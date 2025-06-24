@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/nodove/workspace/fix_jeonbuk/build/linux/x64/debug/cmake_install.cmake",
+		"/home/nodove/workspace/fix_jeonbuk/build/linux/x64/debug/flutter/cmake_install.cmake",
+		"/home/nodove/workspace/fix_jeonbuk/build/linux/x64/debug/runner/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
