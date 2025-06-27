@@ -67,3 +67,33 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Flutter
+.dart_tool/
+.flutter-plugins/
+.flutter-plugins-dependencies/
+.idea/
+.vscode/
+.iml
+*.iml
+*.freezed.dart
+*.g.dart
+build/
+.fvm/
+.packages
+.dart_tool/
+.flutter-plugins-cache/
+.env # 민감한 환경 변수 파일이 있다면 추가
+
+# Dart Frog Backend (flutter_backend 폴더 내에도 별도의 .gitignore가 있을 수 있음)
+flutter_backend/.dart_tool/
+flutter_backend/build/
+flutter_backend/.packages
+flutter_backend/generated/
+flutter_backend/.env # 백엔드용 .env 파일이 있다면 추가
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
