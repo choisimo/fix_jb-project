@@ -1,359 +1,140 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import '../providers/report_provider.dart';
 import '../../domain/entities/report.dart';
-import '../../../../shared/widgets/loading_overlay.dart';
 
-class ReportCreatePage extends StatefulWidget {
-  const ReportCreatePage({super.key});
-
-  @override
-  State<ReportCreatePage> createState() => _ReportCreatePageState();
-}
-
-class _ReportCreatePageState extends State<ReportCreatePage> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
-  
-  ReportCategory _selectedCategory = ReportCategory.other;
-  ReportPriority _selectedPriority = ReportPriority.normal;
-  List<File> _selectedImages = [];
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickImages() async {
-    try {
-      final List<XFile> images = await _picker.pickMultiImage();
-      if (images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(
-            images.map((xFile) => File(xFile.path)).take(10 - _selectedImages.length),
-          );
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('이미지 선택 중 오류가 발생했습니다: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _takePicture() async {
-    try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-      if (image != null && _selectedImages.length < 10) {
-        setState(() {
-          _selectedImages.add(File(image.path));
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('사진 촬영 중 오류가 발생했습니다: $e')),
-        );
-      }
-    }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
-  }
-
-  Future<void> _submitReport() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final reportData = {
-        'title': _titleController.text.trim(),
-        'content': _contentController.text.trim(),
-        'category': _selectedCategory.name,
-        'priority': _selectedPriority.name,
-        'status': ReportStatus.submitted.name,
-      };
-
-      final reportProvider = context.read<ReportProvider>();
-      final success = await reportProvider.createReport(reportData);
-
-      if (success && mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('보고서가 성공적으로 제출되었습니다.')),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('보고서 제출에 실패했습니다.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류가 발생했습니다: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _saveDraft() async {
-    if (_titleController.text.trim().isEmpty && _contentController.text.trim().isEmpty) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final reportData = {
-        'title': _titleController.text.trim(),
-        'content': _contentController.text.trim(),
-        'category': _selectedCategory.name,
-        'priority': _selectedPriority.name,
-        'status': ReportStatus.draft.name,
-      };
-
-      final reportProvider = context.read<ReportProvider>();
-      final success = await reportProvider.createReport(reportData);
-
-      if (success && mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('임시저장되었습니다.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('임시저장 중 오류가 발생했습니다: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
+class ReportCreatePage extends StatelessWidget {
+  const ReportCreatePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('보고서 작성'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveDraft,
-            child: const Text('임시저장'),
+    return Consumer<ReportProvider>(
+      builder: (context, reportProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('신고서 작성'),
+            actions: [
+              if (reportProvider.canSubmit && !reportProvider.isCreating)
+                IconButton(
+                  icon: const Icon(Icons.save),
+                  onPressed: () => _submitReport(context, reportProvider),
+                ),
+            ],
           ),
-        ],
-      ),
-      body: LoadingOverlay(
-        isLoading: _isLoading,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: '제목 *',
-                    hintText: '보고서 제목을 입력하세요',
+          body: reportProvider.isCreating
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('신고서를 제출하고 있습니다...'),
+                    ],
                   ),
-                  maxLength: 100,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '제목을 입력하세요';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<ReportCategory>(
-                        value: _selectedCategory,
-                        decoration: const InputDecoration(
-                          labelText: '카테고리',
-                        ),
-                        items: ReportCategory.values.map((category) {
-                          return DropdownMenuItem(
-                            value: category,
-                            child: Text(_getCategoryText(category)),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedCategory = value;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<ReportPriority>(
-                        value: _selectedPriority,
-                        decoration: const InputDecoration(
-                          labelText: '우선순위',
-                        ),
-                        items: ReportPriority.values.map((priority) {
-                          return DropdownMenuItem(
-                            value: priority,
-                            child: Text(_getPriorityText(priority)),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedPriority = value;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _contentController,
-                  decoration: const InputDecoration(
-                    labelText: '내용 *',
-                    hintText: '보고서 내용을 상세히 입력하세요',
-                    alignLabelWithHint: true,
-                  ),
-                  maxLines: 8,
-                  maxLength: 2000,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '내용을 입력하세요';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  '사진 첨부',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (reportProvider.error != null)
+                        _buildErrorCard(context, reportProvider),
+
+                      _buildTitleField(context, reportProvider),
+                      const SizedBox(height: 16),
+
+                      _buildCategoryField(context, reportProvider),
+                      const SizedBox(height: 16),
+
+                      _buildContentField(context, reportProvider),
+                      const SizedBox(height: 16),
+
+                      _buildImageSection(context, reportProvider),
+                      const SizedBox(height: 16),
+
+                      _buildLocationSection(context, reportProvider),
+                      const SizedBox(height: 32),
+
+                      _buildSubmitButton(context, reportProvider),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _selectedImages.length >= 10 ? null : _takePicture,
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('카메라'),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: _selectedImages.length >= 10 ? null : _pickImages,
-                      icon: const Icon(Icons.photo_library),
-                      label: const Text('갤러리'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${_selectedImages.length}/10',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_selectedImages.isNotEmpty)
-                  SizedBox(
-                    height: 120,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _selectedImages.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          child: Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  _selectedImages[index],
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () => _removeImage(index),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submitReport,
-                    child: const Text('보고서 제출'),
-                  ),
-                ),
-              ],
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorCard(BuildContext context, ReportProvider provider) {
+    return Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.onErrorContainer,
             ),
-          ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                provider.error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.close,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+              onPressed: () {
+                // TODO: 에러 메시지 클리어 기능 추가
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  String _getCategoryText(ReportCategory category) {
+  Widget _buildTitleField(BuildContext context, ReportProvider provider) {
+    return TextFormField(
+      decoration: const InputDecoration(
+        labelText: '제목 *',
+        hintText: '신고 제목을 입력하세요',
+        prefixIcon: Icon(Icons.title),
+      ),
+      onChanged: provider.updateTitle,
+      maxLength: 100,
+      textInputAction: TextInputAction.next,
+    );
+  }
+
+  Widget _buildCategoryField(BuildContext context, ReportProvider provider) {
+    return DropdownButtonFormField<ReportCategory>(
+      value: provider.category,
+      decoration: const InputDecoration(
+        labelText: '카테고리',
+        prefixIcon: Icon(Icons.category),
+      ),
+      items: ReportCategory.values.map((cat) {
+        return DropdownMenuItem(
+          value: cat,
+          child: Text(_getCategoryDisplayName(cat)),
+        );
+      }).toList(),
+      onChanged: (value) {
+        if (value != null) {
+          provider.updateCategory(value);
+        }
+      },
+    );
+  }
+
+  String _getCategoryDisplayName(ReportCategory category) {
     switch (category) {
       case ReportCategory.safety:
         return '안전';
@@ -368,16 +149,298 @@ class _ReportCreatePageState extends State<ReportCreatePage> {
     }
   }
 
-  String _getPriorityText(ReportPriority priority) {
-    switch (priority) {
-      case ReportPriority.low:
-        return '낮음';
-      case ReportPriority.normal:
-        return '보통';
-      case ReportPriority.high:
-        return '높음';
-      case ReportPriority.urgent:
-        return '긴급';
+  Widget _buildContentField(BuildContext context, ReportProvider provider) {
+    return TextFormField(
+      decoration: const InputDecoration(
+        labelText: '내용 *',
+        hintText: '상세 내용을 입력하세요',
+        prefixIcon: Icon(Icons.description),
+        alignLabelWithHint: true,
+      ),
+      maxLines: 6,
+      onChanged: provider.updateContent,
+      maxLength: 1000,
+      textInputAction: TextInputAction.newline,
+    );
+  }
+
+  Widget _buildImageSection(BuildContext context, ReportProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.photo_camera, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '사진 첨부 (${provider.selectedImages.length}/5)',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (provider.selectedImages.isEmpty)
+          _buildEmptyImageState(context, provider)
+        else
+          _buildImageGrid(context, provider),
+      ],
+    );
+  }
+
+  Widget _buildEmptyImageState(BuildContext context, ReportProvider provider) {
+    return Container(
+      width: double.infinity,
+      height: 120,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          style: BorderStyle.solid,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showImagePickerDialog(context, provider),
+          borderRadius: BorderRadius.circular(8),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_a_photo, size: 48, color: Colors.grey),
+              SizedBox(height: 8),
+              Text('사진을 추가하려면 탭하세요', style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageGrid(BuildContext context, ReportProvider provider) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        ...provider.selectedImages.asMap().entries.map((entry) {
+          return _buildImageThumbnail(entry.value, entry.key, provider);
+        }),
+        if (provider.selectedImages.length < 5)
+          _buildAddImageButton(context, provider),
+      ],
+    );
+  }
+
+  Widget _buildImageThumbnail(File image, int index, ReportProvider provider) {
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            image: DecorationImage(image: FileImage(image), fit: BoxFit.cover),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () => provider.removeImage(index),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddImageButton(BuildContext context, ReportProvider provider) {
+    return GestureDetector(
+      onTap: () => _showImagePickerDialog(context, provider),
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline,
+            style: BorderStyle.solid,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.add_a_photo,
+          color: Theme.of(context).colorScheme.primary,
+          size: 32,
+        ),
+      ),
+    );
+  }
+
+  void _showImagePickerDialog(BuildContext context, ReportProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('카메라로 촬영'),
+                onTap: () {
+                  Navigator.pop(context);
+                  provider.pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('갤러리에서 선택'),
+                onTap: () {
+                  Navigator.pop(context);
+                  provider.pickImageFromGallery();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLocationSection(BuildContext context, ReportProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 20),
+                const SizedBox(width: 8),
+                Text('위치 정보', style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+            FilledButton.icon(
+              onPressed: provider.isLoading
+                  ? null
+                  : () => provider.getCurrentLocation(),
+              icon: provider.isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location),
+              label: Text(provider.isLoading ? '위치 확인 중...' : '현재 위치'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                provider.currentPosition != null
+                    ? Icons.location_on
+                    : Icons.location_off,
+                color: provider.currentPosition != null
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  provider.locationText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton(BuildContext context, ReportProvider provider) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: provider.canSubmit && !provider.isCreating
+            ? () => _submitReport(context, provider)
+            : null,
+        icon: provider.isCreating
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.send),
+        label: Text(
+          provider.isCreating ? '제출 중...' : '신고 제출',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitReport(
+    BuildContext context,
+    ReportProvider provider,
+  ) async {
+    final success = await provider.submitReport();
+
+    if (!context.mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('신고서가 성공적으로 제출되었습니다.'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(provider.error ?? '제출 중 오류가 발생했습니다.')),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: '다시 시도',
+            textColor: Colors.white,
+            onPressed: () => _submitReport(context, provider),
+          ),
+        ),
+      );
     }
   }
 }

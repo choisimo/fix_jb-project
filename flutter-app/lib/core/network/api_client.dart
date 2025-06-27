@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../auth/auth_service.dart';
@@ -37,7 +38,9 @@ class ApiClient {
           if (refreshed) {
             final newToken = await AuthService.instance.getAccessToken();
             error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-            return _dio.fetch(error.requestOptions);
+            final response = await _dio.fetch(error.requestOptions);
+            handler.resolve(response);
+            return;
           } else {
             await AuthService.instance.logout();
           }
@@ -72,11 +75,37 @@ class ApiClient {
     return _dio.delete(path);
   }
 
-  Future<Response> uploadFile(String path, String filePath, {Map<String, dynamic>? data}) {
+  Future<Response> uploadFile(String path, String filePath,
+      {Map<String, dynamic>? data}) {
     final formData = FormData.fromMap({
       'file': MultipartFile.fromFileSync(filePath),
       ...?data,
     });
+    return _dio.post(path, data: formData);
+  }
+
+  Future<Response> postMultipart(
+    String path,
+    Map<String, dynamic> fields,
+    List<File> files, {
+    String fileFieldName = 'images',
+  }) async {
+    final formData = FormData.fromMap({
+      ...fields,
+    });
+
+    // 파일들 추가
+    for (int i = 0; i < files.length; i++) {
+      final file = files[i];
+      formData.files.add(MapEntry(
+        '${fileFieldName}[$i]',
+        await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split('/').last,
+        ),
+      ));
+    }
+
     return _dio.post(path, data: formData);
   }
 }
