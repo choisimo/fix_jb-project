@@ -97,7 +97,7 @@ class AppTheme {
         ),
         labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
         hintStyle: TextStyle(
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          color: colorScheme.onSurfaceVariant.withOpacity(0.7),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -198,7 +198,7 @@ class AppTheme {
         ),
         labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
         hintStyle: TextStyle(
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          color: colorScheme.onSurfaceVariant.withOpacity(0.7),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

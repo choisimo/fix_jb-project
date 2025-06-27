@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/reports/presentation/pages/report_list_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../app/routes/app_routes.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -11,18 +12,22 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
-  
-  final List<Widget> _pages = [
-    const ReportListPage(),
-    const ProfilePage(),
-  ];
+
+  final List<Widget> _pages = [const ReportListPage(), const ProfilePage()];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+      body: IndexedStack(index: _currentIndex, children: _pages),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).pushNamed(AppRoutes.reportCreate);
+        },
+        heroTag: "report_create",
+        tooltip: '신고서 작성',
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -32,14 +37,8 @@ class _MainNavigationState extends State<MainNavigation> {
           });
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: '보고서',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: '프로필',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: '보고서'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
         ],
       ),
     );

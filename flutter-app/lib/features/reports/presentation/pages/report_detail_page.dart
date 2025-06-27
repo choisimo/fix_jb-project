@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/report_provider.dart';
 import '../../domain/entities/report.dart';
 import '../../../../shared/widgets/loading_overlay.dart';
 
@@ -24,14 +22,51 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   }
 
   Future<void> _loadReport() async {
-    final reportProvider = context.read<ReportProvider>();
-    final report = await reportProvider.getReport(widget.reportId);
+    try {
+      // 임시로 더미 데이터 생성 (실제 API 연동 전까지)
+      await Future.delayed(const Duration(seconds: 1)); // API 호출 시뮬레이션
 
-    if (mounted) {
-      setState(() {
-        _report = report;
-        _isLoading = false;
-      });
+      final dummyReport = Report(
+        id: widget.reportId,
+        title: '현장 안전 점검 보고서',
+        content:
+            '현장 안전 점검을 실시한 결과 전반적으로 양호한 상태이나, 일부 개선이 필요한 사항이 있습니다.\n\n1. 안전 장비 점검\n2. 작업 환경 확인\n3. 개선 사항 도출',
+        authorId: 'user123',
+        authorName: '김현장',
+        category: ReportCategory.safety,
+        priority: ReportPriority.normal,
+        status: ReportStatus.submitted,
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        updatedAt: DateTime.now(),
+        imageUrls: [],
+        location: null,
+        comments: [
+          ReportComment(
+            id: 'comment1',
+            authorId: 'manager1',
+            authorName: '이관리자',
+            content: '보고서 잘 작성되었습니다. 개선사항 검토 후 승인 예정입니다.',
+            createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
+          ),
+        ],
+      );
+
+      if (mounted) {
+        setState(() {
+          _report = dummyReport;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('보고서 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('보고서를 불러오는데 실패했습니다.')));
+      }
     }
   }
 
@@ -406,17 +441,21 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              final reportProvider = context.read<ReportProvider>();
-              final success = await reportProvider.deleteReport(
-                widget.reportId,
-              );
 
-              if (success && mounted) {
+              try {
+                // 임시로 성공 처리 (실제 API 연동 전까지)
+                await Future.delayed(const Duration(milliseconds: 500));
+
+                if (!mounted) return;
+
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(const SnackBar(content: Text('보고서가 삭제되었습니다.')));
-              } else if (mounted) {
+              } catch (e) {
+                debugPrint('보고서 삭제 실패: $e');
+                if (!mounted) return;
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('보고서 삭제에 실패했습니다.')),
                 );

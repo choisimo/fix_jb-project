@@ -1,11 +1,69 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/report_provider.dart';
-import '../../domain/entities/report.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:signature/signature.dart';
+import '../../../../core/ai/roboflow_service.dart';
+import '../../../../core/ai/ocr_service.dart';
 
-class ReportCreatePage extends StatelessWidget {
-  const ReportCreatePage({Key? key}) : super(key: key);
+class ReportCreatePage extends StatefulWidget {
+  const ReportCreatePage({super.key});
+
+  @override
+  State<ReportCreatePage> createState() => _ReportCreatePageState();
+}
+
+class _ReportCreatePageState extends State<ReportCreatePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _signatureController = SignatureController(
+    penStrokeWidth: 2,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
+
+  // 이미지 관련
+  final List<File> _selectedImages = [];
+  final List<ObjectDetectionResult> _detectionResults = [];
+  final List<OCRResult> _ocrResults = [];
+  final ImagePicker _imagePicker = ImagePicker();
+
+  // 위치 관련
+  Position? _currentPosition;
+  bool _isLoadingLocation = false;
+
+  // 폼 데이터
+  String _selectedCategory = '기타';
+  String _selectedPriority = '보통';
+  bool _isProcessing = false;
+
+  final List<String> _categories = [
+    '도로/교통',
+    '환경/위생',
+    '상하수도',
+    '전기/조명',
+    '건축물',
+    '공원/시설물',
+    '공사/안전',
+    '기타',
+  ];
+
+  final List<String> _priorities = ['긴급', '높음', '보통', '낮음'];
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _signatureController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,15 +159,20 @@ class ReportCreatePage extends StatelessWidget {
   }
 
   Widget _buildTitleField(BuildContext context, ReportProvider provider) {
-    return TextFormField(
-      decoration: const InputDecoration(
-        labelText: '제목 *',
-        hintText: '신고 제목을 입력하세요',
-        prefixIcon: Icon(Icons.title),
+    return Container(
+      height: 56,
+      child: TextFormField(
+        decoration: const InputDecoration(
+          labelText: '제목 *',
+          hintText: '신고 제목을 입력하세요',
+          prefixIcon: Icon(Icons.title),
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+        onChanged: provider.updateTitle,
+        maxLength: 100,
+        textInputAction: TextInputAction.next,
       ),
-      onChanged: provider.updateTitle,
-      maxLength: 100,
-      textInputAction: TextInputAction.next,
     );
   }
 
@@ -150,17 +213,22 @@ class ReportCreatePage extends StatelessWidget {
   }
 
   Widget _buildContentField(BuildContext context, ReportProvider provider) {
-    return TextFormField(
-      decoration: const InputDecoration(
-        labelText: '내용 *',
-        hintText: '상세 내용을 입력하세요',
-        prefixIcon: Icon(Icons.description),
-        alignLabelWithHint: true,
+    return Container(
+      height: 160, // 멀티라인이므로 더 큰 높이
+      child: TextFormField(
+        decoration: const InputDecoration(
+          labelText: '내용 *',
+          hintText: '상세 내용을 입력하세요',
+          prefixIcon: Icon(Icons.description),
+          alignLabelWithHint: true,
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        maxLines: 6,
+        onChanged: provider.updateContent,
+        maxLength: 1000,
+        textInputAction: TextInputAction.newline,
       ),
-      maxLines: 6,
-      onChanged: provider.updateContent,
-      maxLength: 1000,
-      textInputAction: TextInputAction.newline,
     );
   }
 
@@ -346,7 +414,7 @@ class ReportCreatePage extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
