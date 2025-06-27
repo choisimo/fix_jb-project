@@ -15,7 +15,8 @@ Future<Response> onRequest(RequestContext context) async {
 
   final authHeader = context.request.headers['Authorization'];
   if (authHeader == null || !authHeader.startsWith('Bearer ')) {
-    return Response(statusCode: HttpStatus.unauthorized, body: 'Missing or invalid token');
+    return Response(
+        statusCode: HttpStatus.unauthorized, body: 'Missing or invalid token');
   }
 
   final token = authHeader.substring(7);
@@ -27,15 +28,19 @@ Future<Response> onRequest(RequestContext context) async {
 
     // In a real app, you might want to re-fetch user from DB
     // to ensure they still exist and have the right permissions.
-    return Response.json(body: {
-      'id': payload['id'],
-      'email': payload['email'],
-      'name': '임시 사용자', // You can add more user info to the JWT payload
-      'department': '개발팀',
-    },);
+    return Response.json(
+      body: {
+        'id': payload['id'],
+        'email': payload['email'],
+        'name': '임시 사용자', // You can add more user info to the JWT payload
+        'department': '개발팀',
+      },
+    );
   } on JWTExpiredException {
     return Response(statusCode: HttpStatus.unauthorized, body: 'Token expired');
   } on JWTException catch (err) {
-    return Response(statusCode: HttpStatus.unauthorized, body: 'Invalid token: ${err.message}');
+    return Response(
+        statusCode: HttpStatus.unauthorized,
+        body: 'Invalid token: ${err.message}');
   }
 }
