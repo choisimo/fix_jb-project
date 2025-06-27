@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/auth/auth_service.dart';
 import '../../../../app/routes/app_routes.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -20,10 +19,11 @@ class ProfilePage extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          final userInfo = authProvider.userInfo;
-          
+      body: Builder(
+        builder: (context) {
+          final authService = AuthService.instance;
+          final userInfo = authService.userInfo;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -133,9 +133,9 @@ class ProfilePage extends StatelessWidget {
                           ],
                         ),
                       );
-                      
+
                       if (confirmed == true) {
-                        await authProvider.logout();
+                        await authService.logout();
                         if (context.mounted) {
                           Navigator.of(context).pushNamedAndRemoveUntil(
                             AppRoutes.login,
