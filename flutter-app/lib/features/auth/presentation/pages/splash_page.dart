@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../../core/auth/auth_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -14,21 +13,33 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
+    // Schedule the authentication check to run safely after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkAuthStatus();
+      }
+    });
   }
 
   Future<void> _checkAuthStatus() async {
-    await Future.delayed(const Duration(seconds: 2)); // 스플래시 화면 표시
-    
-    if (mounted) {
-      final authProvider = context.read<AuthProvider>();
-      await authProvider.checkAuthStatus();
-      
-      if (authProvider.isAuthenticated) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-      } else {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-      }
+    // Capture context-dependent objects before any async operations.
+    final navigator = Navigator.of(context);
+    final authService = AuthService.instance;
+
+    // Add a small delay to show splash screen
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    // Check authentication status directly from service
+    final isAuthenticated = authService.isAuthenticated;
+
+    if (!mounted) return;
+
+    if (isAuthenticated) {
+      navigator.pushReplacementNamed(AppRoutes.home);
+    } else {
+      navigator.pushReplacementNamed(AppRoutes.login);
     }
   }
 
@@ -50,11 +61,7 @@ class _SplashPageState extends State<SplashPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.assignment,
-                size: 80,
-                color: Colors.white,
-              ),
+              Icon(Icons.assignment, size: 80, color: Colors.white),
               SizedBox(height: 24),
               Text(
                 'Flutter Report App',
@@ -67,15 +74,10 @@ class _SplashPageState extends State<SplashPage> {
               SizedBox(height: 8),
               Text(
                 '현장 보고 및 관리 플랫폼',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.white70),
               ),
               SizedBox(height: 48),
-              CircularProgressIndicator(
-                color: Colors.white,
-              ),
+              CircularProgressIndicator(color: Colors.white),
             ],
           ),
         ),

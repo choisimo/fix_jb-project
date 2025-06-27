@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../storage/storage_service.dart';
 import '../network/api_client.dart';
+import '../../app/config/app_config.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -24,10 +25,26 @@ class AuthService {
 
   Future<bool> loginWithEmail(String email, String password) async {
     try {
-      final response = await _apiClient.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-      });
+      // 개발 모드에서 테스트 계정 확인
+      if (AppConfig.isDevelopmentMode &&
+          AppConfig.testAccounts.containsKey(email)) {
+        if (AppConfig.testAccounts[email] == password) {
+          // 테스트 계정으로 로그인 성공
+          await _saveTestUserTokens(email);
+          await _loadTestUserInfo(email);
+          debugPrint('Test account login successful: $email');
+          return true;
+        } else {
+          debugPrint('Test account login failed: incorrect password');
+          return false;
+        }
+      }
+
+      // 실제 서버 로그인
+      final response = await _apiClient.post(
+        '/auth/login',
+        data: {'email': email, 'password': password},
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -68,9 +85,10 @@ class AuthService {
     if (_refreshToken == null) return false;
 
     try {
-      final response = await _apiClient.post('/auth/refresh', data: {
-        'refreshToken': _refreshToken,
-      });
+      final response = await _apiClient.post(
+        '/auth/refresh',
+        data: {'refreshToken': _refreshToken},
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -103,7 +121,7 @@ class AuthService {
   Future<void> _saveTokens(String accessToken, String refreshToken) async {
     _accessToken = accessToken;
     _refreshToken = refreshToken;
-    
+
     await _storage.setString('access_token', accessToken);
     await _storage.setString('refresh_token', refreshToken);
   }
@@ -111,7 +129,7 @@ class AuthService {
   Future<void> _loadTokensFromStorage() async {
     _accessToken = await _storage.getString('access_token');
     _refreshToken = await _storage.getString('refresh_token');
-    
+
     if (_accessToken != null) {
       await _loadUserInfo();
     }
@@ -133,9 +151,35 @@ class AuthService {
     _accessToken = null;
     _refreshToken = null;
     _userInfo = null;
-    
+
     await _storage.remove('access_token');
     await _storage.remove('refresh_token');
     await _storage.remove('user_info');
+  }
+
+  // 테스트 사용자를 위한 메서드들 (개발 모드에서만 사용)
+  Future<void> _saveTestUserTokens(String email) async {
+    // 테스트 토큰 생성 (실제로는 JWT가 아니지만 테스트용)
+    final testToken =
+        'test_token_${email.replaceAll('@', '_').replaceAll('.', '_')}';
+    final testRefreshToken =
+        'test_refresh_${email.replaceAll('@', '_').replaceAll('.', '_')}';
+
+    await _saveTokens(testToken, testRefreshToken);
+  }
+
+  Future<void> _loadTestUserInfo(String email) async {
+    // 테스트 사용자 정보 생성
+    final testUserInfo = {
+      'id': email.hashCode,
+      'email': email,
+      'name': email.split('@')[0].replaceAll('.', ' ').toUpperCase(),
+      'role': email.startsWith('admin') ? 'ADMIN' : 'USER',
+      'isTestAccount': true,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+
+    _userInfo = testUserInfo;
+    await _storage.setString('user_info', jsonEncode(_userInfo));
   }
 }

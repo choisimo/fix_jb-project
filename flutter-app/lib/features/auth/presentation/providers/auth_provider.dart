@@ -19,60 +19,70 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> loginWithEmail(String email, String password) async {
-    _setLoading(true);
-    
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final success = await _authService.loginWithEmail(email, password);
+      _isAuthenticated = success;
       if (success) {
-        _isAuthenticated = true;
         _userInfo = _authService.userInfo;
       }
+      _isLoading = false;
+      notifyListeners();
       return success;
-    } finally {
-      _setLoading(false);
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
   Future<bool> loginWithGoogle() async {
-    _setLoading(true);
-    
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final success = await _authService.loginWithGoogle();
+      _isAuthenticated = success;
       if (success) {
-        _isAuthenticated = true;
         _userInfo = _authService.userInfo;
       }
+      _isLoading = false;
+      notifyListeners();
       return success;
-    } finally {
-      _setLoading(false);
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
   Future<bool> loginWithKakao() async {
-    _setLoading(true);
-    
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final success = await _authService.loginWithKakao();
+      _isAuthenticated = success;
       if (success) {
-        _isAuthenticated = true;
         _userInfo = _authService.userInfo;
       }
+      _isLoading = false;
+      notifyListeners();
       return success;
-    } finally {
-      _setLoading(false);
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
   Future<void> logout() async {
-    _setLoading(true);
-    
-    try {
-      await _authService.logout();
-      _isAuthenticated = false;
-      _userInfo = null;
-    } finally {
-      _setLoading(false);
-    }
+    await _authService.logout();
+    _isAuthenticated = false;
+    _userInfo = null;
+    notifyListeners();
   }
 
   void _setLoading(bool loading) {

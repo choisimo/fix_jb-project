@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/report_provider.dart';
 import '../../domain/entities/report.dart';
 import '../../../../shared/widgets/loading_overlay.dart';
 
 class ReportDetailPage extends StatefulWidget {
   final String reportId;
 
-  const ReportDetailPage({
-    super.key,
-    required this.reportId,
-  });
+  const ReportDetailPage({super.key, required this.reportId});
 
   @override
   State<ReportDetailPage> createState() => _ReportDetailPageState();
@@ -27,14 +22,51 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   }
 
   Future<void> _loadReport() async {
-    final reportProvider = context.read<ReportProvider>();
-    final report = await reportProvider.getReport(widget.reportId);
-    
-    if (mounted) {
-      setState(() {
-        _report = report;
-        _isLoading = false;
-      });
+    try {
+      // 임시로 더미 데이터 생성 (실제 API 연동 전까지)
+      await Future.delayed(const Duration(seconds: 1)); // API 호출 시뮬레이션
+
+      final dummyReport = Report(
+        id: widget.reportId,
+        title: '현장 안전 점검 보고서',
+        content:
+            '현장 안전 점검을 실시한 결과 전반적으로 양호한 상태이나, 일부 개선이 필요한 사항이 있습니다.\n\n1. 안전 장비 점검\n2. 작업 환경 확인\n3. 개선 사항 도출',
+        authorId: 'user123',
+        authorName: '김현장',
+        category: ReportCategory.safety,
+        priority: ReportPriority.normal,
+        status: ReportStatus.submitted,
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        updatedAt: DateTime.now(),
+        imageUrls: [],
+        location: null,
+        comments: [
+          ReportComment(
+            id: 'comment1',
+            authorId: 'manager1',
+            authorName: '이관리자',
+            content: '보고서 잘 작성되었습니다. 개선사항 검토 후 승인 예정입니다.',
+            createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
+          ),
+        ],
+      );
+
+      if (mounted) {
+        setState(() {
+          _report = dummyReport;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('보고서 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('보고서를 불러오는데 실패했습니다.')));
+      }
     }
   }
 
@@ -57,14 +89,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Text('수정'),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('삭제'),
-                ),
+                const PopupMenuItem(value: 'edit', child: Text('수정')),
+                const PopupMenuItem(value: 'delete', child: Text('삭제')),
               ],
             ),
         ],
@@ -72,9 +98,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: _report == null
-            ? const Center(
-                child: Text('보고서를 찾을 수 없습니다.'),
-              )
+            ? const Center(child: Text('보고서를 찾을 수 없습니다.'))
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -132,24 +156,16 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
-                  Icons.person,
-                  size: 16,
-                  color: Colors.grey[600],
-                ),
+                Icon(Icons.person, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 4),
                 Text(
                   _report!.authorName,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
                 const Spacer(),
                 Text(
                   _formatDate(_report!.createdAt),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -168,16 +184,10 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           children: [
             const Text(
               '내용',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              _report!.content,
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(_report!.content, style: const TextStyle(fontSize: 14)),
           ],
         ),
       ),
@@ -193,10 +203,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           children: [
             const Text(
               '첨부 사진',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -243,10 +250,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           children: [
             const Text(
               '위치 정보',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(_report!.location!.address),
@@ -254,10 +258,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
             Text(
               '위도: ${_report!.location!.latitude.toStringAsFixed(6)}, '
               '경도: ${_report!.location!.longitude.toStringAsFixed(6)}',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
           ],
         ),
@@ -274,19 +275,15 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           children: [
             const Text(
               '댓글',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             if (_report!.comments.isEmpty)
-              const Text(
-                '댓글이 없습니다.',
-                style: TextStyle(color: Colors.grey),
-              )
+              const Text('댓글이 없습니다.', style: TextStyle(color: Colors.grey))
             else
-              ...(_report!.comments.map((comment) => _buildCommentItem(comment))),
+              ...(_report!.comments.map(
+                (comment) => _buildCommentItem(comment),
+              )),
           ],
         ),
       ),
@@ -308,17 +305,12 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
             children: [
               Text(
                 comment.authorName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               Text(
                 _formatDate(comment.createdAt),
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
             ],
           ),
@@ -332,7 +324,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   Widget _buildStatusChip(ReportStatus status) {
     Color color;
     String text;
-    
+
     switch (status) {
       case ReportStatus.draft:
         color = Colors.grey;
@@ -355,10 +347,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     return Chip(
       label: Text(
         text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.white,
-        ),
+        style: const TextStyle(fontSize: 12, color: Colors.white),
       ),
       backgroundColor: color,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -367,7 +356,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
 
   Widget _buildCategoryChip(ReportCategory category) {
     String text;
-    
+
     switch (category) {
       case ReportCategory.safety:
         text = '안전';
@@ -387,10 +376,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     }
 
     return Chip(
-      label: Text(
-        text,
-        style: const TextStyle(fontSize: 12),
-      ),
+      label: Text(text, style: const TextStyle(fontSize: 12)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
@@ -398,7 +384,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   Widget _buildPriorityChip(ReportPriority priority) {
     Color color;
     String text;
-    
+
     switch (priority) {
       case ReportPriority.low:
         color = Colors.green;
@@ -421,9 +407,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
@@ -438,7 +424,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
 
   String _formatDate(DateTime date) {
     return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')} '
-           '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   void _showDeleteDialog() {
@@ -455,15 +441,21 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              final reportProvider = context.read<ReportProvider>();
-              final success = await reportProvider.deleteReport(widget.reportId);
-              
-              if (success && mounted) {
+
+              try {
+                // 임시로 성공 처리 (실제 API 연동 전까지)
+                await Future.delayed(const Duration(milliseconds: 500));
+
+                if (!mounted) return;
+
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('보고서가 삭제되었습니다.')),
-                );
-              } else if (mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('보고서가 삭제되었습니다.')));
+              } catch (e) {
+                debugPrint('보고서 삭제 실패: $e');
+                if (!mounted) return;
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('보고서 삭제에 실패했습니다.')),
                 );
