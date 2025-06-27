@@ -17,8 +17,9 @@ class LoadingOverlay extends StatelessWidget {
     return Stack(
       children: [
         child,
-        if (isLoading)
-          Container(
+        Offstage(
+          offstage: !isLoading,
+          child: Container(
             color: Colors.black.withOpacity(0.3),
             child: Center(
               child: Card(
@@ -41,6 +42,7 @@ class LoadingOverlay extends StatelessWidget {
               ),
             ),
           ),
+        ),
       ],
     );
   }

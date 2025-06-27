@@ -98,7 +98,7 @@ class ApiClient {
     for (int i = 0; i < files.length; i++) {
       final file = files[i];
       formData.files.add(MapEntry(
-        '${fileFieldName}[$i]',
+        '$fileFieldName[$i]',
         await MultipartFile.fromFile(
           file.path,
           filename: file.path.split('/').last,

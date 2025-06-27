@@ -18,7 +18,7 @@ class ReportProvider extends ChangeNotifier {
   String _searchQuery = '';
 
   // 새로운 신고서 작성 관련 상태
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   Position? _currentPosition;
   String _title = '';
   String _content = '';

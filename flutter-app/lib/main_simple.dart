@@ -1,51 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'app/theme/app_theme.dart';
 import 'app/routes/app_routes.dart';
 import 'core/auth/auth_service.dart';
 import 'core/storage/storage_service.dart';
-import 'features/auth/presentation/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔥 전역 Flutter 에러 핸들러 설정 - semantics 오류 등 처리
-  FlutterError.onError = (FlutterErrorDetails details) {
-    final String errorString = details.exception.toString();
-
-    // 알려진 non-critical 렌더링 오류들을 필터링
-    final List<String> ignoredErrors = [
-      '!semantics.parentDataDirty',
-      'BoxConstraints has a negative minimum height',
-      'RenderBox was not laid out',
-      'Vertical viewport was given unbounded height',
-      'RenderFlex overflowed by',
-      'The following assertion was thrown during layout',
-      'The following RenderObject was being processed when the failure occurred',
-    ];
-
-    bool shouldIgnoreError = ignoredErrors.any(
-      (pattern) => errorString.contains(pattern),
-    );
-
-    if (shouldIgnoreError) {
-      debugPrint(
-        '⚠️ Ignored rendering error: ${errorString.split('\n').first}',
-      );
-      return; // 에러를 무시하고 앱 계속 실행
-    } else {
-      // 중요한 에러는 기본 핸들러로 처리
-      debugPrint('🔥 Critical Flutter error: $errorString');
-      FlutterError.presentError(details);
-    }
-  };
-
-  // Dart 런타임 에러 핸들러도 설정
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('🔥 Unhandled Dart error: $error');
-    debugPrint('Stack: $stack');
-    return true; // 에러 처리 완료 표시
-  };
 
   // 서비스 초기화 및 에러 핸들링
   try {
@@ -89,7 +49,9 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      home: const LoginPage(),
+      // 지역화 설정 - Provider 의존성 없이 기본 설정
+      supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
       debugShowCheckedModeBanner: false,
       // 렌더링 안정성을 위한 builder 추가
@@ -98,13 +60,16 @@ class MyApp extends StatelessWidget {
         final mediaQuery = MediaQuery.of(context);
         return MediaQuery(
           data: mediaQuery.copyWith(
-            // 텍스트 스케일 제한으로 UI 깨짐 방지
+            // 텍스트 스케일 제한으로 UI 깨짐 방지 (새로운 API 사용)
             textScaler: mediaQuery.textScaler.clamp(
               minScaleFactor: 0.8,
               maxScaleFactor: 1.2,
             ),
           ),
-          child: child ?? const SizedBox.shrink(),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       // 전역 에러 핸들러
