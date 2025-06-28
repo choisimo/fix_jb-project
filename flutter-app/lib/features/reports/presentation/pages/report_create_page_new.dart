@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:signature/signature.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/ai/roboflow_service.dart';
 import '../../../../core/ai/ocr_service.dart';
 
@@ -23,9 +24,11 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
   );
 
   // 이미지 관련
-  final List<String> _selectedImageTypes = []; // 더미 이미지 타입 저장
+  final List<File> _selectedImages = []; // 실제 이미지 파일들
+  final List<String> _selectedImageTypes = []; // 더미 이미지 타입 저장 (테스트용)
   final List<ObjectDetectionResult> _detectionResults = [];
   final List<OCRResult> _ocrResults = [];
+  final ImagePicker _imagePicker = ImagePicker();
 
   // 위치 관련
   Position? _currentPosition;
@@ -40,6 +43,9 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
   bool _hasComplexIssue = false; // 복합 민원 플래그
   List<String> _conflictingCategories = []; // 충돌하는 카테고리들
   String _complexIssueDescription = ''; // 복합 민원 설명
+  
+  // API 키 상태 관리
+  bool _hasValidApiKey = false;
 
   final List<String> _categories = [
     '도로/교통',
@@ -58,6 +64,15 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _checkApiKeyStatus();
+  }
+  
+  /// API 키 상태 확인
+  Future<void> _checkApiKeyStatus() async {
+    final hasValidKey = await RoboflowService.hasValidApiKey;
+    setState(() {
+      _hasValidApiKey = hasValidKey;
+    });
   }
 
   @override
@@ -99,72 +114,62 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
 
   /// 이미지 선택 (더미 기능)
   Future<void> _selectImage(String source) async {
-    if (_selectedImageTypes.length >= 10) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('최대 10장까지 첨부할 수 있습니다')));
+    if (_selectedImages.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('최대 10장까지 첨부할 수 있습니다'))
+      );
       return;
     }
 
     try {
-      // 데모용 더미 이미지 생성 및 추가
-      await _createDummyImage(source);
+      XFile? pickedFile;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$source 테스트 이미지가 추가되었습니다'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (source == '카메라') {
+        pickedFile = await _imagePicker.pickImage(
+          source: ImageSource.camera,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+      } else if (source == '갤러리') {
+        pickedFile = await _imagePicker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+      }
+
+      if (pickedFile != null) {
+        final imageFile = File(pickedFile.path);
+        await _addImageAndAnalyze(imageFile, source);
+      }
     } catch (e) {
       debugPrint('Image selection error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('이미지 선택 중 오류가 발생했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이미지 선택 중 오류가 발생했습니다: $e'))
+      );
     }
   }
 
-  /// 더미 이미지 생성 및 추가
-  Future<void> _createDummyImage(String source) async {
+  /// 실제 이미지 추가 및 AI 분석
+  Future<void> _addImageAndAnalyze(File imageFile, String source) async {
     setState(() {
       _isProcessing = true;
+      _selectedImages.add(imageFile);
+      _selectedImageTypes.add(source);
     });
 
     try {
-      // 더미 이미지 타입을 선택된 이미지 목록에 추가
-      setState(() {
-        _selectedImageTypes.add(source);
-      });
-
-      // AI 분석 시뮬레이션 실행
-      await _simulateImageAnalysis();
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
-    }
-  }
-
-  /// 더미 이미지 분석 시뮬레이션
-  Future<void> _simulateImageAnalysis() async {
-    setState(() {
-      _isProcessing = true;
-    });
-
-    try {
-      // 더미 이미지 파일을 생성하여 실제 AI 서비스로 분석
-      final dummyImagePath = await _createDummyImageFile(_selectedImageTypes.last);
-      final dummyFile = File(dummyImagePath);
-      
-      // 실제 Roboflow 서비스로 분석 (개발 모드에서는 목업 데이터 반환)
-      final objectDetection = await RoboflowService.instance.detectObjects(dummyFile);
-      final ocrResult = await OCRService.instance.extractText(dummyFile);
+      // 실제 Roboflow AI 분석 실행
+      final objectDetection = await RoboflowService.instance.detectObjects(imageFile);
+      final ocrResult = await OCRService.instance.extractText(imageFile);
 
       _detectionResults.add(objectDetection);
       _ocrResults.add(ocrResult);
 
       // 첫 번째 이미지인 경우에만 기본 AI 추천 적용
-      if (_selectedImageTypes.length == 1) {
+      if (_selectedImages.length == 1) {
         final recommendedCategory = RoboflowService.recommendCategory(
           objectDetection.detections,
         );
@@ -205,7 +210,140 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
       }
 
       // 복합 민원 검사 (2개 이상 이미지가 있을 때)
-      if (_selectedImageTypes.length > 1) {
+      if (_selectedImages.length > 1) {
+        _checkForComplexIssues();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('AI 분석 완료: ${objectDetection.summary}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Image analysis error: $e');
+      // 에러 발생 시 마지막 추가된 이미지 제거
+      setState(() {
+        if (_selectedImages.isNotEmpty) {
+          _selectedImages.removeLast();
+        }
+        if (_selectedImageTypes.isNotEmpty) {
+          _selectedImageTypes.removeLast();
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미지 분석 중 오류가 발생했습니다: $e'))
+        );
+      }
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  /// 더미 이미지 생성 및 추가
+  Future<void> _createDummyImage(String source) async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      // 더미 이미지 타입을 선택된 이미지 목록에 추가
+      setState(() {
+        _selectedImageTypes.add(source);
+      });
+
+      // AI 분석 시뮬레이션 실행
+      await _simulateImageAnalysis(source);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$source 테스트 이미지가 추가되었습니다'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Dummy image creation error: $e');
+      // 에러 발생 시 마지막 추가된 항목 제거
+      if (_selectedImageTypes.isNotEmpty) {
+        setState(() {
+          _selectedImageTypes.removeLast();
+        });
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('테스트 이미지 생성 중 오류가 발생했습니다: $e'))
+      );
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  /// 더미 이미지 분석 시뮬레이션
+  Future<void> _simulateImageAnalysis(String imageType) async {
+    try {
+      // 더미 이미지 파일을 생성하여 AI 서비스로 분석
+      final dummyImagePath = await _createDummyImageFile(imageType);
+      final dummyFile = File(dummyImagePath);
+      
+      // 실제 Roboflow 서비스로 분석
+      final objectDetection = await RoboflowService.instance.detectObjects(dummyFile);
+      final ocrResult = await OCRService.instance.extractText(dummyFile);
+
+      _detectionResults.add(objectDetection);
+      _ocrResults.add(ocrResult);
+
+      // 첫 번째 이미지인 경우에만 기본 AI 추천 적용
+      final totalImages = _selectedImages.length + _selectedImageTypes.length;
+      if (totalImages == 1) {
+        final recommendedCategory = RoboflowService.recommendCategory(
+          objectDetection.detections,
+        );
+        final recommendedPriority = RoboflowService.recommendPriority(
+          objectDetection.detections,
+        );
+
+        setState(() {
+          _selectedCategory = recommendedCategory;
+          _selectedPriority = recommendedPriority;
+        });
+
+        // 자동 제목 생성
+        if (_titleController.text.isEmpty && objectDetection.hasDetections) {
+          final mainObject = objectDetection.detections.first;
+          _titleController.text = '${mainObject.koreanName} 신고';
+        }
+
+        // OCR 결과 활용 (시뮬레이션)
+        if (ocrResult.hasText && ocrResult.extractedInfo.hasUsefulInfo) {
+          final extractedInfo = ocrResult.extractedInfo;
+          final autoDescription = StringBuffer();
+
+          if (extractedInfo.primaryAddress.isNotEmpty) {
+            autoDescription.writeln('위치: ${extractedInfo.primaryAddress}');
+          }
+
+          if (extractedInfo.keywords.isNotEmpty) {
+            autoDescription.writeln(
+              '관련 키워드: ${extractedInfo.keywords.join(', ')}',
+            );
+          }
+
+          if (_descriptionController.text.isEmpty) {
+            _descriptionController.text = autoDescription.toString();
+          }
+        }
+      }
+
+      // 복합 민원 검사 (2개 이상 이미지가 있을 때)
+      if (totalImages > 1) {
         _checkForComplexIssues();
       }
 
@@ -220,28 +358,52 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
     } catch (e) {
       debugPrint('Image analysis error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('이미지 분석 중 오류가 발생했습니다: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미지 분석 중 오류가 발생했습니다: $e'))
+        );
       }
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
     }
   }
 
   /// 더미 이미지 파일 생성 (테스트용)
   Future<String> _createDummyImageFile(String type) async {
-    // 임시 파일 경로 생성
+    // 임시 파일 경로 생성 (타입에 따라 다른 이름 패턴)
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return '/tmp/dummy_${type}_$timestamp.jpg';
+    String fileName;
+    
+    switch (type) {
+      case '도로 파손':
+        fileName = 'road_damage_$timestamp.jpg';
+        break;
+      case '환경 문제':
+        fileName = 'environment_issue_$timestamp.jpg';
+        break;
+      case '시설물 파손':
+        fileName = 'facility_damage_$timestamp.jpg';
+        break;
+      case '복합 문제':
+        fileName = 'complex_issue_$timestamp.jpg';
+        break;
+      default:
+        fileName = 'test_${type.toLowerCase()}_$timestamp.jpg';
+        break;
+    }
+    
+    return '/tmp/$fileName';
   }
 
   /// 이미지 제거
   void _removeImage(int index) {
     setState(() {
-      _selectedImageTypes.removeAt(index);
+      // 실제 이미지 파일 제거
+      if (index < _selectedImages.length) {
+        _selectedImages.removeAt(index);
+      }
+      
+      // 테스트 타입 제거 
+      if (index < _selectedImageTypes.length) {
+        _selectedImageTypes.removeAt(index);
+      }
       
       // 분석 결과도 함께 제거
       if (index < _detectionResults.length) {
@@ -259,7 +421,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
       }
       
       // 복합 민원 다시 검사
-      if (_selectedImageTypes.length > 1) {
+      if (_selectedImages.length > 1) {
         _checkForComplexIssues();
       } else {
         // 이미지가 1개 이하면 복합 민원 플래그 제거
@@ -273,10 +435,10 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
   /// 신고서 제출
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedImageTypes.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('최소 1장의 사진을 첨부해주세요')));
+    if (_selectedImages.isEmpty && _selectedImageTypes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('최소 1장의 사진을 첨부해주세요'))
+      );
       return;
     }
 
@@ -299,7 +461,12 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
           'latitude': _currentPosition!.latitude,
           'longitude': _currentPosition!.longitude,
         } : null,
-        'images': _selectedImageTypes.asMap().entries.map((entry) => {
+        'images': _selectedImages.asMap().entries.map((entry) => {
+          'index': entry.key,
+          'path': entry.value.path,
+          'isPrimary': entry.key == _primaryImageIndex,
+        }).toList(),
+        'testImages': _selectedImageTypes.asMap().entries.map((entry) => {
           'index': entry.key,
           'type': entry.value,
           'isPrimary': entry.key == _primaryImageIndex,
@@ -333,14 +500,102 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
     } catch (e) {
       debugPrint('Submit error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('제출 중 오류가 발생했습니다: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('제출 중 오류가 발생했습니다: $e'))
+        );
       }
     } finally {
       setState(() {
         _isProcessing = false;
       });
+    }
+  }
+
+  /// API 연결 테스트
+  Future<void> _testApiConnection() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('API 연결 테스트 중...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final isConnected = await RoboflowService.testApiConnection();
+      
+      if (mounted) {
+        Navigator.pop(context); // 로딩 다이얼로그 닫기
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  isConnected ? Icons.check_circle : Icons.error,
+                  color: isConnected ? Colors.green : Colors.red,
+                ),
+                const SizedBox(width: 8),
+                Text(isConnected ? 'API 연결 성공' : 'API 연결 실패'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isConnected 
+                      ? '✅ Roboflow API와 정상적으로 연결되었습니다.\n실제 이미지 분석이 가능합니다.'
+                      : '❌ API 연결에 실패했습니다.\n다음을 확인해주세요:',
+                ),
+                if (!isConnected) ...[
+                  const SizedBox(height: 12),
+                  const Text('• API 키가 올바른지 확인'),
+                  const Text('• 인터넷 연결 상태 확인'),
+                  const Text('• Roboflow 계정 상태 확인'),
+                  const Text('• 모델 엔드포인트 확인'),
+                  const SizedBox(height: 12),
+                  Text(
+                    'API 키 정보: ${RoboflowService.apiKeyInfo}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              if (!isConnected)
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showApiKeyDialog();
+                  },
+                  child: const Text('API 키 수정'),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // 로딩 다이얼로그 닫기
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('API 테스트 중 오류 발생: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -419,7 +674,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
                 ),
                 const Spacer(),
                 Text(
-                  '${_selectedImageTypes.length}/10',
+                  '${_selectedImages.length + _selectedImageTypes.length}/10',
                   style: TextStyle(color: Colors.grey[600]),
                 ),
               ],
@@ -427,7 +682,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
             const SizedBox(height: 16),
 
             // 이미지 그리드
-            if (_selectedImageTypes.isNotEmpty) ...[
+            if (_selectedImages.isNotEmpty || _selectedImageTypes.isNotEmpty) ...[
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -436,7 +691,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                 ),
-                itemCount: _selectedImageTypes.length,
+                itemCount: _selectedImages.length + _selectedImageTypes.length,
                 itemBuilder: (context, index) {
                   final isPrimary = _primaryImageIndex == index;
                   return GestureDetector(
@@ -452,7 +707,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
                                   : null,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: _buildDummyImage(_selectedImageTypes[index]),
+                            child: _buildImageWidget(index),
                           ),
                         ),
                         // 대표 이미지 표시
@@ -523,6 +778,30 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
                               ),
                             ),
                           ),
+                        // 실제 이미지 표시 (테스트 이미지와 구분)
+                        if (index < _selectedImages.length)
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                '실제',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   );
@@ -564,7 +843,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
               ],
             ),
 
-            if (_selectedImageTypes.isEmpty)
+            if (_selectedImages.isEmpty && _selectedImageTypes.isEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.symmetric(vertical: 8),
@@ -646,7 +925,7 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
             ],
 
             // 대표 이미지 선택 가이드
-            if (_selectedImageTypes.length > 1 && _primaryImageIndex < 0) ...[
+            if ((_selectedImages.length + _selectedImageTypes.length) > 1 && _primaryImageIndex < 0) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(top: 16),
@@ -1045,235 +1324,96 @@ class _ReportCreatePageNewState extends State<ReportCreatePageNew> {
     });
   }
 
-  /// 더미 이미지 위젯 생성
-  Widget _buildDummyImage(String type) {
-    Color backgroundColor;
-    IconData icon;
-    
-    switch (type) {
-      case '카메라':
-        backgroundColor = Colors.blue.withOpacity(0.3);
-        icon = Icons.camera_alt;
-        break;
-      case '갤러리':
-        backgroundColor = Colors.green.withOpacity(0.3);
-        icon = Icons.photo;
-        break;
-      default:
-        backgroundColor = Colors.grey.withOpacity(0.3);
-        icon = Icons.image;
-    }
-
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withOpacity(0.5)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 30, color: Colors.grey[600]),
-          const SizedBox(height: 4),
-          Text(
-            type,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// AI 테스트 다이얼로그 표시
-  void _showImageTestDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('AI 분석 테스트'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('다양한 시나리오로 AI 분석을 테스트해보세요:'),
-              const SizedBox(height: 16),
-              ...['도로 파손', '환경 문제', '전기 고장', '건물 균열', '복합 민원'].map(
-                (testType) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _runAITestScenario(testType);
-                    },
-                    child: Text('$testType 테스트'),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// AI 테스트 시나리오 실행
-  Future<void> _runAITestScenario(String scenario) async {
-    if (_selectedImageTypes.length >= 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('최대 10장까지 첨부할 수 있습니다')),
-      );
-      return;
-    }
-
-    setState(() {
-      _selectedImageTypes.add('AI테스트: $scenario');
-    });
-
-    // AI 분석 시뮬레이션
-    await _simulateImageAnalysis();
-
+  /// 빠른 설정 정보 표시
+  void _showQuickSetupInfo(BuildContext context, String setupType) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$scenario AI 테스트가 완료되었습니다'),
-        backgroundColor: Colors.green,
+        content: Text('$setupType 설정이 적용되었습니다.'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: Colors.blue,
       ),
     );
   }
 
-  /// 복합 민원 상세보기 다이얼로그
-  void _showComplexIssueDialog() {
+  /// 프로젝트 설정 상세 가이드
+  void _showProjectGuide() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Row(
-            children: [
-              const Icon(Icons.warning, color: Colors.orange),
-              const SizedBox(width: 8),
-              const Text('복합 민원 상세정보'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '여러 유형의 문제가 감지되었습니다:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              ...List.generate(
-                _conflictingCategories.length,
-                (index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.orange,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('${index + 1}. ${_conflictingCategories[index]}'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (_complexIssueDescription.isNotEmpty) ...[
+          title: const Text('📖 Roboflow 프로젝트 설정 가이드'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 const Text(
-                  '분석 결과:',
+                  '🎯 프로젝트 이름이 중요한 이유',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                Text(_complexIssueDescription),
+                const Text('Roboflow API는 workspace/project/version 형태로 모델을 식별합니다.'),
                 const SizedBox(height: 16),
+                
+                const Text(
+                  '✅ 추천 설정',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('🆓 무료 공개 모델 (API 키 불필요)'),
+                      Text('• Workspace: microsoft'),
+                      Text('• Project: coco'),
+                      Text('• 설명: 일반 객체 감지 (사람, 차량, 동물 등)'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                const Text(
+                  '🔧 내 프로젝트 만들기',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+                const SizedBox(height: 8),
+                const Text('1. Roboflow.com 방문'),
+                const Text('2. "Create New Project" 클릭'),
+                const Text('3. "Object Detection" 선택'),
+                const Text('4. 프로젝트 이름 입력 (예: field-reports)'),
+                const Text('5. 클래스 추가 (damage, pothole, graffiti 등)'),
+                const Text('6. Settings > API Key 복사'),
+                const SizedBox(height: 12),
+                
+                const Text(
+                  '🎯 프로젝트 이름 예시',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• field-reports (현장 보고용)'),
+                      Text('• damage-detection (손상 감지)'),
+                      Text('• road-inspection (도로 점검)'),
+                      Text('• facility-monitoring (시설 모니터링)'),
+                    ],
+                  ),
+                ),
               ],
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '담당자가 여러 부서에 동시 전달하여 종합적으로 검토할 예정입니다.',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            if (_primaryImageIndex < 0)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('이미지를 길게 눌러서 대표 이미지를 선택해주세요'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                },
-                child: const Text('대표 이미지 선택'),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('확인'),
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// 대표 이미지 선택 가이드 표시
-  void _showPrimaryImageGuide() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('대표 이미지 선택'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('대표 이미지를 선택하면 더 정확한 AI 분석이 가능합니다.'),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(Icons.touch_app, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text('이미지를 길게 눌러서 대표 이미지로 설정하세요'),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.label, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text('대표 이미지는 "대표" 라벨로 표시됩니다'),
-                  ),
-                ],
-              ),
-            ],
           ),
           actions: [
             TextButton(
