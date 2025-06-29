@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/theme/theme_manager.dart';
-import '../../../../app/routes/app_routes.dart';
 import 'my_reports_page.dart';
 import 'notification_settings_page.dart';
 import 'help_page.dart';
 import 'app_info_page.dart';
 import 'settings_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,57 +40,58 @@ class ProfilePage extends StatelessWidget {
       ),
       body: Builder(
         builder: (context) {
-          final authService = AuthService.instance;
-          final userInfo = authService.userInfo;
-
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // 프로필 정보 카드
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        const CircleAvatar(
+                        // 프로필 이미지
+                        CircleAvatar(
                           radius: 50,
-                          child: Icon(Icons.person, size: 50),
+                          backgroundColor: Colors.grey[300],
+                          child: const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.grey,
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          userInfo?['name'] ?? '사용자',
-                          style: const TextStyle(
+                        // 사용자 정보
+                        const Text(
+                          '사용자',
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          userInfo?['email'] ?? '',
+                        const Text(
+                          'user@example.com',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          userInfo?['department'] ?? '부서 정보 없음',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
+                            color: Colors.grey,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
+                
                 const SizedBox(height: 16),
+                
+                // 메뉴 목록
                 Card(
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(Icons.assignment),
-                        title: const Text('내 보고서'),
+                        leading: const Icon(Icons.article),
+                        title: const Text('내 신고'),
+                        subtitle: const Text('제출한 신고 내역'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
                           Navigator.push(
@@ -95,6 +106,7 @@ class ProfilePage extends StatelessWidget {
                       ListTile(
                         leading: const Icon(Icons.notifications),
                         title: const Text('알림 설정'),
+                        subtitle: const Text('푸시 알림 및 이메일 설정'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
                           Navigator.push(
@@ -134,10 +146,26 @@ class ProfilePage extends StatelessWidget {
                           );
                         },
                       ),
+                      const Divider(height: 1),
+                      // 개발자 도구 (디버그 모드에서만 표시)
+                      if (kDebugMode) ...[
+                        ListTile(
+                          leading: const Icon(Icons.developer_mode, color: Colors.orange),
+                          title: const Text('위치 서비스 테스트'),
+                          subtitle: const Text('GPS/위치 기능 디버깅'),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/location-test');
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                
                 const SizedBox(height: 16),
+                
+                // 로그아웃 버튼
                 Card(
                   child: ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
@@ -145,40 +173,41 @@ class ProfilePage extends StatelessWidget {
                       '로그아웃',
                       style: TextStyle(color: Colors.red),
                     ),
-                    onTap: () async {
-                      final confirmed = await showDialog<bool>(
+                    onTap: () {
+                      showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text('로그아웃'),
                           content: const Text('정말 로그아웃하시겠습니까?'),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
+                              onPressed: () => Navigator.pop(context),
                               child: const Text('취소'),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.of(context).pop(true),
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await AuthService.instance.logout();
+                                if (context.mounted) {
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    '/login',
+                                    (route) => false,
+                                  );
+                                }
+                              },
                               child: const Text('로그아웃'),
                             ),
                           ],
                         ),
                       );
-
-                      if (confirmed == true) {
-                        await authService.logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                            AppRoutes.login,
-                            (route) => false,
-                          );
-                        }
-                      }
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // 현재 설정 상태 표시 카드
+                
+                const SizedBox(height: 24),
+                
+                // 다크 모드 설정
                 AnimatedBuilder(
                   animation: ThemeManager.instance,
                   builder: (context, child) {
@@ -188,45 +217,19 @@ class ProfilePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.settings_applications,
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '현재 설정',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            const Text(
+                              '테마 설정',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             _buildSettingRow(
-                              icon: Icons.brightness_6,
-                              title: '테마',
-                              value: ThemeManager.instance.isDarkMode
-                                  ? '다크모드'
-                                  : '라이트모드',
-                              iconColor: ThemeManager.instance.isDarkMode
-                                  ? Colors.grey[700]
-                                  : Colors.yellow[700],
-                            ),
-                            _buildSettingRow(
-                              icon: Icons.text_fields,
-                              title: '폰트 크기',
-                              value:
-                                  '${ThemeManager.instance.fontSize.toInt()}px',
-                              iconColor: Colors.blue,
-                            ),
-                            _buildSettingRow(
-                              icon: Icons.language,
-                              title: '언어',
-                              value: ThemeManager.instance.language,
-                              iconColor: Colors.green,
+                              icon: Icons.dark_mode,
+                              title: '다크 모드',
+                              value: ThemeManager.instance.isDarkMode,
+                              onChanged: ThemeManager.instance.toggleDarkMode,
                             ),
                           ],
                         ),
@@ -234,7 +237,6 @@ class ProfilePage extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
               ],
             ),
           );
@@ -243,31 +245,22 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  /// 설정 항목을 표시하는 위젯
   Widget _buildSettingRow({
     required IconData icon,
     required String title,
-    required String value,
-    Color? iconColor,
+    required bool value,
+    required Function(bool) onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: iconColor ?? Colors.grey[600]),
+          Icon(icon, size: 20),
           const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w400,
-            ),
+          Expanded(child: Text(title)),
+          Switch(
+            value: value,
+            onChanged: onChanged,
           ),
         ],
       ),

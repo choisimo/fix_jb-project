@@ -14,6 +14,22 @@ class _ReportListPageState extends State<ReportListPage> {
   final ReportManager _reportManager = ReportManager();
 
   List<Map<String, dynamic>> _reports = [];
+  List<Map<String, dynamic>> _filteredReports = [];
+
+  // 필터 상태
+  String? _selectedStatus;
+  String? _selectedCategory;
+
+  // 필터 옵션들
+  final List<String> _statusOptions = ['전체', '접수', '처리중', '완료', '보류'];
+  final List<String> _categoryOptions = [
+    '전체',
+    '안전',
+    '품질',
+    '진행상황',
+    '유지보수',
+    '기타',
+  ];
 
   @override
   void initState() {
@@ -32,7 +48,28 @@ class _ReportListPageState extends State<ReportListPage> {
   void _loadReports() {
     setState(() {
       _reports = _reportManager.reports;
+      _applyFilters();
     });
+  }
+
+  void _applyFilters() {
+    _filteredReports = _reports.where((report) {
+      // 상태 필터
+      if (_selectedStatus != null && _selectedStatus != '전체') {
+        if (report['status'] != _selectedStatus) {
+          return false;
+        }
+      }
+
+      // 카테고리 필터
+      if (_selectedCategory != null && _selectedCategory != '전체') {
+        if (report['category'] != _selectedCategory) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
   }
 
   void _onScroll() {
@@ -71,19 +108,19 @@ class _ReportListPageState extends State<ReportListPage> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshReports,
-        child: _reports.isEmpty
+        child: _filteredReports.isEmpty
             ? const Center(
                 child: Text(
-                  '아직 제출된 보고서가 없습니다.',
+                  '조건에 맞는 보고서가 없습니다.',
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               )
             : ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                itemCount: _reports.length,
+                itemCount: _filteredReports.length,
                 itemBuilder: (context, index) {
-                  final report = _reports[index];
+                  final report = _filteredReports[index];
                   return _buildReportCard(report);
                 },
               ),
@@ -148,27 +185,97 @@ class _ReportListPageState extends State<ReportListPage> {
   }
 
   void _showFilterDialog() {
+    String? tempStatus = _selectedStatus;
+    String? tempCategory = _selectedCategory;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('필터'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 필터 옵션들 구현
-            Text('필터 기능 구현 예정'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('필터 설정'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('상태', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: tempStatus,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                hint: const Text('상태 선택'),
+                items: _statusOptions.map((status) {
+                  return DropdownMenuItem(value: status, child: Text(status));
+                }).toList(),
+                onChanged: (value) {
+                  setDialogState(() {
+                    tempStatus = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text('카테고리', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: tempCategory,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                hint: const Text('카테고리 선택'),
+                items: _categoryOptions.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setDialogState(() {
+                    tempCategory = value;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // 필터 초기화
+                setState(() {
+                  _selectedStatus = null;
+                  _selectedCategory = null;
+                  _applyFilters();
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('초기화'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // 필터 적용
+                setState(() {
+                  _selectedStatus = tempStatus;
+                  _selectedCategory = tempCategory;
+                  _applyFilters();
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('적용'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('적용'),
-          ),
-        ],
       ),
     );
   }

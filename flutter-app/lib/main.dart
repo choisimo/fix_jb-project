@@ -13,6 +13,11 @@ void main() async {
 
   // Initialize Naver Map with enhanced error handling
   try {
+    print('🔄 네이버 지도 SDK 초기화 시작...');
+    print('📱 클라이언트 ID: 6gmofoay96');
+    print('📦 패키지명: com.example.flutter.report.app (릴리즈)');
+    print('📦 패키지명: com.example.flutter.report.app.debug (디버그)');
+
     await NaverMapSdk.instance.initialize(
       clientId: '6gmofoay96', // Your actual Naver Maps client ID
       onAuthFailed: (exception) {
@@ -25,12 +30,23 @@ void main() async {
         print('  2. Mobile Dynamic Map 서비스가 활성화되었는지 확인');
         print('  3. Client ID: 6gmofoay96 이 올바른지 확인');
         print('  4. 설정 변경 후 20분 대기했는지 확인');
+        print('  5. 네트워크 연결 상태 확인');
+
+        // 추가 디버깅 정보
+        print('📊 추가 디버깅 정보:');
+        print('  - Exception type: ${exception.runtimeType}');
+        print('  - Exception details: ${exception.toString()}');
       },
     );
     print('✅ 네이버 지도 SDK 초기화 성공');
+    print('🗺️ 지도 기능을 사용할 수 있습니다.');
   } catch (e) {
     print('❌ 네이버 지도 SDK 초기화 실패: $e');
     print('📱 앱은 지도 기능 없이 계속 실행됩니다.');
+    print('🔧 해결 방법:');
+    print('  1. 인터넷 연결 확인');
+    print('  2. 네이버 개발자 콘솔 설정 확인');
+    print('  3. 앱 재시작 후 다시 시도');
   }
 
   // 🔥 전역 Flutter 에러 핸들러 설정 - semantics 오류 등 처리

@@ -1,0 +1,556 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+// import 'package:image_picker/image_picker.dart';  // 임시로 주석 처리
+import 'dart:io';
+import '../../../../core/auth/auth_service.dart';
+import '../../../../core/theme/theme_manager.dart';
+import '../../../../core/profile/profile_service.dart';
+// import '../../../../core/utils/image_utils.dart';  // 임시로 주석 처리
+import '../../../../app/routes/app_routes.dart';
+import 'my_reports_page.dart';
+import 'notification_settings_page.dart';
+import 'help_page.dart';
+import 'app_info_page.dart';
+import 'settings_page.dart';
+
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  // final ImagePicker _picker = ImagePicker();  // 임시로 주석 처리
+  File? _profileImage;
+  String? _profileImageUrl;
+  bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // _loadProfileImage(); // 임시로 비활성화 - 서버 연결 문제로 인한 오류 방지
+  }
+
+  /// 서버에서 프로필 이미지 URL 로드
+  // 프로필 이미지 로드 - 백엔드 연결 시 활성화 예정
+  /*
+  Future<void> _loadProfileImage() async {
+    try {
+      // TODO: 백엔드 서버 실행 후 주석 해제
+      /*
+      final imageUrl = await ProfileService.instance.getProfileImageUrl();
+      if (mounted) {
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
+      }
+      */
+      print('🔧 프로필 이미지 로딩 임시 비활성화 - 서버 연결 대기 중');
+    } catch (e) {
+      // 프로필 이미지가 없거나 로드 실패 시 무시
+      print('⚠️ 프로필 이미지 로드 실패: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('프로필'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Builder(
+        builder: (context) {
+          final authService = AuthService.instance;
+          final userInfo = authService.userInfo;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _showImageSourceDialog,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundImage: _getProfileImage(),
+                                child: _getProfileImage() == null
+                                    ? const Icon(Icons.person, size: 50)
+                                    : null,
+                              ),
+                              if (_isUploading)
+                                Positioned.fill(
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: Colors.black54,
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          userInfo?['name'] ?? '사용자',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          userInfo?['email'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          userInfo?['department'] ?? '부서 정보 없음',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.assignment),
+                        title: const Text('내 보고서'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MyReportsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.notifications),
+                        title: const Text('알림 설정'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationSettingsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.help),
+                        title: const Text('도움말'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.info),
+                        title: const Text('앱 정보'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AppInfoPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      // 개발자 도구 (디버그 모드에서만 표시)
+                      if (kDebugMode) ...[
+                        ListTile(
+                          leading: const Icon(Icons.developer_mode, color: Colors.orange),
+                          title: const Text('위치 서비스 테스트'),
+                          subtitle: const Text('GPS/위치 기능 디버깅'),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/location-test');
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text(
+                      '로그아웃',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('로그아웃'),
+                          content: const Text('정말 로그아웃하시겠습니까?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('취소'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('로그아웃'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        await authService.logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            AppRoutes.login,
+                            (route) => false,
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 현재 설정 상태 표시 카드
+                AnimatedBuilder(
+                  animation: ThemeManager.instance,
+                  builder: (context, child) {
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.settings_applications,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  '현재 설정',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildSettingRow(
+                              icon: Icons.brightness_6,
+                              title: '테마',
+                              value: ThemeManager.instance.isDarkMode
+                                  ? '다크모드'
+                                  : '라이트모드',
+                              iconColor: ThemeManager.instance.isDarkMode
+                                  ? Colors.grey[700]
+                                  : Colors.yellow[700],
+                            ),
+                            _buildSettingRow(
+                              icon: Icons.text_fields,
+                              title: '폰트 크기',
+                              value:
+                                  '${ThemeManager.instance.fontSize.toInt()}px',
+                              iconColor: Colors.blue,
+                            ),
+                            _buildSettingRow(
+                              icon: Icons.language,
+                              title: '언어',
+                              value: ThemeManager.instance.language,
+                              iconColor: Colors.green,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 설정 항목을 표시하는 위젯
+  Widget _buildSettingRow({
+    required IconData icon,
+    required String title,
+    required String value,
+    Color? iconColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: iconColor ?? Colors.grey[600]),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 이미지 소스 선택 다이얼로그 표시
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('카메라로 촬영'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('갤러리에서 선택'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromGallery();
+                },
+              ),
+              if (_profileImage != null)
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text('사진 삭제'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _removeProfileImage();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 카메라에서 이미지 선택
+  Future<void> _pickImageFromCamera() async {
+    try {
+      // TODO: ImagePicker가 해결되면 주석 해제
+      /*
+      final image = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        final File imageFile = File(image.path);
+        
+        // 파일 크기 검사
+        if (await ImageUtils.isFileSizeValid(imageFile)) {
+          setState(() {
+            _profileImage = imageFile;
+            _profileImageUrl = null; // 로컬 이미지를 우선 표시
+          });
+          await _uploadProfileImage(imageFile);
+        } else {
+          _showErrorSnackBar('이미지 파일이 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
+        }
+      }
+      */
+      _showErrorSnackBar('이미지 선택 기능이 현재 비활성화되어 있습니다.');
+    } catch (e) {
+      _showErrorSnackBar('카메라에서 사진을 가져올 수 없습니다.');
+    }
+  }
+
+  /// 갤러리에서 이미지 선택
+  Future<void> _pickImageFromGallery() async {
+    try {
+      // TODO: ImagePicker가 해결되면 주석 해제
+      /*
+      final image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        final File imageFile = File(image.path);
+        
+        // 파일 크기 검사
+        if (await ImageUtils.isFileSizeValid(imageFile)) {
+          setState(() {
+            _profileImage = imageFile;
+            _profileImageUrl = null; // 로컬 이미지를 우선 표시
+          });
+          await _uploadProfileImage(imageFile);
+        } else {
+          _showErrorSnackBar('이미지 파일이 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
+        }
+      }
+      */
+      _showErrorSnackBar('이미지 선택 기능이 현재 비활성화되어 있습니다.');
+    } catch (e) {
+      _showErrorSnackBar('갤러리에서 사진을 가져올 수 없습니다.');
+    }
+  }
+
+  /// 프로필 이미지 삭제
+  void _removeProfileImage() {
+    setState(() {
+      _profileImage = null;
+      _profileImageUrl = null;
+    });
+    _deleteProfileImageFromServer();
+  }
+
+  /// 서버에서 프로필 이미지 삭제
+  Future<void> _deleteProfileImageFromServer() async {
+    try {
+      await ProfileService.instance.deleteProfileImage();
+      _showSuccessSnackBar('프로필 사진이 삭제되었습니다.');
+    } catch (e) {
+      _showErrorSnackBar('프로필 사진 삭제에 실패했습니다.');
+    }
+  }
+
+  /// 프로필 이미지 업로드
+  Future<void> _uploadProfileImage(File imageFile) async {
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final result = await ProfileService.instance.uploadProfileImage(
+        imageFile,
+      );
+      final newImageUrl = result['imageUrl'] as String?;
+
+      setState(() {
+        _profileImageUrl = newImageUrl;
+        _profileImage = null; // 업로드 성공 후 서버 이미지를 우선 표시
+      });
+
+      _showSuccessSnackBar('프로필 사진이 업데이트되었습니다.');
+    } catch (e) {
+      _showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+      // 업로드 실패 시 로컬 이미지도 제거
+      setState(() {
+        _profileImage = null;
+      });
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
+  /// 성공 메시지 표시
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// 오류 메시지 표시
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// 프로필 이미지 반환 (로컬 파일 또는 네트워크 이미지)
+  ImageProvider? _getProfileImage() {
+    if (_profileImage != null) {
+      return FileImage(_profileImage!);
+    } else if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      return NetworkImage(_profileImageUrl!);
+    }
+    return null;
+  }
+  */
+}
