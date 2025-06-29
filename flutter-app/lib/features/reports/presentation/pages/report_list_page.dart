@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/report_provider.dart';
-import '../widgets/report_card.dart';
-import '../../../../app/routes/app_routes.dart';
-import '../../../../shared/widgets/loading_overlay.dart';
 
 class ReportListPage extends StatefulWidget {
   const ReportListPage({super.key});
@@ -19,7 +14,6 @@ class _ReportListPageState extends State<ReportListPage> {
   @override
   void initState() {
     super.initState();
-    _loadReports();
     _scrollController.addListener(_onScroll);
   }
 
@@ -30,26 +24,11 @@ class _ReportListPageState extends State<ReportListPage> {
     super.dispose();
   }
 
-  Future<void> _loadReports() async {
-    final reportProvider = context.read<ReportProvider>();
-    await reportProvider.loadReports();
-  }
-
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      final reportProvider = context.read<ReportProvider>();
-      reportProvider.loadMoreReports();
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      // 더 많은 보고서 로드 로직 (추후 구현)
     }
-  }
-
-  Future<void> _onRefresh() async {
-    final reportProvider = context.read<ReportProvider>();
-    await reportProvider.refreshReports();
-  }
-
-  void _onSearch(String query) {
-    final reportProvider = context.read<ReportProvider>();
-    reportProvider.searchReports(query);
   }
 
   @override
@@ -65,12 +44,7 @@ class _ReportListPageState extends State<ReportListPage> {
         ],
       ),
       body: const Placeholder(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).pushNamed(AppRoutes.reportCreate);
-        },
-        child: const Icon(Icons.add),
-      ),
+      // FloatingActionButton 제거 - MainNavigation에서 제공됨
     );
   }
 

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/reports/presentation/pages/report_list_page.dart';
 import '../../features/reports/presentation/pages/report_detail_page.dart';
-import '../../features/reports/presentation/pages/report_create_page_new.dart';
+import '../../features/reports/presentation/pages/report_create_page_final.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../shared/widgets/main_navigation.dart';
 
@@ -24,7 +23,7 @@ class AppRoutes {
       case reportList:
         return MaterialPageRoute(builder: (_) => const ReportListPage());
       case reportCreate:
-        return MaterialPageRoute(builder: (_) => const ReportCreatePageNew());
+        return MaterialPageRoute(builder: (_) => const ReportCreatePageFinal());
       case reportDetail:
         final reportId = settings.arguments as String;
         return MaterialPageRoute(

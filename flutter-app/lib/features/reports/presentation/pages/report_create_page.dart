@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:signature/signature.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/ai/roboflow_service.dart';
 import '../../../../core/ai/ocr_service.dart';
+import '../../domain/entities/report.dart';
+import '../providers/report_provider.dart';
 
 class ReportCreatePage extends StatefulWidget {
   const ReportCreatePage({super.key});
