@@ -29,6 +29,28 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 
+# 압축 파일
+*.tar
+*.zip
+
+# 파이썬 가상환경
+improve_python_env.sh
+kafka_worker.py
+kafka_worker_enhanced.py
+mock_kafka_service.py
+router_service.py
+system_diagnosis.py
+test_kafka_connection.py
+test_kafka_consumer.py
+
+# 빌드 산출물 및 캐시
+/build
+.cache/
+
+# 운영체제 및 IDE 설정 파일
+.DS_Store
+.vscode/
+
 # nyc test coverage
 .nyc_output
 
@@ -97,3 +119,18 @@ flutter_backend/.env # 백엔드용 .env 파일이 있다면 추가
 firebase-debug.log
 firebase-debug.*.log
 .firebaserc
+
+# Python
+.venv/
+venv/
+*.pyc
+__pycache__/
+
+# Docker
+*.env
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
