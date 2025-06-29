@@ -1,61 +1,98 @@
 # 네이버 지도 API 설정 가이드
 
-## 현재 상태
-- ✅ Flutter 패키지: `flutter_naver_map: ^1.2.3` 설치됨
-- ✅ Android minSdkVersion: 23으로 업데이트됨
-- ✅ Client ID: `6gmofoay96` 설정됨
-- ❌ 인증 실패: 401 Unauthorized client
+## 📱 현재 패키지 정보 (수정됨)
+- **Android Package**: `com.example.flutter.report.app`
+- **iOS Bundle ID**: `com.example.flutter.report.app`
+- **Client ID**: `6gmofoay96`
 
-## 해결해야 할 문제
+## 🚨 중요: 디버그/릴리즈 모드 패키지명
+Flutter는 디버그 빌드 시 자동으로 패키지명에 `.debug`를 추가합니다:
 
-### 1. 네이버 클라우드 플랫폼 설정 확인
+### 네이버 클라우드 플랫폼에 등록해야 할 패키지명:
+1. **릴리즈 모드**: `com.example.flutter.report.app`
+2. **디버그 모드**: `com.example.flutter.report.app.debug`
+
+```mermaid
+graph TD
+    A[네이버 클라우드 플랫폼] --> B[Application 등록]
+    B --> C[Android 설정]
+    C --> D[패키지명 1: com.example.flutter.report.app]
+    C --> E[패키지명 2: com.example.flutter.report.app.debug]
+    B --> F[iOS 설정]
+    F --> G[Bundle ID: com.example.flutter.report.app]
+    
+    H[Flutter App] --> I{빌드 모드}
+    I --> J[Release: com.example.flutter.report.app]
+    I --> K[Debug: com.example.flutter.report.app.debug]
+```
+
+## 🔑 네이버 클라우드 플랫폼 설정 방법
+
+### 1. 콘솔 접속 및 애플리케이션 선택
 1. [네이버 클라우드 플랫폼 콘솔](https://console.ncloud.com/) 접속
-2. Application > oss-project-4w 선택
-3. **Android 설정**에서 Package Name이 `com.example.flutter_report_app`인지 확인
-4. **Services**에서 Maps > Mobile Maps가 활성화되어 있는지 확인
+2. **AI·NAVER API** → **Application** 메뉴 선택
+3. `oss-project-4w` 애플리케이션 선택
+4. **[변경]** 버튼 클릭
 
-### 2. 패키지 이름 변경 옵션
-현재 앱 패키지: `com.example.flutter_report_app`
-네이버에 등록된 패키지가 다르다면 둘 중 하나를 변경해야 합니다:
+### 2. Android 설정
+**서비스 환경 등록** 섹션에서:
+- ✅ `com.example.flutter.report.app` (릴리즈용)
+- ✅ `com.example.flutter.report.app.debug` (디버그용)
 
-#### 옵션 A: 네이버 클라우드 플랫폼에서 패키지 이름 변경
-- 네이버 콘솔에서 Android 패키지 이름을 `com.example.flutter_report_app`로 변경
+### 3. iOS 설정
+**서비스 환경 등록** 섹션에서:
+- ✅ `com.example.flutter.report.app`
 
-#### 옵션 B: 앱 패키지 이름 변경 (권장하지 않음)
-- `android/app/build.gradle.kts`에서 `namespace` 변경
-- `AndroidManifest.xml`에서 패키지 관련 설정 변경
+### 4. API 서비스 활성화 확인
+**API 설정** 탭에서 다음 서비스가 **ON** 상태인지 확인:
+- ✅ **Mobile Dynamic Map**
+- ✅ **Geocoding**
+- ⚠️ 기타 필요한 Maps 서비스들
 
-### 3. 현재 설정 파일들
+## ⏰ 설정 적용 시간
+⚠️ **중요**: 설정 변경 후 **최대 20분** 대기 후 테스트하세요.
 
-#### AndroidManifest.xml
-```xml
-<meta-data android:name="com.naver.maps.map.CLIENT_ID"
-    android:value="6gmofoay96" />
+## 🧪 테스트 방법
+
+### 1. 디버그 모드 테스트
+```bash
+cd /home/nodove/workspace/fix_jeonbuk/flutter-app
+flutter run --debug
 ```
 
-#### iOS Info.plist
-```xml
-<key>NMFClientId</key>
-<string>6gmofoay96</string>
+### 2. 릴리즈 모드 테스트
+```bash
+flutter run --release
 ```
 
-#### main.dart
+### 3. 인증 실패 로그 확인
 ```dart
 await NaverMapSdk.instance.initialize(
   clientId: '6gmofoay96',
-  onAuthFailed: (e) {
-    print('Naver Map Auth Failed: $e');
+  onAuthFailed: (exception) {
+    print('🚨 네이버 맵 인증 실패: $exception');
+    print('📱 현재 패키지명 확인 필요');
   },
 );
 ```
 
-## 다음 단계
+## 📋 체크리스트
 
-1. 네이버 클라우드 플랫폼에서 패키지 이름 확인/수정
-2. Mobile Maps 서비스 활성화 확인
-3. 앱 재빌드 및 테스트
-4. 여전히 문제가 있다면 네이버 클라우드 플랫폼 고객지원 문의
+### 필수 확인사항:
+- [ ] 네이버 콘솔에 두 패키지명 모두 등록됨
+- [ ] Mobile Dynamic Map 서비스 활성화됨
+- [ ] Client ID가 올바르게 설정됨
+- [ ] 설정 변경 후 20분 대기함
+- [ ] 언더바(_) 사용하지 않음
 
-## 참고 링크
-- [네이버 지도 Android SDK 가이드](https://navermaps.github.io/android-map-sdk/guide-ko/)
+### 일반적인 오류 원인:
+1. **패키지명 불일치** (가장 흔함)
+2. **디버그 패키지명 미등록**
+3. **언더바 사용으로 인한 iOS 인증 실패**
+4. **API 서비스 비활성화**
+5. **Client ID 오타**
+
+## 🔗 참고 링크
+- [네이버 지도 Android SDK](https://navermaps.github.io/android-map-sdk/guide-ko/)
 - [네이버 클라우드 플랫폼 Maps API](https://guide.ncloud-docs.com/docs/naveropenapi-maps-overview)
+- [Flutter 패키지명 설정 가이드](https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration)

@@ -11,22 +11,26 @@ import 'features/auth/presentation/pages/login_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Naver Map with error handling
+  // Initialize Naver Map with enhanced error handling
   try {
     await NaverMapSdk.instance.initialize(
       clientId: '6gmofoay96', // Your actual Naver Maps client ID
-      onAuthFailed: (e) {
-        print('Naver Map Auth Failed: $e');
-        print('Please check your Naver Cloud Platform settings:');
-        print('1. Verify Client ID is correct');
-        print('2. Ensure package name matches: com.example.flutter_report_app');
-        print('3. Check if Mobile Maps service is enabled');
+      onAuthFailed: (exception) {
+        print('🚨 네이버 맵 인증 실패: $exception');
+        print('📱 현재 패키지명: com.example.flutter.report.app');
+        print('🔧 확인사항:');
+        print('  1. 네이버 콘솔에 다음 패키지명들이 등록되었는지 확인:');
+        print('     - com.example.flutter.report.app (릴리즈)');
+        print('     - com.example.flutter.report.app.debug (디버그)');
+        print('  2. Mobile Dynamic Map 서비스가 활성화되었는지 확인');
+        print('  3. Client ID: 6gmofoay96 이 올바른지 확인');
+        print('  4. 설정 변경 후 20분 대기했는지 확인');
       },
     );
-    print('Naver Map SDK initialized successfully');
+    print('✅ 네이버 지도 SDK 초기화 성공');
   } catch (e) {
-    print('Failed to initialize Naver Map SDK: $e');
-    print('App will continue without map functionality');
+    print('❌ 네이버 지도 SDK 초기화 실패: $e');
+    print('📱 앱은 지도 기능 없이 계속 실행됩니다.');
   }
 
   // 🔥 전역 Flutter 에러 핸들러 설정 - semantics 오류 등 처리

@@ -2,11 +2,11 @@
 
 ## 📋 문서 정보
 
-- **버전**: v2.1 (CBT-JB-Rev2)
-- **작성일**: 2025년 6월 25일
+- **버전**: v2.2 (CBT-JB-Rev2.2)
+- **작성일**: 2025년 6월 29일
 - **프로젝트 타입**: Flutter 모바일/웹 + Spring Boot 백엔드
 - **개발 방식**: 크로스플랫폼 (Flutter) + 마이크로서비스 (Spring Boot)
-- **기술 스택**: Spring Boot + Spring Security + JPA + QueryDSL + Kafka + Docker
+- **기술 스택**: Spring Boot, Spring Security, JPA, QueryDSL, **PostgreSQL (PostGIS)**, **Redis**, Kafka, Docker
 - **인증 방식**: OAuth2 + JWT
 - **배포 방식**: Docker Compose + Nginx Load Balancing
 
@@ -35,7 +35,7 @@
 
 ## 2. 🏗️ 시스템 아키텍처
 
-(기존 시스템 아키텍처와 동일)
+> **참고**: 전체 데이터베이스 스키마는 `database/schema.sql` 파일에서 확인할 수 있습니다.
 
 ```mermaid
 graph TB
@@ -57,7 +57,7 @@ graph TB
     end
 
     subgraph "Data & Message Layer"
-        I[🗄️ PostgreSQL<br/>Primary Database]
+        I[🗄️ PostgreSQL (PostGIS)<br/>Primary Database]
         J[⚡ Redis<br/>Cache + Session]
         K[📁 MinIO<br/>File Storage]
         L[📨 Apache Kafka<br/>Event Streaming]
@@ -283,7 +283,7 @@ graph LR
 
 **🔍 객체 탐지 (Roboflow YOLOv8)**
 - **16개 클래스 감지**: 도로 파손, 포트홀, 무단 투기, 낙서, 간판 파손 등
-- **실시간 분석**: 평균 250ms 내 처리 완료
+- **실시간 분석**: 평균 250ms 내 처리 완료 (`analyze_image.py` 참조)
 - **높은 정확도**: 85% 이상 신뢰도로 객체 식별
 - **자동 추천**: 감지된 객체에 따른 카테고리 및 우선순위 자동 설정
 
@@ -321,7 +321,7 @@ graph LR
 #### 4. 🛠️ 기술 스택
 
 **AI/ML 엔진**
-- **Roboflow**: 커스텀 객체 탐지 모델
+- **Roboflow**: 커스텀 객체 탐지 모델 (YOLOv8)
 - **Google ML Kit**: 온디바이스 OCR
 - **Flutter**: 크로스플랫폼 앱 개발
 
