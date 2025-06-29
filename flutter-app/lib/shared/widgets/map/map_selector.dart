@@ -202,13 +202,20 @@ class _MapSelectorState extends State<MapSelector> {
   }
 
   void _onMapReady(NaverMapController controller) {
+    print('🗺️ 네이버 맵 컨트롤러 준비 완료');
     _mapController = controller;
+
     if (_markers.isNotEmpty) {
+      print('📌 기존 마커 ${_markers.length}개 추가');
       _mapController!.addOverlayAll(_markers);
     }
+
+    // 네트워크 상태 확인
+    _checkNetworkAndMapStatus();
   }
 
   void _onMapTapped(NPoint point, NLatLng nLatLng) {
+    print('🎯 맵 탭 이벤트: $nLatLng');
     setState(() {
       _selectedPosition = nLatLng;
     });
@@ -299,6 +306,31 @@ class _MapSelectorState extends State<MapSelector> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    }
+  }
+
+  /// 네트워크 상태 및 맵 상태 확인
+  Future<void> _checkNetworkAndMapStatus() async {
+    try {
+      print('🔍 네트워크 및 맵 상태 확인 중...');
+
+      // 맵 컨트롤러 상태 확인
+      if (_mapController != null) {
+        print('✅ 맵 컨트롤러: 정상');
+      } else {
+        print('❌ 맵 컨트롤러: null');
+      }
+
+      // 현재 위치 상태 확인
+      if (_selectedPosition != null) {
+        print('📍 현재 위치: $_selectedPosition');
+      } else {
+        print('❌ 현재 위치: null');
+      }
+
+      print('✅ 맵 상태 확인 완료');
+    } catch (e) {
+      print('❌ 맵 상태 확인 실패: $e');
     }
   }
 

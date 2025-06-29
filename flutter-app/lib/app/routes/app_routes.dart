@@ -5,6 +5,7 @@ import '../../features/reports/presentation/pages/report_detail_page.dart';
 import '../../features/reports/presentation/pages/report_create_page_final.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../shared/widgets/main_navigation.dart';
+import '../../widgets/location_test_widget.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -13,6 +14,7 @@ class AppRoutes {
   static const String reportCreate = '/reports/create';
   static const String reportDetail = '/reports/detail';
   static const String profile = '/profile';
+  static const String locationTest = '/location-test'; // 개발자 도구
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -31,6 +33,8 @@ class AppRoutes {
         );
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfilePage());
+      case locationTest:
+        return MaterialPageRoute(builder: (_) => const LocationTestWidget());
       default:
         return MaterialPageRoute(
           builder: (_) =>

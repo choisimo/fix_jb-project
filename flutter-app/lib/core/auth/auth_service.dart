@@ -122,13 +122,15 @@ class AuthService {
     _accessToken = accessToken;
     _refreshToken = refreshToken;
 
-    await _storage.setString('access_token', accessToken);
-    await _storage.setString('refresh_token', refreshToken);
+    // 🔐 보안 저장소에 토큰 저장
+    await _storage.setSecureString('access_token', accessToken);
+    await _storage.setSecureString('refresh_token', refreshToken);
   }
 
   Future<void> _loadTokensFromStorage() async {
-    _accessToken = await _storage.getString('access_token');
-    _refreshToken = await _storage.getString('refresh_token');
+    // 🔐 보안 저장소에서 토큰 로드
+    _accessToken = await _storage.getSecureString('access_token');
+    _refreshToken = await _storage.getSecureString('refresh_token');
 
     if (_accessToken != null) {
       await _loadUserInfo();
@@ -152,8 +154,9 @@ class AuthService {
     _refreshToken = null;
     _userInfo = null;
 
-    await _storage.remove('access_token');
-    await _storage.remove('refresh_token');
+    // 🔐 보안 저장소에서 토큰 삭제
+    await _storage.removeSecure('access_token');
+    await _storage.removeSecure('refresh_token');
     await _storage.remove('user_info');
   }
 
