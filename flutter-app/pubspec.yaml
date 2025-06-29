@@ -43,7 +43,6 @@ dependencies:
   
   # AI 및 ML
   http: ^1.2.2
-  http_parser: ^4.1.0
   flutter_dotenv: ^5.2.1
   
   # OCR

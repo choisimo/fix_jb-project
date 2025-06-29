@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class IntegrationTester:
     """End-to-end integration tester for Roboflow AI system"""
     
-    def __init__(self, backend_url: str = "http://localhost:8080"):
+    def __init__(self, backend_url: str = "http://localhost:8000"):
         self.backend_url = backend_url.rstrip('/')
         self.api_base = f"{self.backend_url}/api/v1/ai"
         
@@ -119,9 +119,12 @@ class IntegrationTester:
                     'overlap': 30
                 }
                 
+                files = {'file': img_file}
+                data = {'category': 'test_category'} # 임시 카테고리
+                
                 start_time = time.time()
                 response = requests.post(
-                    f"{self.api_base}/analyze",
+                    f"{self.backend_url}/api/v2/detect",
                     files=files,
                     data=data,
                     timeout=60
@@ -129,25 +132,11 @@ class IntegrationTester:
                 
                 processing_time = (time.time() - start_time) * 1000
                 
-            if response.status_code == 200:
+            if response.status_code == 202: # Accepted
                 result = response.json()
-                
-                logger.info("✅ Image analysis successful:")
+                request_id = result.get("request_id")
+                logger.info(f"✅ Image analysis request accepted. Request ID: {request_id}")
                 logger.info(f"   Processing time: {processing_time:.2f}ms")
-                logger.info(f"   Success: {result.get('success', False)}")
-                logger.info(f"   Detections: {len(result.get('detections', []))}")
-                logger.info(f"   Average confidence: {result.get('averageConfidence', 0):.1f}%")
-                logger.info(f"   Recommended category: {result.get('recommendedCategory', 'N/A')}")
-                logger.info(f"   Recommended priority: {result.get('recommendedPriority', 'N/A')}")
-                
-                # Show detected objects
-                detections = result.get('detections', [])
-                if detections:
-                    logger.info("   Detected objects:")
-                    for i, detection in enumerate(detections[:3]):  # Show first 3
-                        logger.info(f"     {i+1}. {detection.get('koreanName', 'N/A')} "
-                                  f"({detection.get('confidence', 0):.1f}%)")
-                
                 return {"success": True, "result": result}
                 
             else:
@@ -245,7 +234,7 @@ class IntegrationTester:
                     timeout=30
                 )
             
-            if response.status_code == 202:  # Accepted
+            if response.status_code in [200, 202]:  # Success or Accepted
                 job_id = response.text.strip('"')
                 logger.info(f"🔄 Async job started: {job_id}")
                 
@@ -373,8 +362,8 @@ def main():
     parser = argparse.ArgumentParser(description="Roboflow Integration Test")
     parser.add_argument(
         '--backend-url',
-        default='http://localhost:8080',
-        help='Backend server URL (default: http://localhost:8080)'
+        default='http://localhost:8000',
+        help='Backend server URL (default: http://localhost:8000)'
     )
     parser.add_argument(
         '--quick',
