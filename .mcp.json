@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "taskmaster-ai": {
+      "command": "npx",
+      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
+      "env": {
+        "PERPLEXITY_API_KEY": "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",
+        "GOOGLE_API_KEY": "AIzaSyAogRgknm4q_2xPZW7xUjGgvSOdoyQfiQQ"
+      }
+    }
+  }
+}
+

@@ -1,13 +1,33 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'app/theme/app_theme.dart';
 import 'app/routes/app_routes.dart';
 import 'core/auth/auth_service.dart';
 import 'core/storage/storage_service.dart';
+import 'core/theme/theme_manager.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Naver Map with error handling
+  try {
+    await NaverMapSdk.instance.initialize(
+      clientId: '6gmofoay96', // Your actual Naver Maps client ID
+      onAuthFailed: (e) {
+        print('Naver Map Auth Failed: $e');
+        print('Please check your Naver Cloud Platform settings:');
+        print('1. Verify Client ID is correct');
+        print('2. Ensure package name matches: com.example.flutter_report_app');
+        print('3. Check if Mobile Maps service is enabled');
+      },
+    );
+    print('Naver Map SDK initialized successfully');
+  } catch (e) {
+    print('Failed to initialize Naver Map SDK: $e');
+    print('App will continue without map functionality');
+  }
 
   // 🔥 전역 Flutter 에러 핸들러 설정 - semantics 오류 등 처리
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -70,6 +90,10 @@ Future<void> _initializeServices() async {
     debugPrint('🔐 Initializing Auth Service...');
     await AuthService.instance.init();
 
+    // 3. 테마 매니저 초기화
+    debugPrint('🎨 Initializing Theme Manager...');
+    await ThemeManager.instance.loadSettings();
+
     debugPrint('✅ All services initialized successfully');
   } catch (e, stackTrace) {
     debugPrint('🔥 Service initialization failed: $e');
@@ -84,36 +108,45 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '전북 현장 보고 플랫폼',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const LoginPage(),
-      onGenerateRoute: AppRoutes.generateRoute,
-      debugShowCheckedModeBanner: false,
-      // 렌더링 안정성을 위한 builder 추가
-      builder: (BuildContext context, Widget? child) {
-        // MediaQuery 래핑으로 렌더링 오류 방지
-        final mediaQuery = MediaQuery.of(context);
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            // 텍스트 스케일 제한으로 UI 깨짐 방지
-            textScaler: mediaQuery.textScaler.clamp(
-              minScaleFactor: 0.8,
-              maxScaleFactor: 1.2,
-            ),
+    return AnimatedBuilder(
+      animation: ThemeManager.instance,
+      builder: (context, child) {
+        return MaterialApp(
+          title: '전북 현장 보고 플랫폼',
+          theme: AppTheme.getLightTheme(
+            fontSize: ThemeManager.instance.fontSize,
           ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-      // 전역 에러 핸들러
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(title: const Text('페이지를 찾을 수 없음')),
-            body: const Center(child: Text('요청한 페이지를 찾을 수 없습니다.')),
+          darkTheme: AppTheme.getDarkTheme(
+            fontSize: ThemeManager.instance.fontSize,
           ),
+          themeMode: ThemeManager.instance.themeMode,
+          home: const LoginPage(),
+          onGenerateRoute: AppRoutes.generateRoute,
+          debugShowCheckedModeBanner: false,
+          // 렌더링 안정성을 위한 builder 추가
+          builder: (BuildContext context, Widget? child) {
+            // MediaQuery 래핑으로 렌더링 오류 방지
+            final mediaQuery = MediaQuery.of(context);
+            return MediaQuery(
+              data: mediaQuery.copyWith(
+                // 텍스트 스케일 제한으로 UI 깨짐 방지
+                textScaler: mediaQuery.textScaler.clamp(
+                  minScaleFactor: 0.8,
+                  maxScaleFactor: 1.2,
+                ),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+          // 전역 에러 핸들러
+          onUnknownRoute: (settings) {
+            return MaterialPageRoute(
+              builder: (context) => Scaffold(
+                appBar: AppBar(title: const Text('페이지를 찾을 수 없음')),
+                body: const Center(child: Text('요청한 페이지를 찾을 수 없습니다.')),
+              ),
+            );
+          },
         );
       },
     );

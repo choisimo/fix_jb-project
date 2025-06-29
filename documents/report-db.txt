@@ -1,0 +1,49 @@
+# Spring Boot DB 연동 상태 분석 보고서
+
+## 1. 분석 요약
+
+Spring Boot 백엔드 모듈의 데이터베이스 연동 상태를 분석한 결과, **"부분 구현"** 상태로 평가됩니다.
+
+데이터 접근 계층(Repository)까지는 매우 정교하고 상세하게 구현되어 있으나, 이를 활용하여 실제 비즈니스 로직을 처리하는 서비스(Service) 및 API 엔드포인트(Controller) 계층의 구현이 미완료 상태입니다.
+
+---
+
+## 2. 세부 분석 결과
+
+### ✅ 구현 완료된 항목
+
+1.  **데이터베이스 연결 설정 (`application.yml`)**
+    *   PostgreSQL 연결 정보(URL, Driver, Credentials)가 환경 변수와 연동하여 올바르게 설정되었습니다.
+    *   JPA 및 Hibernate 설정이 `validate` 모드로 구성되어, 엔티티와 실제 DB 스키마의 일관성을 검증합니다.
+    *   PostGIS Dialect가 설정되어 위치 기반 데이터 처리를 위한 준비가 완료되었습니다.
+
+2.  **도메인 엔티티 (`domain/entity`)**
+    *   `Report`, `User`, `Category`, `Status` 등 핵심 엔티티들이 `@Entity` 어노테이션과 함께 정교하게 정의되었습니다.
+    *   테이블명, 컬럼명, 제약 조건 등이 명확하게 매핑되어 있습니다.
+    *   `@ManyToOne`, `@OneToMany` 등을 사용한 엔티티 간의 관계 설정이 올바르게 구현되었습니다.
+
+3.  **JPA Repository (`domain/repository`)**
+    *   `ReportRepository` 인터페이스가 `JpaRepository`를 상속받아 기본적인 CRUD 기능을 확보했습니다.
+    *   `@Query` 어노테이션을 활용하여 단순 조회를 넘어선 복잡한 비즈니스 요구사항을 충족하는 다수의 커스텀 쿼리가 구현되어 있습니다.
+        *   **소프트 삭제(Soft-delete)**를 고려한 조회 쿼리
+        *   다중 조건을 조합하는 **동적 검색 쿼리** (`searchReports`)
+        *   PostGIS 함수를 활용한 **위치 기반 반경 검색** (`findByLocationWithinRadius`)
+        *   **각종 통계 집계 쿼리** (상태별, 카테고리별, 월별 통계 등)
+
+### ⚠️ 구현이 필요한 항목
+
+1.  **서비스 계층 (`application/service`)**
+    *   `ReportRepository`를 주입받아 실제 비즈니스 로직(보고서 생성, 수정, 상태 변경 등)을 처리하는 `ReportService` 클래스가 존재하지 않습니다.
+    *   현재 `UserService`만 구현되어 있습니다.
+
+2.  **프레젠테이션 계층 (`presentation/controller`)**
+    *   클라이언트의 HTTP 요청을 받아 `ReportService`를 호출하고 결과를 반환하는 `ReportController` 클래스가 존재하지 않습니다.
+    *   현재 `UserController`만 구현되어 있습니다.
+
+---
+
+## 3. 최종 결론
+
+데이터베이스와의 연동을 위한 기술적인 기반(설정, 엔티티, 리포지토리)은 **완벽하게 준비된 상태**입니다.
+
+향후 개발은 이 준비된 데이터 접근 계층을 활용하여 **`ReportService`와 `ReportController`를 구현**하는 데 집중해야 합니다. 이는 `taskmaster`의 Task #14 (`Backend Integration - FastAPI Gateway Enhancement`)가 `in_progress`이고 하위 작업들이 `pending`인 현재 프로젝트 상태와 정확히 일치합니다.

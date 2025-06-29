@@ -1,0 +1,294 @@
+{
+  "check-service": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Update Flutter Dependencies (pubspec.yaml)",
+        "description": "Remove the existing Google Maps Flutter package and add the flutter_naver_map package to the project dependencies.",
+        "details": "Edit the `pubspec.yaml` file. Remove the line for `google_maps_flutter`. Add `flutter_naver_map: ^1.2.0` (or the latest compatible version) under `dependencies`. Run `flutter pub get` to fetch the new package.",
+        "testStrategy": "Run `flutter pub get` and verify that the command completes successfully without errors. Check the `pubspec.lock` file to confirm that `flutter_naver_map` has been added and `google_maps_flutter` is no longer listed as a direct dependency.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Configure Naver Cloud Platform and Obtain Client ID",
+        "description": "Register the application on the Naver Cloud Platform, select the Mobile Dynamic Map API, register Android package name and iOS Bundle ID, and obtain the Client ID.",
+        "details": "Access the Naver Cloud Platform console. Create a new application. Select the 'Maps' service and specifically the 'Mobile Dynamic Map' API. Register the Android `applicationId` and iOS `Bundle ID` associated with the Flutter project. Generate and note down the Client ID provided by Naver Cloud Platform. This is a manual, external configuration step.",
+        "testStrategy": "Confirm that an application is successfully registered on Naver Cloud Platform, the Mobile Dynamic Map API is enabled for it, and a Client ID has been issued and securely recorded.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Configure Android Native Manifest (AndroidManifest.xml)",
+        "description": "Add the obtained Naver Map Client ID to the Android native manifest file.",
+        "details": "Edit the `android/app/src/main/AndroidManifest.xml` file. Inside the `<application>` tag, add a `<meta-data>` tag with `android:name=\"com.naver.maps.map.CLIENT_ID\"` and `android:value=\"YOUR_NAVER_MAP_CLIENT_ID\"`, replacing the placeholder with the actual Client ID obtained from Task 2.",
+        "testStrategy": "Build the Android application. Check the build output and logs for any errors related to manifest merging or the added meta-data tag. Verify the Client ID is correctly embedded in the final manifest (can be checked by inspecting the built APK/bundle).",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Configure iOS Native Info.plist",
+        "description": "Add the obtained Naver Map Client ID and necessary location usage descriptions to the iOS native Info.plist file.",
+        "details": "Edit the `ios/Runner/Info.plist` file. Add a new key-value pair: `<key>NMFClientId</key><string>YOUR_NAVER_MAP_CLIENT_ID</string>`, replacing the placeholder with the actual Client ID from Task 2. Ensure location usage description keys (`NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`) are present with appropriate descriptions, as `geolocator` requires them.",
+        "testStrategy": "Build the iOS application. Check the build output and logs for any errors related to the Info.plist file. Verify the Client ID and location usage descriptions are correctly added by inspecting the built app's Info.plist.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Initialize Naver Map SDK in Flutter",
+        "description": "Initialize the Naver Map SDK within the Flutter application's startup sequence.",
+        "details": "Locate the application's entry point, typically `main.dart`. Before calling `runApp()` or initializing the first screen that uses the map, call `NaverMapSdk.instance.initialize()`. Consider handling potential initialization errors.",
+        "testStrategy": "Run the application on both Android and iOS simulators/devices. Monitor the console output for messages indicating successful Naver Map SDK initialization or any related errors. The map widget should not crash or show initialization errors when first displayed.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Replace GoogleMap Widget with NaverMap Widget",
+        "description": "Replace all instances of the `GoogleMap` widget with the `NaverMap` widget in the application's UI code.",
+        "details": "Identify all Flutter screens or widgets that currently use `google_maps_flutter`'s `GoogleMap`. Replace `GoogleMap(...)` with `NaverMap(options: const NaverMapViewOptions(), onMapReady: (controller) { ... })`. Adapt initial camera position logic using `NCameraPosition` if necessary.",
+        "testStrategy": "Navigate to all screens that previously displayed a Google Map. Verify that a map view is displayed using the Naver Map SDK instead of the old Google Map. Check for any immediate rendering issues or errors in the console.",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement Current Location Display",
+        "description": "Implement functionality to obtain the user's current GPS location using `geolocator` and display it accurately on the Naver Map.",
+        "details": "Use the `geolocator` package to request and receive the user's location. On the `NaverMap`, display this location using either the built-in `NLocationOverlay` or by adding a custom `NMarker` at the current coordinates (`NLatLng`). Ensure location permissions are handled appropriately.",
+        "testStrategy": "Run the app on a device with GPS. Grant location permissions when prompted. Verify that the user's current location is displayed on the map, either as a blue dot (overlay) or a custom marker. Check accuracy in different environments.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Marker Display",
+        "description": "Add the capability to display markers (pins) on the Naver Map at specified geographic coordinates, such as report locations.",
+        "details": "Identify where markers were previously created for Google Maps. Convert the marker data (coordinates, title, snippet, icon) to use `flutter_naver_map`'s `NMarker` objects. Add these `NMarker` instances to the `NaverMap` widget's `markers` list or manage them via the `NaverMapController`.",
+        "testStrategy": "Navigate to screens that display markers (e.g., report detail pages). Verify that markers appear on the map at the correct locations. Check that the marker icons are displayed as expected.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Camera Movement and Zoom Control",
+        "description": "Implement functionality to programmatically move the map camera to a specific coordinate and adjust the zoom level.",
+        "details": "Obtain the `NaverMapController` from the `onMapReady` callback. Implement methods that use `controller.updateCamera(NCameraUpdate.fromCameraPosition(...))` or similar controller methods to animate or instantly move the camera to a target `NLatLng` with a specified zoom level.",
+        "testStrategy": "Trigger camera movement actions (e.g., tapping a list item associated with a location, or the '현재 위치로 이동' button). Verify that the map camera smoothly transitions to the target location and zoom level as intended.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Integrate UI Controls (Current Location Button, Marker Info)",
+        "description": "Integrate existing UI controls, such as the 'Current Location' button and marker info windows/details, to work correctly with the Naver Map implementation.",
+        "details": "Connect the tap handler for the 'Current Location' button to the camera movement logic implemented in Task 7/9. Adapt the logic for handling marker taps; instead of Google Maps InfoWindow, use `NInfoWindow` or trigger a custom UI element (like a bottom sheet or navigation) based on the `NMarker` tap event.",
+        "testStrategy": "Tap the 'Current Location' button and verify it moves the map to the current location. Tap on displayed markers and verify that the associated information or action (e.g., showing details, navigating) is correctly triggered and displayed.",
+        "priority": "medium",
+        "dependencies": [
+          7,
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Cross-Platform Testing and Refinement",
+        "description": "Perform comprehensive functional and platform testing on both Android and iOS devices, and address any bugs or performance issues found.",
+        "details": "Execute the test cases outlined in PRD 5.0 on both Android and iOS devices. This includes verifying map loading, current location display, marker display, camera controls, and UI interactions. Monitor app performance (PRD 5.0). Identify and fix any platform-specific bugs or inconsistencies. Clean up any remaining unused Google Maps code.",
+        "testStrategy": "Follow the detailed test plan in PRD 5.0. Ensure all listed test cases pass on both Android and iOS. Document any failures and verify fixes. Confirm that the app's performance with Naver Map is acceptable and does not show significant degradation compared to the previous version.",
+        "priority": "high",
+        "dependencies": [
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-29T11:04:37.352Z",
+      "updated": "2025-06-29T11:04:37.352Z",
+      "description": "Tasks for check-service context"
+    }
+  },
+  "map-dev": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Update Dependencies (Remove Google Maps, Add Naver Map)",
+        "description": "Remove the existing Google Maps Flutter package and add the flutter_naver_map package to the project dependencies.",
+        "details": "Edit `pubspec.yaml`. Remove `google_maps_flutter`. Add `flutter_naver_map` with the latest stable version (e.g., `^1.2.0` or newer). Run `flutter pub get` to fetch the new dependency.",
+        "testStrategy": "Run `flutter pub get` and ensure no dependency conflicts. Verify the package is added to the project's dependencies list.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Configure Naver Cloud Platform and Obtain API Key",
+        "description": "Register the application on Naver Cloud Platform, select the Mobile Dynamic Map service, register package names (Android applicationId, iOS Bundle ID), and obtain the Client ID.",
+        "details": "Access Naver Cloud Platform console. Create a new application. Select the 'Maps' service and 'Mobile Dynamic Map' API. Add the Android package name and iOS Bundle ID. Generate and note down the Client ID.",
+        "testStrategy": "Confirm successful application registration and obtain a valid Client ID from the Naver Cloud Platform console.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Configure Android Native Project with Naver Map Client ID",
+        "description": "Add the obtained Naver Map Client ID to the Android native manifest file.",
+        "details": "Open `android/app/src/main/AndroidManifest.xml`. Inside the `<application>` tag, add a `<meta-data>` tag with `android:name=\"com.naver.maps.map.CLIENT_ID\"` and `android:value=\"YOUR_NAVER_MAP_CLIENT_ID\"`, replacing the placeholder with the actual Client ID from Task 2.",
+        "testStrategy": "Build and run the Android application. Check logcat for any errors related to Naver Map SDK initialization or missing Client ID.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Configure iOS Native Project with Naver Map Client ID and Permissions",
+        "description": "Add the obtained Naver Map Client ID and necessary permissions to the iOS native Info.plist file.",
+        "details": "Open `ios/Runner/Info.plist`. Add a new key `NMFClientId` with the string value of your Naver Map Client ID from Task 2. Ensure location usage descriptions (`NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`) are present if not already.",
+        "testStrategy": "Build and run the iOS application. Check the console output for any errors related to Naver Map SDK initialization or missing Client ID/permissions. Verify location permission prompts appear correctly.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Initialize Naver Map SDK in Flutter App",
+        "description": "Initialize the Naver Map SDK in the Flutter application startup code.",
+        "details": "In `main.dart` or the main application entry point, call `NaverMapSdk.instance.initialize()` before `runApp()`. Handle potential initialization errors if necessary.",
+        "testStrategy": "Run the application on both Android and iOS. Verify that the Naver Map SDK initializes successfully without errors in the console/logs.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Replace GoogleMap Widget with NaverMap Widget",
+        "description": "Replace the existing GoogleMap widget instances with the NaverMap widget.",
+        "details": "Identify all screens/widgets using `GoogleMap`. Replace `GoogleMap(...)` with `NaverMap(options: const NaverMapViewOptions(), onMapReady: (controller) { ... })`. Adapt initial camera position logic to use `NaverMapViewOptions`.",
+        "testStrategy": "Navigate to all screens that previously displayed a map. Verify that a map view appears correctly on both Android and iOS devices.",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement Map Camera Control (Move, Zoom)",
+        "description": "Implement functionality to control the map camera, including setting initial position, moving to specific coordinates, and adjusting zoom level.",
+        "details": "Utilize the `NaverMapController` obtained from `onMapReady`. Implement methods to move the camera using `controller.moveCamera(NCameraUpdate.fromCameraPosition(...))` or `controller.moveCamera(NCameraUpdate.fitBounds(...))`. Adapt existing logic that used `GoogleMapController` for camera manipulation.",
+        "testStrategy": "Verify that the map loads with the correct initial camera position and zoom. Test programmatically moving the camera to different locations and zoom levels.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Current Location Display and 'Move to Current Location' Button",
+        "description": "Integrate `geolocator` to get the user's current location and display it on the Naver Map. Ensure the '현재 위치로 이동' button works.",
+        "details": "Use `geolocator` to fetch the current GPS location. Add a current location overlay or marker provided by `flutter_naver_map`. Implement the logic for the '현재 위치로 이동' button to move the map camera to the user's current location using the `NaverMapController` (Task 7).",
+        "testStrategy": "Test on a physical device with GPS enabled. Verify the current location marker appears accurately. Tap the '현재 위치로 이동' button and confirm the map centers and zooms to the current location.",
+        "priority": "high",
+        "dependencies": [
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Marker Display and Interaction",
+        "description": "Implement the display of markers (pins) on the Naver Map for specific coordinates (e.g., report locations) and handle marker tap events.",
+        "details": "Create `NMarker` objects for each location that needs a pin. Add these markers to the map using the `NaverMapController`. Implement the `onMarkerTap` callback to handle user interaction, potentially displaying an Info Window or navigating to a detail screen. Adapt existing marker data structures to `NMarker`.",
+        "testStrategy": "Load screens displaying markers. Verify markers appear at the correct coordinates. Tap on markers and verify the expected action (e.g., Info Window display, navigation) occurs.",
+        "priority": "high",
+        "dependencies": [
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Refactor Remaining Map Logic and Conduct Comprehensive Testing",
+        "description": "Refactor any remaining Google Maps specific code, adjust UI elements for Naver Map compatibility (e.g., Info Windows), and conduct comprehensive functional, platform, and performance testing.",
+        "details": "Review the codebase for any lingering `google_maps_flutter` references or logic that needs adaptation. Ensure UI elements like custom Info Windows or overlays are compatible or reimplemented for Naver Map. Execute the test plan outlined in Section 5 of the PRD, covering map loading, current location, markers, camera controls, and performance on both Android and iOS.",
+        "testStrategy": "Perform all test cases listed in the PRD's Test Plan (Section 5). Verify consistent behavior and performance on Android and iOS. Check for any crashes, ANRs, or significant performance degradation.",
+        "priority": "medium",
+        "dependencies": [
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-29T11:28:44.091Z",
+      "updated": "2025-06-29T11:28:44.091Z",
+      "description": "Tasks for map-dev context"
+    }
+  }
+}
