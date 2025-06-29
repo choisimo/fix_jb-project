@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/theme/theme_manager.dart';
 import '../../../../app/routes/app_routes.dart';
+import 'my_reports_page.dart';
+import 'notification_settings_page.dart';
+import 'help_page.dart';
+import 'app_info_page.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -14,7 +20,10 @@ class ProfilePage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // 설정 페이지로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
             },
           ),
         ],
@@ -74,7 +83,12 @@ class ProfilePage extends StatelessWidget {
                         title: const Text('내 보고서'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          // 내 보고서 목록으로 이동
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MyReportsPage(),
+                            ),
+                          );
                         },
                       ),
                       const Divider(height: 1),
@@ -83,7 +97,13 @@ class ProfilePage extends StatelessWidget {
                         title: const Text('알림 설정'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          // 알림 설정으로 이동
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationSettingsPage(),
+                            ),
+                          );
                         },
                       ),
                       const Divider(height: 1),
@@ -92,7 +112,12 @@ class ProfilePage extends StatelessWidget {
                         title: const Text('도움말'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          // 도움말으로 이동
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpPage(),
+                            ),
+                          );
                         },
                       ),
                       const Divider(height: 1),
@@ -101,7 +126,12 @@ class ProfilePage extends StatelessWidget {
                         title: const Text('앱 정보'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          // 앱 정보로 이동
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AppInfoPage(),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -146,10 +176,100 @@ class ProfilePage extends StatelessWidget {
                     },
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                // 현재 설정 상태 표시 카드
+                AnimatedBuilder(
+                  animation: ThemeManager.instance,
+                  builder: (context, child) {
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.settings_applications,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  '현재 설정',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildSettingRow(
+                              icon: Icons.brightness_6,
+                              title: '테마',
+                              value: ThemeManager.instance.isDarkMode
+                                  ? '다크모드'
+                                  : '라이트모드',
+                              iconColor: ThemeManager.instance.isDarkMode
+                                  ? Colors.grey[700]
+                                  : Colors.yellow[700],
+                            ),
+                            _buildSettingRow(
+                              icon: Icons.text_fields,
+                              title: '폰트 크기',
+                              value:
+                                  '${ThemeManager.instance.fontSize.toInt()}px',
+                              iconColor: Colors.blue,
+                            ),
+                            _buildSettingRow(
+                              icon: Icons.language,
+                              title: '언어',
+                              value: ThemeManager.instance.language,
+                              iconColor: Colors.green,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// 설정 항목을 표시하는 위젯
+  Widget _buildSettingRow({
+    required IconData icon,
+    required String title,
+    required String value,
+    Color? iconColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: iconColor ?? Colors.grey[600]),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
       ),
     );
   }

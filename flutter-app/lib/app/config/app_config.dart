@@ -32,7 +32,8 @@ class AppConfig {
   // OAuth2 설정
   static const String googleClientId = 'your-google-client-id';
   static const String kakaoAppKey = 'your-kakao-app-key';
-  static const String naverClientId = 'your-naver-client-id';
+  static const String naverClientId = '6gmofoay96';
+  static const String naverClientSecret = '6WQ3He7rBpcsa02WtRY6A9ycU5MsClOvKkwZ601B';
 
   // 파일 업로드 설정
   static const int maxImageCount = 10;

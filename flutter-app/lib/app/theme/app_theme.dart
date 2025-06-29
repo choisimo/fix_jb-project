@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import '../../core/theme/theme_manager.dart';
 
 class AppTheme {
   // 전북 특색을 담은 색상 팔레트
@@ -224,6 +225,137 @@ class AppTheme {
         foregroundColor: colorScheme.onPrimary,
         shape: const CircleBorder(),
         elevation: 6,
+      ),
+    );
+  }
+
+  /// 동적 폰트 크기를 적용한 라이트 테마
+  static ThemeData getLightTheme({double? fontSize}) {
+    final colorScheme = _lightColorScheme;
+    final baseFontSize = fontSize ?? 16.0;
+    final textTheme = _buildTextTheme(baseFontSize, colorScheme.onSurface);
+
+    return lightTheme.copyWith(
+      textTheme: textTheme,
+      appBarTheme: lightTheme.appBarTheme?.copyWith(
+        titleTextStyle: TextStyle(
+          fontSize: baseFontSize + 2,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: lightTheme.elevatedButtonTheme?.style?.copyWith(
+          textStyle: WidgetStateProperty.all(
+            TextStyle(fontSize: baseFontSize, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 동적 폰트 크기를 적용한 다크 테마
+  static ThemeData getDarkTheme({double? fontSize}) {
+    final colorScheme = _darkColorScheme;
+    final baseFontSize = fontSize ?? 16.0;
+    final textTheme = _buildTextTheme(baseFontSize, colorScheme.onSurface);
+
+    return darkTheme.copyWith(
+      textTheme: textTheme,
+      appBarTheme: darkTheme.appBarTheme?.copyWith(
+        titleTextStyle: TextStyle(
+          fontSize: baseFontSize + 2,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: darkTheme.elevatedButtonTheme?.style?.copyWith(
+          textStyle: WidgetStateProperty.all(
+            TextStyle(fontSize: baseFontSize, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 폰트 크기에 맞는 텍스트 테마 생성
+  static TextTheme _buildTextTheme(double baseFontSize, Color textColor) {
+    return TextTheme(
+      displayLarge: TextStyle(
+        fontSize: baseFontSize + 16,
+        fontWeight: FontWeight.w300,
+        color: textColor,
+      ),
+      displayMedium: TextStyle(
+        fontSize: baseFontSize + 12,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      displaySmall: TextStyle(
+        fontSize: baseFontSize + 8,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: baseFontSize + 6,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: baseFontSize + 4,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      headlineSmall: TextStyle(
+        fontSize: baseFontSize + 2,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      titleLarge: TextStyle(
+        fontSize: baseFontSize + 2,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+      titleMedium: TextStyle(
+        fontSize: baseFontSize,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+      titleSmall: TextStyle(
+        fontSize: baseFontSize - 2,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: baseFontSize,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: baseFontSize - 2,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      bodySmall: TextStyle(
+        fontSize: baseFontSize - 4,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      labelLarge: TextStyle(
+        fontSize: baseFontSize - 2,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+      labelMedium: TextStyle(
+        fontSize: baseFontSize - 4,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+      labelSmall: TextStyle(
+        fontSize: baseFontSize - 6,
+        fontWeight: FontWeight.w500,
+        color: textColor,
       ),
     );
   }

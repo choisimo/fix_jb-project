@@ -29,6 +29,7 @@ services:
     container_name: kafka
     ports:
       - "9092:9092"
+  
     depends_on:
       zookeeper:
         condition: service_healthy

@@ -10,7 +10,23 @@
     <application
         android:label="flutter_report_app"
         android:name="${applicationName}"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher">
+        
+        <!-- Uncomment the following line and add your Google Maps API key to enable Google Maps -->
+        <!-- <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="" /> -->
+
+        <!--  Naver Map API Key -->
+        <meta-data android:name="com.naver.maps.map.CLIENT_ID"
+            android:value="6gmofoay96" />
+        
+        <!-- Uncomment the following line to enable Kakao Map -->
+        <!-- <meta-data android:name="com.kakao.sdk.AppKey"
+            android:value="YOUR_KAKAO_MAPS_APP_KEY" /> -->
+
+        <!-- This is needed to ensure that the Flutter engine can access the
+             Flutter assets and resources. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
