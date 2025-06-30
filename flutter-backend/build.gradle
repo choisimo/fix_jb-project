@@ -1,11 +1,11 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.3'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springframework.boot' version '3.2.0'
+	id 'io.spring.dependency-management' version '1.1.4'
 }
 
-group = 'com.fix_jb-team'
-version = '0.0.1-SNAPSHOT'
+group = 'com.jeonbuk'
+version = '1.0.0'
 
 java {
 	toolchain {
@@ -13,23 +13,145 @@ java {
 	}
 }
 
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
 repositories {
 	mavenCentral()
 }
 
+ext {
+	springCloudVersion = '2023.0.0'
+}
+
 dependencies {
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	
+	// Database
 	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.hibernate:hibernate-spatial:6.4.0.Final'
+	
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+	
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+	
+	// File Upload
+	implementation 'commons-fileupload:commons-fileupload:1.5'
+	implementation 'commons-io:commons-io:2.11.0'
+	
+	// OAuth2
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	
+	// JSON Processing
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+	
+	// Utilities
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+	
+	// Lombok과 MapStruct 호환성을 위한 추가 설정
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+	
+	// API Documentation
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+	
+	// 개발 도구
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	
+	// 테스트 컨테이너 추가 모듈
+	testImplementation 'org.testcontainers:kafka'
+	testImplementation 'org.testcontainers:mongodb'
+	
+	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// 테스트 실행 시 더 자세한 로그 출력
+	testLogging {
+		events "passed", "skipped", "failed", "standardOut", "standardError"
+		exceptionFormat "full"
+	}
+	// 병렬 테스트 실행 (성능 향상)
+	maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+}
+
+// Lombok 및 어노테이션 프로세서 설정
+compileJava {
+	options.annotationProcessorPath = configurations.annotationProcessor
+	options.compilerArgs += [
+		'-Amapstruct.suppressGeneratorTimestamp=true',
+		'-Amapstruct.defaultComponentModel=spring',
+		'-parameters', // 리플렉션을 위한 파라미터 이름 보존
+		'-Xlint:deprecation',
+		'-Xlint:unchecked'
+	]
+	// 컴파일 인코딩 설정
+	options.encoding = 'UTF-8'
+	// 병렬 컴파일 활성화
+	options.fork = true
+	options.forkOptions.jvmArgs = ['-Xmx2g']
+}
+
+// Main class configuration
+tasks.named('bootJar') {
+	mainClass = 'com.jeonbuk.report.JeonbukReportPlatformApplication'
+	// JAR 파일 최적화
+	archiveFileName = "${project.name}-${project.version}.jar"
+	exclude '**/application-local.yml'
+	exclude '**/application-dev.yml'
+}
+
+tasks.named('bootRun') {
+	mainClass = 'com.jeonbuk.report.JeonbukReportPlatformApplication'
+	// 개발 시 JVM 옵션
+	jvmArgs = [
+		'-Xmx1g',
+		'-Dspring.profiles.active=dev',
+		'-Dspring.devtools.restart.enabled=true'
+	]
+}
+
+// 빌드 정보 생성
+springBoot {
+	buildInfo {
+		properties {
+			artifact = "${project.name}"
+			version = "${project.version}"
+			group = "${project.group}"
+			name = "${project.name}"
+		}
+	}
 }

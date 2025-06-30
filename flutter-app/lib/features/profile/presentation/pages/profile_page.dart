@@ -72,18 +72,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 8),
                         const Text(
                           'user@example.com',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // 메뉴 목록
                 Card(
                   child: Column(
@@ -150,7 +147,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       // 개발자 도구 (디버그 모드에서만 표시)
                       if (kDebugMode) ...[
                         ListTile(
-                          leading: const Icon(Icons.developer_mode, color: Colors.orange),
+                          leading: const Icon(
+                            Icons.developer_mode,
+                            color: Colors.orange,
+                          ),
                           title: const Text('위치 서비스 테스트'),
                           subtitle: const Text('GPS/위치 기능 디버깅'),
                           trailing: const Icon(Icons.arrow_forward_ios),
@@ -162,9 +162,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // 로그아웃 버튼
                 Card(
                   child: ListTile(
@@ -204,9 +204,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // 다크 모드 설정
                 AnimatedBuilder(
                   animation: ThemeManager.instance,
@@ -258,10 +258,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Icon(icon, size: 20),
           const SizedBox(width: 12),
           Expanded(child: Text(title)),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
