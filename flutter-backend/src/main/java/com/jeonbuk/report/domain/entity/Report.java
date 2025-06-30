@@ -87,7 +87,7 @@ public class Report {
 
   // AI 분석 정보
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "ai_analysis_results", columnDefinition = "jsonb")
+  @Column(name = "ai_analysis_results", columnDefinition = "TEXT")
   private Map<String, Object> aiAnalysisResults;
 
   @Column(name = "ai_confidence_score", precision = 5, scale = 2)
@@ -116,7 +116,7 @@ public class Report {
   private String signatureData;
 
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "device_info", columnDefinition = "jsonb")
+  @Column(name = "device_info", columnDefinition = "TEXT")
   private Map<String, Object> deviceInfo;
 
   // 메타데이터

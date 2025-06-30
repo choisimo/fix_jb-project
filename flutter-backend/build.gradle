@@ -41,6 +41,7 @@ dependencies {
 	
 	// Database
 	runtimeOnly 'org.postgresql:postgresql'
+	runtimeOnly 'com.h2database:h2'
 	implementation 'org.hibernate:hibernate-spatial:6.4.0.Final'
 	
 	// JWT
@@ -62,6 +63,9 @@ dependencies {
 	// JSON Processing
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+	
+	// HTTP Client
+	implementation 'org.apache.httpcomponents.client5:httpclient5'
 	
 	// Utilities
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
