@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -169,28 +168,6 @@ public class AsyncConfig {
                 executor.getCorePoolSize(), executor.getMaxPoolSize());
         
         return executor;
-    }
-
-    /**
-     * RestTemplate Bean (HTTP 클라이언트)
-     * 연결 풀링 및 타임아웃 설정 포함
-     */
-    @Bean
-    public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
-        
-        // 연결 타임아웃 및 읽기 타임아웃 설정
-        org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
-                new org.springframework.http.client.SimpleClientHttpRequestFactory();
-        
-        factory.setConnectTimeout(10000); // 10초 연결 타임아웃
-        factory.setReadTimeout(30000);    // 30초 읽기 타임아웃
-        
-        restTemplate.setRequestFactory(factory);
-        
-        log.info("🌐 RestTemplate 초기화 완료 - 연결 타임아웃: 10s, 읽기 타임아웃: 30s");
-        
-        return restTemplate;
     }
 
     /**
