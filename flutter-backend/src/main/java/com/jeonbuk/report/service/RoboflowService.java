@@ -6,6 +6,9 @@ import com.jeonbuk.report.dto.AIAnalysisRequest;
 import com.jeonbuk.report.dto.AIAnalysisResponse;
 import com.jeonbuk.report.dto.AIAnalysisResponse.DetectedObjectDto;
 import com.jeonbuk.report.dto.AIAnalysisResponse.BoundingBoxDto;
+import com.jeonbuk.report.domain.entity.ReportCategory;
+import com.jeonbuk.report.domain.entity.Report;
+import com.jeonbuk.report.repository.ReportCategoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -47,72 +50,73 @@ public class RoboflowService {
     
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final ReportCategoryRepository reportCategoryRepository;
     
     // 비동기 작업 결과 저장소 (실제 환경에서는 Redis 등 사용)
     private final Map<String, AIAnalysisResponse> asyncResults = new ConcurrentHashMap<>();
     
     // 한국어 클래스명 매핑 - 전북지역 인프라 문제 중심
-    private final Map<String, String> koreanClassNames = Map.of(
+    private final Map<String, String> koreanClassNames = Map.ofEntries(
         // 도로 관련 문제
-        "pothole", "포트홀",
-        "crack", "균열",
-        "damaged_road", "도로 손상",
-        "road_marking_faded", "차선 도색 훼손",
+        Map.entry("pothole", "포트홀"),
+        Map.entry("crack", "균열"),
+        Map.entry("damaged_road", "도로 손상"),
+        Map.entry("road_marking_faded", "차선 도색 훼손"),
         
         // 시설물 관련 문제  
-        "broken_manhole", "맨홀 파손",
-        "damaged_sign", "표지판 손상",
-        "broken_streetlight", "가로등 파손",
-        "damaged_guardrail", "가드레일 손상",
-        "broken_sidewalk", "인도 파손",
+        Map.entry("broken_manhole", "맨홀 파손"),
+        Map.entry("damaged_sign", "표지판 손상"),
+        Map.entry("broken_streetlight", "가로등 파손"),
+        Map.entry("damaged_guardrail", "가드레일 손상"),
+        Map.entry("broken_sidewalk", "인도 파손"),
         
         // 환경 관리 문제
-        "litter", "쓰레기",
-        "graffiti", "낙서",
-        "illegal_dumping", "불법 투기",
+        Map.entry("litter", "쓰레기"),
+        Map.entry("graffiti", "낙서"),
+        Map.entry("illegal_dumping", "불법 투기"),
         
         // 기타 공공시설 문제
-        "damaged_bus_stop", "버스정류장 손상",
-        "broken_bench", "벤치 파손",
-        "damaged_fence", "울타리 손상"
+        Map.entry("damaged_bus_stop", "버스정류장 손상"),
+        Map.entry("broken_bench", "벤치 파손"),
+        Map.entry("damaged_fence", "울타리 손상")
     );
     
     // 문제 유형별 카테고리 매핑
-    private final Map<String, String> categoryMapping = Map.of(
-        "pothole", "도로관리",
-        "crack", "도로관리", 
-        "damaged_road", "도로관리",
-        "road_marking_faded", "도로관리",
-        "broken_manhole", "시설관리",
-        "damaged_sign", "시설관리",
-        "broken_streetlight", "시설관리",
-        "damaged_guardrail", "안전관리",
-        "broken_sidewalk", "도로관리",
-        "litter", "환경관리",
-        "graffiti", "환경관리",
-        "illegal_dumping", "환경관리",
-        "damaged_bus_stop", "교통관리",
-        "broken_bench", "시설관리",
-        "damaged_fence", "시설관리"
+    private final Map<String, String> categoryMapping = Map.ofEntries(
+        Map.entry("pothole", "도로관리"),
+        Map.entry("crack", "도로관리"), 
+        Map.entry("damaged_road", "도로관리"),
+        Map.entry("road_marking_faded", "도로관리"),
+        Map.entry("broken_manhole", "시설관리"),
+        Map.entry("damaged_sign", "시설관리"),
+        Map.entry("broken_streetlight", "시설관리"),
+        Map.entry("damaged_guardrail", "안전관리"),
+        Map.entry("broken_sidewalk", "도로관리"),
+        Map.entry("litter", "환경관리"),
+        Map.entry("graffiti", "환경관리"),
+        Map.entry("illegal_dumping", "환경관리"),
+        Map.entry("damaged_bus_stop", "교통관리"),
+        Map.entry("broken_bench", "시설관리"),
+        Map.entry("damaged_fence", "시설관리")
     );
     
     // 우선순위 매핑 (기본 우선순위)
-    private final Map<String, String> priorityMapping = Map.of(
-        "pothole", "긴급",
-        "crack", "보통",
-        "damaged_road", "긴급", 
-        "road_marking_faded", "낮음",
-        "broken_manhole", "긴급",
-        "damaged_sign", "보통",
-        "broken_streetlight", "보통",
-        "damaged_guardrail", "긴급",
-        "broken_sidewalk", "보통",
-        "litter", "낮음",
-        "graffiti", "낮음",
-        "illegal_dumping", "보통",
-        "damaged_bus_stop", "보통",
-        "broken_bench", "낮음",
-        "damaged_fence", "낮음"
+    private final Map<String, String> priorityMapping = Map.ofEntries(
+        Map.entry("pothole", "긴급"),
+        Map.entry("crack", "보통"),
+        Map.entry("damaged_road", "긴급"), 
+        Map.entry("road_marking_faded", "낮음"),
+        Map.entry("broken_manhole", "긴급"),
+        Map.entry("damaged_sign", "보통"),
+        Map.entry("broken_streetlight", "보통"),
+        Map.entry("damaged_guardrail", "긴급"),
+        Map.entry("broken_sidewalk", "보통"),
+        Map.entry("litter", "낮음"),
+        Map.entry("graffiti", "낮음"),
+        Map.entry("illegal_dumping", "보통"),
+        Map.entry("damaged_bus_stop", "보통"),
+        Map.entry("broken_bench", "낮음"),
+        Map.entry("damaged_fence", "낮음")
     );
     
     // Circuit breaker for API failures
@@ -131,9 +135,10 @@ public class RoboflowService {
     @Value("${roboflow.timeout.read:60000}")
     private int readTimeout;
     
-    public RoboflowService(RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public RoboflowService(RestTemplate restTemplate, ObjectMapper objectMapper, ReportCategoryRepository reportCategoryRepository) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.reportCategoryRepository = reportCategoryRepository;
     }
     
     /**
@@ -471,24 +476,24 @@ public class RoboflowService {
                 .koreanName("포트홀")
                 .confidence(82.5)
                 .boundingBox(BoundingBoxDto.builder().x(200.0).y(180.0).width(120.0).height(80.0).build())
-                .category("도로관리")
-                .priority("긴급")
+                .category(mapToCategory("pothole"))
+                .priority(Report.Priority.URGENT)
                 .build(),
             DetectedObjectDto.builder()
                 .className("litter")
                 .koreanName("쓰레기")
                 .confidence(75.3)
                 .boundingBox(BoundingBoxDto.builder().x(450.0).y(300.0).width(90.0).height(60.0).build())
-                .category("환경관리")
-                .priority("낮음")
+                .category(mapToCategory("litter"))
+                .priority(Report.Priority.LOW)
                 .build(),
             DetectedObjectDto.builder()
                 .className("damaged_sign")
                 .koreanName("표지판 손상")
                 .confidence(68.7)
                 .boundingBox(BoundingBoxDto.builder().x(100.0).y(120.0).width(80.0).height(120.0).build())
-                .category("시설관리")
-                .priority("보통")
+                .category(mapToCategory("damaged_sign"))
+                .priority(Report.Priority.MEDIUM)
                 .build()
         );
         
@@ -498,8 +503,8 @@ public class RoboflowService {
             .averageConfidence(75.5)
             .processingTime(System.currentTimeMillis() - startTime)
             .timestamp(LocalDateTime.now())
-            .recommendedCategory("도로관리") // 가장 심각한 문제 기준
-            .recommendedPriority("긴급")
+            .recommendedCategory(mapToCategory("pothole")) // 가장 심각한 문제 기준
+            .recommendedPriority(Report.Priority.URGENT)
             .recommendedDepartment("도로관리팀")
             .summary(description + " 총 3개 문제: 포트홀 1개, 쓰레기 1개, 표지판 손상 1개")
             .build();
@@ -608,29 +613,36 @@ public class RoboflowService {
             .orElse(0.0);
     }
     
-    private String determineCategory(List<DetectedObjectDto> detections) {
-        if (detections.isEmpty()) return "기타";
+    private ReportCategory determineCategory(List<DetectedObjectDto> detections) {
+        if (detections.isEmpty()) {
+            return getOrCreateDefaultCategory("기타");
+        }
         
         // 가장 높은 신뢰도를 가진 객체의 카테고리 반환
         return detections.stream()
             .max(Comparator.comparing(DetectedObjectDto::getConfidence))
             .map(DetectedObjectDto::getCategory)
-            .orElse("기타");
+            .orElse(getOrCreateDefaultCategory("기타"));
     }
     
-    private String determinePriority(List<DetectedObjectDto> detections) {
-        if (detections.isEmpty()) return "낮음";
+    private Report.Priority determinePriority(List<DetectedObjectDto> detections) {
+        if (detections.isEmpty()) return Report.Priority.LOW;
         
         // 긴급도가 높은 객체가 있으면 높은 우선순위
-        boolean hasHighPriority = detections.stream()
-            .anyMatch(d -> "긴급".equals(d.getPriority()));
+        boolean hasUrgentPriority = detections.stream()
+            .anyMatch(d -> d.getPriority() == Report.Priority.URGENT);
         
-        if (hasHighPriority) return "긴급";
+        if (hasUrgentPriority) return Report.Priority.URGENT;
+        
+        boolean hasHighPriority = detections.stream()
+            .anyMatch(d -> d.getPriority() == Report.Priority.HIGH);
+        
+        if (hasHighPriority) return Report.Priority.HIGH;
         
         boolean hasMediumPriority = detections.stream()
-            .anyMatch(d -> "보통".equals(d.getPriority()));
+            .anyMatch(d -> d.getPriority() == Report.Priority.MEDIUM);
         
-        return hasMediumPriority ? "보통" : "낮음";
+        return hasMediumPriority ? Report.Priority.MEDIUM : Report.Priority.LOW;
     }
     
     private String determineDepartment(List<DetectedObjectDto> detections) {
@@ -646,13 +658,13 @@ public class RoboflowService {
         );
         
         // 우선순위가 높은 문제부터 부서 결정
-        String primaryCategory = detections.stream()
-            .filter(d -> "긴급".equals(d.getPriority()))
+        String primaryCategoryName = detections.stream()
+            .filter(d -> d.getPriority() == Report.Priority.URGENT)
             .findFirst()
-            .map(DetectedObjectDto::getCategory)
-            .orElse(determineCategory(detections));
+            .map(d -> d.getCategory().getName())
+            .orElse(determineCategory(detections).getName());
         
-        return departmentMap.getOrDefault(primaryCategory, "시설관리팀");
+        return departmentMap.getOrDefault(primaryCategoryName, "시설관리팀");
     }
     
     private String generateSummary(List<DetectedObjectDto> detections) {
@@ -679,39 +691,60 @@ public class RoboflowService {
         return summary.toString();
     }
     
-    private String mapToCategory(String className) {
-        return categoryMapping.getOrDefault(className, "기타");
+    private ReportCategory mapToCategory(String className) {
+        String categoryName = categoryMapping.getOrDefault(className, "기타");
+        return reportCategoryRepository.findByName(categoryName)
+            .orElseGet(() -> getOrCreateDefaultCategory("기타"));
     }
     
-    private String mapToPriority(String className, double confidence) {
+    private ReportCategory getOrCreateDefaultCategory(String name) {
+        return reportCategoryRepository.findByName(name)
+            .orElse(ReportCategory.builder()
+                .name(name)
+                .description("기본 카테고리")
+                .isActive(true)
+                .sortOrder(999)
+                .build());
+    }
+    
+    private Report.Priority mapToPriority(String className, double confidence) {
         // 기본 우선순위 가져오기
         String basePriority = priorityMapping.getOrDefault(className, "낮음");
         
         // 신뢰도에 따른 우선순위 조정
+        String finalPriority;
         if (confidence >= 0.9) {
             // 90% 이상 신뢰도 - 두 단계 상향
             switch (basePriority) {
-                case "낮음": return "긴급";
-                case "보통": return "긴급";
-                default: return basePriority;
+                case "낮음": finalPriority = "긴급"; break;
+                case "보통": finalPriority = "긴급"; break;
+                default: finalPriority = basePriority; break;
             }
         } else if (confidence >= 0.8) {
             // 80% 이상 신뢰도 - 한 단계 상향
             switch (basePriority) {
-                case "낮음": return "보통";
-                case "보통": return "긴급";
-                default: return basePriority;
+                case "낮음": finalPriority = "보통"; break;
+                case "보통": finalPriority = "긴급"; break;
+                default: finalPriority = basePriority; break;
             }
         } else if (confidence < 0.6) {
             // 60% 미만 신뢰도 - 한 단계 하향
             switch (basePriority) {
-                case "긴급": return "보통";
-                case "보통": return "낮음";
-                default: return basePriority;
+                case "긴급": finalPriority = "보통"; break;
+                case "보통": finalPriority = "낮음"; break;
+                default: finalPriority = basePriority; break;
             }
+        } else {
+            finalPriority = basePriority;
         }
         
-        return basePriority;
+        // 문자열을 enum으로 변환
+        switch (finalPriority) {
+            case "긴급": return Report.Priority.URGENT;
+            case "높음": return Report.Priority.HIGH;
+            case "보통": return Report.Priority.MEDIUM;
+            case "낮음": default: return Report.Priority.LOW;
+        }
     }
     
     /**

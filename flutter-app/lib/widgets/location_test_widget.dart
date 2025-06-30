@@ -30,9 +30,10 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
     try {
       final status = await _locationService.getLocationServiceStatus();
       setState(() {
-        _statusInfo = '서비스: ${status['serviceEnabled'] ? "활성화" : "비활성화"}\n'
-                     '권한: ${status['permission']}\n'
-                     '사용가능: ${status['canGetLocation'] ? "예" : "아니오"}';
+        _statusInfo =
+            '서비스: ${status['serviceEnabled'] ? "활성화" : "비활성화"}\n'
+            '권한: ${status['permission']}\n'
+            '사용가능: ${status['canGetLocation'] ? "예" : "아니오"}';
       });
     } catch (e) {
       setState(() {
@@ -59,12 +60,13 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
       );
 
       setState(() {
-        _locationInfo = '📍 위치 정보:\n'
-                       '위도: ${position.latitude.toStringAsFixed(6)}\n'
-                       '경도: ${position.longitude.toStringAsFixed(6)}\n'
-                       '정확도: ${position.accuracy.toStringAsFixed(1)}m\n'
-                       '주소: $address\n'
-                       '시간: ${position.timestamp.toString().substring(0, 19)}';
+        _locationInfo =
+            '📍 위치 정보:\n'
+            '위도: ${position.latitude.toStringAsFixed(6)}\n'
+            '경도: ${position.longitude.toStringAsFixed(6)}\n'
+            '정확도: ${position.accuracy.toStringAsFixed(1)}m\n'
+            '주소: $address\n'
+            '시간: ${position.timestamp.toString().substring(0, 19)}';
       });
     } catch (e) {
       setState(() {
@@ -127,15 +129,12 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      _statusInfo,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    Text(_statusInfo, style: const TextStyle(fontSize: 14)),
                   ],
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
 
             // 위치 정보 카드
@@ -153,10 +152,7 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      _locationInfo,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    Text(_locationInfo, style: const TextStyle(fontSize: 14)),
                   ],
                 ),
               ),
@@ -166,9 +162,7 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
 
             // 테스트 버튼들
             if (_isLoading)
-              const Center(
-                child: CircularProgressIndicator(),
-              )
+              const Center(child: CircularProgressIndicator())
             else ...[
               ElevatedButton.icon(
                 onPressed: _checkLocationStatus,
@@ -180,9 +174,9 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               ElevatedButton.icon(
                 onPressed: _testCurrentLocation,
                 icon: const Icon(Icons.location_on),
@@ -193,9 +187,9 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               ElevatedButton.icon(
                 onPressed: _testLocationProviders,
                 icon: const Icon(Icons.developer_mode),
@@ -231,10 +225,7 @@ class _LocationTestWidgetState extends State<LocationTestWidget> {
                       '• 에뮬레이터: Extended Controls > Location에서 한국 좌표 설정\n'
                       '• 실제 기기: 야외에서 GPS 신호가 잘 잡히는 곳에서 테스트\n'
                       '• 콘솔 로그에서 상세한 디버깅 정보 확인 가능',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.white),
                     ),
                   ],
                 ),
