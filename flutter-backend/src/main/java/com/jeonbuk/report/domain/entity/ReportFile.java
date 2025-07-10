@@ -87,8 +87,8 @@ public class ReportFile {
   @Builder.Default
   private Boolean isPrimary = false; // 대표 이미지 여부
 
-  @JdbcTypeCode(SqlTypes.ARRAY)
-  @Column(name = "tags", columnDefinition = "varchar(200)[]")
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "tags", columnDefinition = "jsonb")
   private List<String> tags; // 태그 배열
 
   // 메타데이터

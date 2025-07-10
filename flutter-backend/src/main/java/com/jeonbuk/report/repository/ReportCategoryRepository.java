@@ -12,19 +12,19 @@ import java.util.UUID;
  */
 @Repository
 public interface ReportCategoryRepository extends JpaRepository<ReportCategory, UUID> {
-    
+
     /**
      * 카테고리 이름으로 조회
      */
     Optional<ReportCategory> findByName(String name);
-    
+
     /**
      * 카테고리 코드로 조회
      */
     Optional<ReportCategory> findByCode(String code);
-    
+
     /**
      * 활성화된 카테고리만 조회
      */
-    Optional<ReportCategory> findByNameAndActiveTrue(String name);
+    Optional<ReportCategory> findByNameAndIsActiveTrue(String name);
 }

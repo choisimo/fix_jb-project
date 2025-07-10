@@ -21,7 +21,8 @@ public class OpenRouterDto {
         private String role; // "system", "user", "assistant"
         private String content;
 
-        public Message() {}
+        public Message() {
+        }
 
         public Message(String role, String content) {
             this.role = role;
@@ -54,18 +55,18 @@ public class OpenRouterDto {
     // 별칭 - 기존 코드 호환성을 위해
     public static class ChatResponse extends ChatCompletionResponse {
     }
-    
+
     // 추가 별칭들
     public static class ChatMessage extends Message {
         public ChatMessage() {
             super();
         }
-        
+
         public ChatMessage(String role, String content) {
             super(role, content);
         }
     }
-    
+
     public static class ChatRequest extends ChatCompletionRequest {
     }
 

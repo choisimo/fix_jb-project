@@ -3,16 +3,15 @@ spring:
   application:
     name: jeonbuk-report-platform
   
-  # Database Configuration (H2 인메모리 데이터베이스 - 시연용)
+  main:
+    allow-bean-definition-overriding: true
+  
+  # Database Configuration (PostgreSQL)
   datasource:
-    url: jdbc:h2:mem:testdb
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    url: jdbc:postgresql://localhost:5432/jeonbuk_report_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
     
   # JPA Configuration
   jpa:
@@ -20,12 +19,14 @@ spring:
       ddl-auto: create-drop
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-    show-sql: ${SHOW_SQL:false}
+    show-sql: ${SHOW_SQL:true}
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         use_sql_comments: true
+        jdbc:
+          time_zone: Asia/Seoul
   
   # Redis Configuration
   data:
@@ -39,24 +40,6 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
-  
-  # Kafka Configuration
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.JsonSerializer
-      properties:
-        enable.idempotence: true
-        acks: all
-        retries: 3
-    consumer:
-      group-id: report-service-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "com.jeonbuk.report.dto"
-        auto.offset.reset: earliest
   
   # File Upload Configuration
   servlet:

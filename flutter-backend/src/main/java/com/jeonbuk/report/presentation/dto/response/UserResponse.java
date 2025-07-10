@@ -99,7 +99,7 @@ public class UserResponse {
     if (user == null) {
       return null;
     }
-    
+
     return fromEntity(user);
   }
 }

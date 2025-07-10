@@ -29,8 +29,8 @@ public class JwtTokenProvider {
     private final long tokenValidityInMilliseconds;
 
     public JwtTokenProvider(
-        @Value("${jwt.secret:defaultSecretKeyForJeonbukReportPlatformApplication}") String secret,
-        @Value("${jwt.token-validity-in-seconds:86400}") long tokenValidityInSeconds) {
+            @Value("${jwt.secret:defaultSecretKeyForJeonbukReportPlatformApplication}") String secret,
+            @Value("${jwt.token-validity-in-seconds:86400}") long tokenValidityInSeconds) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
     }
@@ -40,18 +40,18 @@ public class JwtTokenProvider {
      */
     public String createToken(Authentication authentication) {
         String authorities = authentication.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority)
-            .collect(Collectors.joining(","));
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
         Date validity = new Date(now + this.tokenValidityInMilliseconds);
 
         return Jwts.builder()
-            .subject(authentication.getName())
-            .claim("auth", authorities)
-            .signWith(key)
-            .expiration(validity)
-            .compact();
+                .subject(authentication.getName())
+                .claim("auth", authorities)
+                .signWith(key)
+                .expiration(validity)
+                .compact();
     }
 
     /**
@@ -59,13 +59,12 @@ public class JwtTokenProvider {
      */
     public Authentication getAuthentication(String token) {
         Claims claims = Jwts.parser()
-            .verifyWith(key)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
 
-        Collection<? extends GrantedAuthority> authorities =
-            Arrays.stream(claims.get("auth").toString().split(","))
+        Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("auth").toString().split(","))
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
 

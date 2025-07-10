@@ -29,7 +29,7 @@ services:
     container_name: kafka
     ports:
       - "9092:9092"
-  
+
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -105,7 +105,7 @@ services:
       - jeonbuk_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d jeonbuk_reports"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d jeonbuk_report_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,7 +114,8 @@ services:
 volumes:
   kafka_data:
     driver: local
-  postgres_data: # 새로운 볼륨 추가
+  postgres_data:
+    # 새로운 볼륨 추가
     driver: local
 
 networks:

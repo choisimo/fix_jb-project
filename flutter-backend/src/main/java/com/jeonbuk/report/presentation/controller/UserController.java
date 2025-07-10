@@ -43,14 +43,14 @@ public class UserController {
       @Valid @RequestBody UserRegistrationRequest request) {
     try {
       log.info("사용자 등록 요청: {}", request.email());
-      
+
       User user = userService.registerUser(
           request.email(),
           request.password(),
           request.realName(),
           request.phoneNumber(),
           request.department());
-      
+
       UserResponse response = UserResponse.fromEntity(user);
       return ResponseEntity.status(HttpStatus.CREATED)
           .body(ApiResponse.success(response));
@@ -71,9 +71,8 @@ public class UserController {
       @Parameter(description = "사용자 ID") @PathVariable UUID userId) {
     try {
       log.info("사용자 조회 요청: {}", userId);
-      
-      User user = userService.findById(userId).orElseThrow(() -> 
-          new RuntimeException("사용자를 찾을 수 없습니다"));
+
+      User user = userService.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
       UserResponse response = UserResponse.fromEntity(user);
       return ResponseEntity.ok(ApiResponse.success(response));
     } catch (Exception e) {
@@ -94,13 +93,13 @@ public class UserController {
       @Valid @RequestBody UserUpdateRequest request) {
     try {
       log.info("사용자 정보 수정 요청: {}", userId);
-      
+
       User user = userService.updateUser(
           userId,
           request.name(),
           request.phone(),
           request.department());
-      
+
       UserResponse response = UserResponse.from(user);
       return ResponseEntity.ok(ApiResponse.success(response));
     } catch (Exception e) {
@@ -121,7 +120,7 @@ public class UserController {
       @Valid @RequestBody PasswordChangeRequest request) {
     try {
       log.info("비밀번호 변경 요청: {}", userId);
-      
+
       userService.changePassword(userId, request.currentPassword(), request.newPassword());
       return ResponseEntity.ok(ApiResponse.success(null));
     } catch (Exception e) {
@@ -141,7 +140,7 @@ public class UserController {
       @Parameter(description = "페이징 정보") Pageable pageable) {
     try {
       log.info("사용자 목록 조회 요청");
-      
+
       Page<User> users = userService.findAll(pageable);
       Page<UserResponse> response = users.map(user -> UserResponse.from(user));
       return ResponseEntity.ok(ApiResponse.success(response));
@@ -162,7 +161,7 @@ public class UserController {
       @Parameter(description = "사용자 ID") @PathVariable UUID userId) {
     try {
       log.info("사용자 비활성화 요청: {}", userId);
-      
+
       userService.deactivateUser(userId);
       return ResponseEntity.ok(ApiResponse.success(null));
     } catch (Exception e) {
@@ -182,7 +181,7 @@ public class UserController {
       @Parameter(description = "사용자 ID") @PathVariable UUID userId) {
     try {
       log.info("사용자 활성화 요청: {}", userId);
-      
+
       userService.activateUser(userId);
       return ResponseEntity.ok(ApiResponse.success(null));
     } catch (Exception e) {
@@ -202,7 +201,7 @@ public class UserController {
       @Parameter(description = "사용자 ID") @PathVariable UUID userId) {
     try {
       log.info("사용자 삭제 요청: {}", userId);
-      
+
       userService.deleteUser(userId);
       return ResponseEntity.ok(ApiResponse.success(null));
     } catch (Exception e) {
@@ -221,7 +220,7 @@ public class UserController {
       @Parameter(description = "이메일") @RequestParam String email) {
     try {
       log.info("이메일 중복 확인 요청: {}", email);
-      
+
       boolean exists = userService.existsByEmail(email);
       return ResponseEntity.ok(ApiResponse.success(!exists));
     } catch (Exception e) {
