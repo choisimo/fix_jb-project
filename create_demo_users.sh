@@ -16,7 +16,7 @@ if curl -s --max-time 5 "$BASE_URL" > /dev/null; then
     echo "✅ 서버가 실행 중입니다."
 else
     echo "❌ 서버에 연결할 수 없습니다. 서버가 실행되고 있는지 확인해주세요."
-    echo "💡 서버 실행: cd flutter-backend && ./gradlew bootRun"
+    echo "💡 서버 실행: cd main-api-server && ./gradlew bootRun"
     exit 1
 fi
 echo

@@ -236,7 +236,7 @@ Roboflow 대시보드에서 확인:
 3. 프로젝트 공개 설정 확인
 ```
 
-#### 3. 모델 훈련 미완료
+
 ```
 오류: "Model training in progress"
 해결:
