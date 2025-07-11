@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 네이버 맵 API 도메인 -->
+        <domain includeSubdomains="true">navermaps.apigw.ntruss.com</domain>
+        <domain includeSubdomains="true">naver.map</domain>
+        <domain includeSubdomains="true">map.naver.com</domain>
+        <domain includeSubdomains="true">nmaps.navercorp.com</domain>
+        
+        <!-- 개발 환경 -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    
+    <!-- 기본 보안 설정 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

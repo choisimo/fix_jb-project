@@ -3,9 +3,9 @@
 ## ✅ 현재 상태
 - ✅ Python 패키지 설치 완료 (`roboflow`, `requests`, `pillow`)
 - ✅ 테스트 모드 정상 작동 확인
-- ⚠️ 실제 API 키 설정 필요
+- ⚠️ 실제 API 키 설정 필요 (AI 기능 사용 시)
 
-## 🎯 다음 단계: 실제 API 키 설정
+## 🎯 단계별 실행 가이드
 
 ### 1단계: Roboflow 계정 생성 (무료)
 1. [Roboflow.com](https://roboflow.com) 방문
@@ -23,14 +23,13 @@
 3. 프로젝트 이름 입력 (예: `field-reports`)
 4. 워크스페이스 이름 확인 (보통 계정명과 동일)
 
-### 4단계: .env 파일 수정
+### 4단계: .env 파일 설정
 ```bash
-# 현재 경로: /home/nodove/workspace/fix_jb-project/.env
+# 루트 디렉토리에서 .env 파일 생성/수정
 nano .env
 ```
-
-다음 내용을 실제 값으로 교체:
-```env
+아래 항목을 실제 값으로 입력:
+```
 ROBOFLOW_API_KEY=your_actual_api_key_here
 ROBOFLOW_WORKSPACE=your_workspace_name
 ROBOFLOW_PROJECT=your_project_name
@@ -43,16 +42,15 @@ ROBOFLOW_PROJECT=your_project_name
 python3 roboflow_test.py --check-config
 ```
 
-### 2. 모의 테스트 (API 키 없이도 가능)
+### 2. 테스트 모드 실행 (API 키 없이도 가능)
 ```bash
 python3 roboflow_test.py --test
 ```
 
-### 3. 실제 API 테스트 (API 키 설정 후)
+### 3. 실제 API 테스트 (API 키 필요)
 ```bash
 # 샘플 이미지 다운로드
 python3 download_test_images.py
-
 # 실제 이미지 분석
 python3 roboflow_test.py --image test_images/sample1.jpg
 ```
@@ -62,34 +60,36 @@ python3 roboflow_test.py --image test_images/sample1.jpg
 python3 roboflow_test.py --test-backend
 ```
 
-## 🔧 문제 해결
+## 🛠️ 문제 해결
+- **403 Forbidden**: API 키, 워크스페이스/프로젝트 이름, 인터넷 연결 확인
+- **모듈 미설치**: `pip3 install roboflow requests pillow python-dotenv`
+- **이미지 파일 오류**: 경로/확장자/크기(10MB 이하) 확인
 
-### ❌ 403 Forbidden 오류
-- API 키가 올바른지 확인
-- 워크스페이스/프로젝트 이름 확인
-- 인터넷 연결 상태 확인
-
-### ❌ 모듈 임포트 오류
-```bash
-pip3 install roboflow requests pillow python-dotenv
+## 📁 프로젝트 구조 (요약)
 ```
-
-### ❌ 이미지 파일 오류
-- 파일 경로 확인
-- 지원 형식: JPG, PNG, BMP
-- 파일 크기: 10MB 이하
-
-## 📁 프로젝트 구조
+fix_jeonbuk/
+  ├── roboflow_test.py          # 메인 테스트 스크립트
+  ├── config_manager.py         # 설정 관리
+  ├── download_test_images.py   # 샘플 이미지 다운로드
+  ├── run_guide.py              # 설정 가이드
+  ├── analyze_image.py          # AI 이미지 분석
+  ├── integration_test.py       # 통합 테스트
+  ├── simple_test.py            # 간단 테스트
+  ├── test_api_key.py           # API 키 테스트
+  ├── setup_and_test.py         # 환경설정 및 테스트
+  ├── .env                      # 환경변수 설정
+  ├── .env.example              # 설정 예제
+  ├── documents/README.md       # 프로젝트 소개 및 가이드
+  ├── documents/QUICK_START_GUIDE.md # 빠른 시작 가이드
+  ├── documents/PROJECT_STATUS_SUMMARY.md # 진행상황 요약
+  └── flutter-app/              # Flutter 모바일/웹 앱
+      └── lib/                  # 주요 기능별 폴더
+      └── test/                 # 테스트 코드
+  └── spring-backend/           # Spring Boot 백엔드
+      └── src/                  # 서비스/엔티티/컨트롤러 등
+  └── database/                 # DB 스키마 및 초기화
+  └── docker-compose.yml        # 서비스 오케스트레이션
 ```
-fix_jb-project/
-├── roboflow_test.py          # 메인 테스트 스크립트
-├── config_manager.py         # 설정 관리
-├── download_test_images.py   # 샘플 이미지 다운로드
-├── run_guide.py             # 설정 가이드
-├── .env                     # 환경변수 설정
-└── .env.example            # 설정 예제
-```
-
 ## 🎉 성공 시 예상 출력
 ```
 🚀 전북 현장 보고 시스템 - Roboflow AI 분석
@@ -103,7 +103,7 @@ fix_jb-project/
 📌 우선순위: 높음
 ```
 
-## 📞 추가 도움
-- 📋 상세 설정 가이드: `ROBOFLOW_SETUP_STEP_BY_STEP.md`
-- 🔧 통합 가이드: `ROBOFLOW_INTEGRATION_COMPLETE.md`
-- 🚀 향상된 가이드: `ROBOFLOW_AI_ENHANCED_GUIDE.md`
+## 📚 추가 도움말
+- 상세 설정 가이드: `ROBOFLOW_SETUP_STEP_BY_STEP.md`
+- 통합 가이드: `ROBOFLOW_INTEGRATION_COMPLETE.md`
+- AI 고도화 가이드: `ROBOFLOW_AI_ENHANCED_GUIDE.md`

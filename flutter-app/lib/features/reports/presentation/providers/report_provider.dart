@@ -5,10 +5,12 @@ import 'package:geolocator/geolocator.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/requests/report_create_request.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/ai/hybrid_analysis_manager.dart';
 
 class ReportProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
   final ImagePicker _imagePicker = ImagePicker();
+  final HybridAnalysisManager _analysisManager = HybridAnalysisManager.instance;
 
   // 기존 리스트 관련 상태
   List<Report> _reports = [];
@@ -19,11 +21,13 @@ class ReportProvider extends ChangeNotifier {
 
   // 새로운 신고서 작성 관련 상태
   final List<File> _selectedImages = [];
+  final Map<String, HybridAnalysisResult> _analysisResults = {};
   Position? _currentPosition;
   String _title = '';
   String _content = '';
   ReportCategory _category = ReportCategory.safety;
   bool _isCreating = false;
+  bool _isAnalyzing = false;
   String? _error;
 
   // 기존 Getter들
@@ -33,11 +37,13 @@ class ReportProvider extends ChangeNotifier {
 
   // 새로운 Getter들
   List<File> get selectedImages => List.unmodifiable(_selectedImages);
+  Map<String, HybridAnalysisResult> get analysisResults => Map.unmodifiable(_analysisResults);
   Position? get currentPosition => _currentPosition;
   String get title => _title;
   String get content => _content;
   ReportCategory get category => _category;
   bool get isCreating => _isCreating;
+  bool get isAnalyzing => _isAnalyzing;
   String? get error => _error;
   bool get canSubmit => _title.isNotEmpty && _content.isNotEmpty;
 
@@ -178,9 +184,13 @@ class ReportProvider extends ChangeNotifier {
       );
 
       if (pickedFile != null && _selectedImages.length < 5) {
-        _selectedImages.add(File(pickedFile.path));
+        final imageFile = File(pickedFile.path);
+        _selectedImages.add(imageFile);
         _error = null;
         notifyListeners();
+
+        // 자동 이미지 분석 수행
+        await _analyzeImage(imageFile);
       }
     } catch (e) {
       _error = '카메라 오류: $e';
@@ -196,21 +206,206 @@ class ReportProvider extends ChangeNotifier {
         imageQuality: 85,
       );
 
+      final newImages = <File>[];
       for (var file in pickedFiles) {
         if (_selectedImages.length >= 5) break;
-        _selectedImages.add(File(file.path));
+        final imageFile = File(file.path);
+        _selectedImages.add(imageFile);
+        newImages.add(imageFile);
       }
+      
       _error = null;
       notifyListeners();
+
+      // 새로 추가된 이미지들 자동 분석
+      for (final imageFile in newImages) {
+        await _analyzeImage(imageFile);
+      }
     } catch (e) {
       _error = '갤러리 오류: $e';
       notifyListeners();
     }
   }
 
+  /// 이미지 자동 분석 수행
+  Future<void> _analyzeImage(File imageFile) async {
+    try {
+      debugPrint('🔍 이미지 자동 분석 시작: ${imageFile.path}');
+      
+      _isAnalyzing = true;
+      notifyListeners();
+
+      // 하이브리드 분석 수행 (빠른 모드)
+      final result = await _analysisManager.analyzeImage(
+        imageFile,
+        mode: AnalysisMode.comprehensive,
+        enableOCR: true,
+        enableObjectDetection: true,
+        enableAIAgent: true,
+      );
+
+      _analysisResults[imageFile.path] = result;
+      
+      debugPrint('✅ 이미지 분석 완료: ${result.summary}');
+
+      // AI 분석 결과를 기반으로 자동 텍스트 보완
+      _autoCompleteFromAnalysis(result);
+
+    } catch (e) {
+      debugPrint('❌ 이미지 분석 오류: $e');
+      _error = '이미지 분석 오류: $e';
+    } finally {
+      _isAnalyzing = false;
+      notifyListeners();
+    }
+  }
+
+  /// 분석 결과를 기반으로 제목과 내용 자동 보완
+  void _autoCompleteFromAnalysis(HybridAnalysisResult result) {
+    if (!result.isSuccessful) return;
+
+    final suggestions = <String>[];
+
+    // OCR 텍스트에서 주요 정보 추출
+    if (result.ocrResult?.hasText == true) {
+      final extractedInfo = result.ocrResult!.extractedInfo;
+      
+      if (extractedInfo.primaryAddress.isNotEmpty) {
+        suggestions.add('위치: ${extractedInfo.primaryAddress}');
+      }
+      
+      if (extractedInfo.keywords.isNotEmpty) {
+        suggestions.add('키워드: ${extractedInfo.keywords.join(', ')}');
+      }
+    }
+
+    // 객체 감지 결과 추가
+    if (result.detectionResult?.hasDetections == true) {
+      final detections = result.detectionResult!.detections
+          .map((d) => d.name)
+          .take(3)
+          .join(', ');
+      suggestions.add('감지된 객체: $detections');
+    }
+
+    // AI 분석 결과 추가
+    if (result.aiAnalysisResult?.isSuccessful == true) {
+      final analysis = result.aiAnalysisResult!.analysis;
+      
+      // 제목이 비어있으면 AI 요약을 기반으로 제안
+      if (_title.isEmpty && analysis.summary.isNotEmpty) {
+        final titleSuggestion = _generateTitleFromSummary(analysis.summary);
+        if (titleSuggestion.isNotEmpty) {
+          _title = titleSuggestion;
+        }
+      }
+      
+      // 내용에 AI 분석 결과 추가
+      if (suggestions.isNotEmpty) {
+        final autoContent = '''
+분석 결과:
+${suggestions.join('\n')}
+
+위험도: ${analysis.riskLevelText} (${analysis.riskLevel}/5)
+긴급도: ${analysis.urgencyText}
+담당 부서: ${analysis.responsibleDepartment}
+
+추천 조치사항:
+${analysis.recommendations.map((r) => '• $r').join('\n')}
+
+${_content.isNotEmpty ? '\n추가 내용:\n$_content' : ''}
+        '''.trim();
+        
+        _content = autoContent;
+      }
+
+      // 카테고리 자동 설정
+      _autoSetCategoryFromAnalysis(analysis);
+    }
+
+    notifyListeners();
+  }
+
+  /// AI 요약에서 제목 생성
+  String _generateTitleFromSummary(String summary) {
+    final words = summary.split(' ').take(8).join(' ');
+    if (words.length > 50) {
+      return '${words.substring(0, 47)}...';
+    }
+    return words;
+  }
+
+  /// AI 분석 결과를 기반으로 카테고리 자동 설정
+  void _autoSetCategoryFromAnalysis(AIAnalysis analysis) {
+    final summary = analysis.summary.toLowerCase();
+    final recommendations = analysis.recommendations.join(' ').toLowerCase();
+    
+    if (summary.contains('도로') || summary.contains('포트홀') || 
+        summary.contains('교통') || recommendations.contains('도로')) {
+      _category = ReportCategory.safety;
+    } else if (summary.contains('건설') || summary.contains('공사') ||
+               recommendations.contains('건설')) {
+      _category = ReportCategory.progress;
+    } else if (summary.contains('품질') || summary.contains('불량') ||
+               analysis.riskLevel >= 3) {
+      _category = ReportCategory.quality;
+    } else if (summary.contains('유지') || summary.contains('보수') ||
+               recommendations.contains('점검')) {
+      _category = ReportCategory.maintenance;
+    }
+  }
+
+  /// 특정 이미지 수동 재분석
+  Future<void> reanalyzeImage(String imagePath) async {
+    final imageFile = File(imagePath);
+    if (await imageFile.exists()) {
+      await _analyzeImage(imageFile);
+    }
+  }
+
+  /// 모든 이미지 배치 분석
+  Future<void> analyzeAllImages() async {
+    if (_selectedImages.isEmpty) return;
+
+    try {
+      _isAnalyzing = true;
+      notifyListeners();
+
+      final results = await _analysisManager.analyzeBatch(
+        _selectedImages,
+        maxConcurrency: 2,
+        mode: AnalysisMode.comprehensive,
+      );
+
+      for (final result in results) {
+        _analysisResults[result.imagePath] = result;
+      }
+
+      // 가장 신뢰도 높은 결과로 텍스트 보완
+      final bestResult = results
+          .where((r) => r.isSuccessful)
+          .reduce((a, b) => 
+              (a.aiAnalysisResult?.confidence ?? 0) > 
+              (b.aiAnalysisResult?.confidence ?? 0) ? a : b);
+      
+      _autoCompleteFromAnalysis(bestResult);
+
+    } catch (e) {
+      _error = '배치 분석 오류: $e';
+    } finally {
+      _isAnalyzing = false;
+      notifyListeners();
+    }
+  }
+
   void removeImage(int index) {
     if (index >= 0 && index < _selectedImages.length) {
+      final removedImagePath = _selectedImages[index].path;
       _selectedImages.removeAt(index);
+      
+      // 해당 이미지의 분석 결과도 제거
+      _analysisResults.remove(removedImagePath);
+      
       notifyListeners();
     }
   }
@@ -278,6 +473,9 @@ class ReportProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
+      // 분석 결과를 포함한 보고서 데이터 구성
+      final analysisData = _buildAnalysisData();
+
       final report = ReportCreateRequest(
         title: _title,
         content: _content,
@@ -287,7 +485,7 @@ class ReportProvider extends ChangeNotifier {
         images: _selectedImages,
       );
 
-      // API 호출 (multipart/form-data 처리)
+      // API 호출 (multipart/form-data 처리) - 분석 결과 포함
       final response = await _apiClient.postMultipart(
           '/reports',
           {
@@ -296,6 +494,7 @@ class ReportProvider extends ChangeNotifier {
             'category': report.category.name,
             'latitude': report.latitude?.toString(),
             'longitude': report.longitude?.toString(),
+            'analysisData': analysisData, // 분석 결과 추가
           },
           _selectedImages);
 
@@ -318,9 +517,32 @@ class ReportProvider extends ChangeNotifier {
     }
   }
 
+  /// 분석 결과 데이터 구성
+  String _buildAnalysisData() {
+    if (_analysisResults.isEmpty) return '';
+
+    final analysisDataList = <Map<String, dynamic>>[];
+    
+    for (final entry in _analysisResults.entries) {
+      final result = entry.value;
+      if (result.isSuccessful) {
+        analysisDataList.add(result.toJson());
+      }
+    }
+
+    // JSON 문자열로 직렬화
+    try {
+      return analysisDataList.toString(); // 간단한 문자열 변환
+    } catch (e) {
+      debugPrint('분석 데이터 직렬화 오류: $e');
+      return '';
+    }
+  }
+
   // 폼 초기화
   void clearForm() {
     _selectedImages.clear();
+    _analysisResults.clear();
     _currentPosition = null;
     _title = '';
     _content = '';

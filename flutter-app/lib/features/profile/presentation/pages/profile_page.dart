@@ -187,16 +187,64 @@ class _ProfilePageState extends State<ProfilePage> {
                             TextButton(
                               onPressed: () async {
                                 Navigator.pop(context);
-                                await AuthService.instance.logout();
-                                if (context.mounted) {
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    '/login',
-                                    (route) => false,
-                                  );
+                                
+                                // 로딩 인디케이터 표시
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const AlertDialog(
+                                    content: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircularProgressIndicator(),
+                                        SizedBox(width: 16),
+                                        Text('로그아웃 중...'),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                                
+                                try {
+                                  await AuthService.instance.logout();
+                                  
+                                  if (context.mounted) {
+                                    // 로딩 다이얼로그 닫기
+                                    Navigator.pop(context);
+                                    
+                                    // 로그인 페이지로 이동 (모든 이전 페이지 제거)
+                                    Navigator.pushNamedAndRemoveUntil(
+                                      context,
+                                      '/login',
+                                      (route) => false,
+                                    );
+                                    
+                                    // 성공 메시지
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('로그아웃되었습니다.'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    // 로딩 다이얼로그 닫기
+                                    Navigator.pop(context);
+                                    
+                                    // 에러 메시지
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('로그아웃 중 오류가 발생했습니다: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
                                 }
                               },
-                              child: const Text('로그아웃'),
+                              child: const Text(
+                                '로그아웃',
+                                style: TextStyle(color: Colors.red),
+                              ),
                             ),
                           ],
                         ),

@@ -13,139 +13,207 @@ class ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      report.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Card(
+        elevation: 3,
+        shadowColor: colorScheme.shadow.withOpacity(0.15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme.surface,
+                  colorScheme.surface.withOpacity(0.98),
+                ],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 제목과 상태
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        report.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildStatusChip(report.status),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                report.content,
-                style: TextStyle(
-                  color: Colors.grey[600],
+                    const SizedBox(width: 12),
+                    _buildStatusChip(report.status, colorScheme),
+                  ],
                 ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _buildCategoryChip(report.category),
-                  const SizedBox(width: 8),
-                  _buildPriorityChip(report.priority),
-                  const Spacer(),
-                  if (report.imageUrls.isNotEmpty)
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.image,
+                
+                const SizedBox(height: 12),
+                
+                // 내용
+                Text(
+                  report.content,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.8),
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 카테고리와 우선순위
+                Row(
+                  children: [
+                    _buildCategoryChip(report.category, colorScheme),
+                    const SizedBox(width: 8),
+                    _buildPriorityChip(report.priority, colorScheme),
+                    const Spacer(),
+                    if (report.imageUrls.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.image_outlined,
+                              size: 16,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${report.imageUrls.length}',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 작성자와 날짜
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.person_outline,
                           size: 16,
-                          color: Colors.grey,
+                          color: colorScheme.primary,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${report.imageUrls.length}',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        report.authorName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.8),
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.person,
-                    size: 16,
-                    color: Colors.grey[600],
+                      ),
+                      const Spacer(),
+                      Text(
+                        _formatDate(report.createdAt),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    report.authorName,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _formatDate(report.createdAt),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusChip(ReportStatus status) {
+  Widget _buildStatusChip(ReportStatus status, ColorScheme colorScheme) {
     Color color;
     String text;
     
     switch (status) {
       case ReportStatus.draft:
-        color = Colors.grey;
+        color = colorScheme.outline;
         text = '임시저장';
         break;
       case ReportStatus.submitted:
-        color = Colors.blue;
+        color = colorScheme.primary;
         text = '제출완료';
         break;
       case ReportStatus.approved:
-        color = Colors.green;
+        color = const Color(0xFF4CAF50);
         text = '승인';
         break;
       case ReportStatus.rejected:
-        color = Colors.red;
+        color = colorScheme.error;
         text = '반려';
         break;
     }
 
-    return Chip(
-      label: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.white,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
         ),
       ),
-      backgroundColor: color,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          color: color,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 
-  Widget _buildCategoryChip(ReportCategory category) {
+  Widget _buildCategoryChip(ReportCategory category, ColorScheme colorScheme) {
     String text;
     
     switch (category) {
@@ -166,40 +234,48 @@ class ReportCard extends StatelessWidget {
         break;
     }
 
-    return Chip(
-      label: Text(
-        text,
-        style: const TextStyle(fontSize: 12),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(12),
       ),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          color: colorScheme.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
-  Widget _buildPriorityChip(ReportPriority priority) {
+  Widget _buildPriorityChip(ReportPriority priority, ColorScheme colorScheme) {
     Color color;
     String text;
     
     switch (priority) {
       case ReportPriority.low:
-        color = Colors.green;
+        color = const Color(0xFF4CAF50);
         text = '낮음';
         break;
       case ReportPriority.normal:
-        color = Colors.blue;
+        color = colorScheme.primary;
         text = '보통';
         break;
       case ReportPriority.high:
-        color = Colors.orange;
+        color = const Color(0xFFFF9800);
         text = '높음';
         break;
       case ReportPriority.urgent:
-        color = Colors.red;
+        color = colorScheme.error;
         text = '긴급';
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
@@ -210,7 +286,7 @@ class ReportCard extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           color: color,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

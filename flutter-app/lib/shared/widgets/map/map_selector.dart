@@ -32,20 +32,45 @@ class _MapSelectorState extends State<MapSelector> {
   NLatLng? _selectedPosition;
   String _selectedAddress = '';
   bool _isLoading = false;
+  bool _mapInitialized = false;
+  String? _initializationError;
 
-  // 기본 위치 (서울시청)
   static const NLatLng _defaultPosition = NLatLng(37.5665, 126.9780);
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialPosition != null) {
-      _selectedPosition = widget.initialPosition;
-      _updateMarker(_selectedPosition!);
-      _updateAddress(_selectedPosition!);
-    } else {
-      _setCurrentLocationOnInit();
+    _initializeMap();
+  }
+
+  Future<void> _initializeMap() async {
+    try {
+      await _checkNaverMapSdkStatus();
+      
+      if (widget.initialPosition != null) {
+        _selectedPosition = widget.initialPosition;
+        _updateMarker(_selectedPosition!);
+        _updateAddress(_selectedPosition!);
+      } else {
+        _setCurrentLocationOnInit();
+      }
+      
+      setState(() {
+        _mapInitialized = true;
+      });
+    } catch (e) {
+      setState(() {
+        _initializationError = e.toString();
+        _selectedPosition = _defaultPosition;
+        _mapInitialized = true;
+      });
+      print('🚨 지도 초기화 실패: $e');
     }
+  }
+
+  Future<void> _checkNaverMapSdkStatus() async {
+    await Future.delayed(Duration(milliseconds: 100));
+    print('🔍 네이버 맵 SDK 상태 확인 완료');
   }
 
   void _setCurrentLocationOnInit() async {
@@ -92,7 +117,11 @@ class _MapSelectorState extends State<MapSelector> {
         borderRadius: BorderRadius.circular(12),
         child: Stack(
           children: [
-            if (_selectedPosition != null)
+            if (_initializationError != null)
+              _buildErrorWidget()
+            else if (!_mapInitialized || _selectedPosition == null)
+              const Center(child: CircularProgressIndicator())
+            else
               NaverMap(
                 options: NaverMapViewOptions(
                   initialCameraPosition: NCameraPosition(
@@ -106,12 +135,9 @@ class _MapSelectorState extends State<MapSelector> {
                 onMapTapped: widget.allowLocationSelection
                     ? _onMapTapped
                     : null,
-              )
-            else
-              const Center(child: CircularProgressIndicator()),
+              ),
 
-            // 현재 위치 버튼
-            if (widget.showCurrentLocationButton)
+            if (widget.showCurrentLocationButton && _mapInitialized)
               Positioned(
                 top: 16,
                 right: 16,
@@ -128,8 +154,7 @@ class _MapSelectorState extends State<MapSelector> {
                 ),
               ),
 
-            // 주소 정보 표시
-            if (_selectedAddress.isNotEmpty)
+            if (_selectedAddress.isNotEmpty && _mapInitialized)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -201,6 +226,58 @@ class _MapSelectorState extends State<MapSelector> {
     );
   }
 
+  Widget _buildErrorWidget() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Colors.red.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '지도를 로드할 수 없습니다',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _initializationError ?? '네이버 맵 초기화 실패',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _initializationError = null;
+                _mapInitialized = false;
+              });
+              _initializeMap();
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('다시 시도'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _onMapReady(NaverMapController controller) {
     print('🗺️ 네이버 맵 컨트롤러 준비 완료');
     _mapController = controller;
@@ -210,7 +287,6 @@ class _MapSelectorState extends State<MapSelector> {
       _mapController!.addOverlayAll(_markers);
     }
 
-    // 네트워크 상태 확인
     _checkNetworkAndMapStatus();
   }
 

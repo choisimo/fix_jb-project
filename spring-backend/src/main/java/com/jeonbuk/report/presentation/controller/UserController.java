@@ -5,6 +5,7 @@ import com.jeonbuk.report.domain.entity.User;
 import com.jeonbuk.report.presentation.dto.request.UserRegistrationRequest;
 import com.jeonbuk.report.presentation.dto.request.UserUpdateRequest;
 import com.jeonbuk.report.presentation.dto.request.PasswordChangeRequest;
+import com.jeonbuk.report.infrastructure.security.jwt.JwtTokenProvider;
 import com.jeonbuk.report.presentation.dto.response.UserResponse;
 import com.jeonbuk.report.presentation.dto.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,10 +40,24 @@ import java.util.stream.Collectors;
 public class UserController {
 
   private final UserService userService;
+  private final JwtTokenProvider jwtTokenProvider;
 
-  @Operation(summary = "사용자 등록", description = "새로운 사용자를 등록합니다.")
-  @PostMapping("/register")
-  public ResponseEntity<ApiResponse<UserResponse>> registerUser(
+  @Operation(summary = "JWT 로그인", description = "이메일/패스워드로 로그인하여 JWT 토큰을 발급합니다.")
+  @PostMapping("/login")
+  public ResponseEntity<ApiResponse<String>> login(@RequestParam String email, @RequestParam String password) {
+    return userService.authenticateUser(email, password)
+        .map(user -> {
+          String token = jwtTokenProvider.createToken(user.getEmail());
+          return ResponseEntity.ok(ApiResponse.success("로그인 성공", token));
+        })
+        .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error("이메일 또는 패스워드가 올바르지 않습니다.")));
+  }
+
+  @Operation(summary = "사용자 등록", description = "새로운 사용자를 등록합니다. (관리자 전용)")
+  @PostMapping("/register-admin")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<UserResponse>> registerUserByAdmin(
       @Valid @RequestBody UserRegistrationRequest request) {
 
     try {

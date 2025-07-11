@@ -27,7 +27,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService {
+public class UserService implements org.springframework.security.core.userdetails.UserDetailsService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -257,4 +257,30 @@ public class UserService {
     LocalDateTime since = LocalDateTime.now().minusDays(days);
     return userRepository.findRecentlyActiveUsers(since);
   }
+
+  /**
+   * 중복 검증 메서드
+   */
+  public boolean isNameAvailable(String name) {
+    return !userRepository.existsByNameAndIsActiveTrue(name);
+  }
+
+  public boolean isPhoneAvailable(String phone) {
+    return !userRepository.existsByPhone(phone);
+  }
+    /**
+     * Spring Security - UserDetailsService 구현
+     */
+    @Override
+    public org.springframework.security.core.userdetails.UserDetails loadUserByUsername(String email) throws org.springframework.security.core.userdetails.UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
+        // User 엔티티를 UserDetails로 변환 (필요시 커스텀 UserDetails 구현 가능)
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPasswordHash())
+                .roles(user.getRole().name())
+                .disabled(!user.getIsActive())
+                .build();
+    }
 }

@@ -34,18 +34,15 @@ class LocationService {
     return true;
   }
 
-  /// 현재 위치 가져오기 (개선된 버전)
   Future<Position> getCurrentPosition() async {
     try {
       print('🔍 위치 서비스 시작...');
 
-      // 디버깅 정보 출력
       await debugLocationService();
 
       await requestLocationPermission();
       print('✅ 위치 권한 확인 완료');
 
-      // 여러 정확도 레벨로 시도
       List<LocationAccuracy> accuracyLevels = [
         LocationAccuracy.best,
         LocationAccuracy.high,
@@ -65,7 +62,6 @@ class LocationService {
           print('✅ 위치 획득 성공: ${position.latitude}, ${position.longitude}');
           print('📊 정확도: ${position.accuracy}m, 시간: ${position.timestamp}');
 
-          // 한국 범위 확인
           bool isInKorea = _isPositionInKorea(position);
           print('🏠 위치 확인: ${isInKorea ? "한국 내" : "해외"}');
 
@@ -81,7 +77,6 @@ class LocationService {
         }
       }
 
-      // 모든 정확도 레벨 실패시 마지막 위치 시도
       Position? lastPosition = await Geolocator.getLastKnownPosition();
       if (lastPosition != null) {
         print(

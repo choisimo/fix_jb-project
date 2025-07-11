@@ -92,81 +92,282 @@ class _ReportListPageState extends State<ReportListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('보고서 목록'),
+        elevation: 0,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshReports,
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.refresh,
+                color: colorScheme.primary,
+              ),
+              onPressed: _refreshReports,
+              tooltip: '새로고침',
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilterDialog(),
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.filter_list,
+                color: colorScheme.secondary,
+              ),
+              onPressed: () => _showFilterDialog(),
+              tooltip: '필터',
+            ),
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshReports,
-        child: _filteredReports.isEmpty
-            ? const Center(
-                child: Text(
-                  '조건에 맞는 보고서가 없습니다.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.surface,
+              colorScheme.surface.withOpacity(0.95),
+            ],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: _refreshReports,
+          color: colorScheme.primary,
+          backgroundColor: colorScheme.surface,
+          child: _filteredReports.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.assignment_outlined,
+                          size: 64,
+                          color: colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        '조건에 맞는 보고서가 없습니다',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '새로운 보고서를 작성해보세요',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _filteredReports.length,
+                  itemBuilder: (context, index) {
+                    final report = _filteredReports[index];
+                    return _buildReportCard(report, index);
+                  },
                 ),
-              )
-            : ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: _filteredReports.length,
-                itemBuilder: (context, index) {
-                  final report = _filteredReports[index];
-                  return _buildReportCard(report);
-                },
-              ),
+        ),
       ),
     );
   }
 
-  Widget _buildReportCard(Map<String, dynamic> report) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        title: Text(
-          report['title'] ?? '',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+  Widget _buildReportCard(Map<String, dynamic> report, int index) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: 16,
+        top: index == 0 ? 8 : 0,
+      ),
+      child: Card(
+        elevation: 3,
+        shadowColor: colorScheme.shadow.withOpacity(0.2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('카테고리: ${report['category']}'),
-            Text('위치: ${report['location']}'),
-            Text('날짜: ${report['date']}'),
-          ],
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: _getStatusColor(report['status']),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            report['status'] ?? '',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/reports/detail',
+              arguments: report['id'],
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme.surface,
+                  colorScheme.surface.withOpacity(0.98),
+                ],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 헤더 영역
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        report['title'] ?? '',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStatusChip(report['status'], colorScheme),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 정보 영역
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outline.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildInfoRow(
+                        Icons.category_outlined,
+                        '카테고리',
+                        report['category'] ?? '',
+                        colorScheme,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        Icons.location_on_outlined,
+                        '위치',
+                        report['location'] ?? '',
+                        colorScheme,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        Icons.schedule_outlined,
+                        '날짜',
+                        report['date'] ?? '',
+                        colorScheme,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            '/reports/detail',
-            arguments: report['id'],
-          );
-        },
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    ColorScheme colorScheme,
+  ) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusChip(String? status, ColorScheme colorScheme) {
+    final statusColor = _getStatusColor(status);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: statusColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        status ?? '',
+        style: TextStyle(
+          color: statusColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

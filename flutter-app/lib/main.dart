@@ -6,6 +6,7 @@ import 'app/routes/app_routes.dart';
 import 'core/auth/auth_service.dart';
 import 'core/storage/storage_service.dart';
 import 'core/theme/theme_manager.dart';
+import 'core/utils/naver_map_connection_test.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 
 void main() async {
@@ -17,6 +18,14 @@ void main() async {
     print('📱 클라이언트 ID: 6gmofoay96');
     print('📦 패키지명: com.example.flutter.report.app (릴리즈)');
     print('📦 패키지명: com.example.flutter.report.app.debug (디버그)');
+
+    // 네트워크 연결 테스트 먼저 수행
+    try {
+      final connectionResults = await NaverMapConnectionTest.testConnection();
+      NaverMapConnectionTest.printTestResults(connectionResults);
+    } catch (e) {
+      print('⚠️ 네트워크 테스트 실패: $e');
+    }
 
     await NaverMapSdk.instance.initialize(
       clientId: '6gmofoay96', // Your actual Naver Maps client ID
@@ -140,7 +149,8 @@ class MyApp extends StatelessWidget {
             fontSize: ThemeManager.instance.fontSize,
           ),
           themeMode: ThemeManager.instance.themeMode,
-          home: const LoginPage(),
+          home: null, // initialRoute를 사용하기 위해 null로 설정
+          initialRoute: AppRoutes.splash, // 스플래시 페이지로 시작
           onGenerateRoute: AppRoutes.generateRoute,
           debugShowCheckedModeBanner: false,
           // 렌더링 안정성을 위한 builder 추가

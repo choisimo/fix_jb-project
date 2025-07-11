@@ -3,28 +3,39 @@ import 'package:flutter/foundation.dart';
 import '../../core/theme/theme_manager.dart';
 
 class AppTheme {
-  // 전북 특색을 담은 색상 팔레트
-  static const Color _primaryGreen = Color(0xFF2E7D32); // 전북의 자연을 상징하는 녹색
-  static const Color _accentBlue = Color(0xFF1976D2); // 전북의 하늘을 상징하는 파란색
+  // 전북 특색을 담은 현대적 색상 팔레트
+  static const Color _primaryGreen = Color(0xFF4CAF50); // 더 밝고 현대적인 녹색
+  static const Color _secondaryGreen = Color(0xFF81C784); // 보조 녹색
+  static const Color _accentBlue = Color(0xFF2196F3); // 더 선명한 파란색
+  static const Color _deepBlue = Color(0xFF1565C0); // 진한 파란색
   static const Color _warningOrange = Color(0xFFFF9800); // 경고/알림용
-  static const Color _errorRed = Color(0xFFD32F2F); // 오류/위험용
+  static const Color _errorRed = Color(0xFFF44336); // 오류/위험용
+  static const Color _successGreen = Color(0xFF4CAF50); // 성공용
+  static const Color _surfaceLight = Color(0xFFFAFAFA); // 밝은 표면색
+  static const Color _surfaceDark = Color(0xFF121212); // 어두운 표면색
 
   static ColorScheme get _lightColorScheme => ColorScheme.fromSeed(
     seedColor: _primaryGreen,
     brightness: Brightness.light,
     primary: _primaryGreen,
-    secondary: _accentBlue,
-    tertiary: _warningOrange,
+    secondary: _secondaryGreen,
+    tertiary: _accentBlue,
     error: _errorRed,
+    surface: _surfaceLight,
+    onSurface: const Color(0xFF1A1A1A),
+    surfaceContainerHighest: const Color(0xFFF5F5F5),
   );
 
   static ColorScheme get _darkColorScheme => ColorScheme.fromSeed(
     seedColor: _primaryGreen,
     brightness: Brightness.dark,
     primary: _primaryGreen,
-    secondary: _accentBlue,
-    tertiary: _warningOrange,
+    secondary: _secondaryGreen,
+    tertiary: _accentBlue,
     error: _errorRed,
+    surface: _surfaceDark,
+    onSurface: const Color(0xFFE0E0E0),
+    surfaceContainerHighest: const Color(0xFF2A2A2A),
   );
 
   static ThemeData get lightTheme {
@@ -62,7 +73,7 @@ class AppTheme {
           foregroundColor: colorScheme.onPrimary,
           minimumSize: const Size(88, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
@@ -70,9 +81,9 @@ class AppTheme {
 
       // Card 테마
       cardTheme: const CardThemeData(
-        elevation: 2,
+        elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
 
@@ -81,19 +92,19 @@ class AppTheme {
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.error, width: 2),
         ),
         labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -101,8 +112,8 @@ class AppTheme {
           color: colorScheme.onSurfaceVariant.withOpacity(0.7),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
+          horizontal: 20,
+          vertical: 18,
         ),
       ),
 
@@ -163,7 +174,7 @@ class AppTheme {
           foregroundColor: colorScheme.onPrimary,
           minimumSize: const Size(88, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
@@ -171,9 +182,9 @@ class AppTheme {
 
       // Card 테마
       cardTheme: const CardThemeData(
-        elevation: 2,
+        elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
 
@@ -182,19 +193,19 @@ class AppTheme {
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.error, width: 2),
         ),
         labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -202,8 +213,8 @@ class AppTheme {
           color: colorScheme.onSurfaceVariant.withOpacity(0.7),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
+          horizontal: 20,
+          vertical: 18,
         ),
       ),
 
