@@ -1,0 +1,56 @@
+# 환경설정 및 외부 서비스 연동 PRD
+
+## 1. 목적 및 개요
+- 개발/운영 환경별 설정 관리
+- 외부 API 키 및 시크릿 관리
+- 환경 변수 및 프로파일 설정
+
+## 2. 상세 요구사항
+- Google/Kakao OAuth 클라이언트 설정
+- Roboflow/OpenRouter API 키 설정
+- JWT 시크릿 키 보안 관리
+- 데이터베이스 연결 정보 설정
+- 파일 업로드 경로 및 제한 설정
+- Kafka 브로커 연결 설정
+
+## 3. 동작 플로우
+1. 애플리케이션 시작 시 환경 변수 로드
+2. 프로파일별 설정 적용
+3. 외부 서비스 연결 테스트
+4. 설정 검증 및 오류 처리
+
+## 4. 예외/에러 처리
+- 필수 환경 변수 누락, 외부 서비스 연결 실패, 잘못된 설정값 등
+
+## 5. 구현 상태 및 미구현/임시 구현 현황
+### ✅ 구현 완료
+- application.yml 기본 구조
+- 환경 변수 기반 설정 체계
+- 프로파일별 설정 분리 구조
+
+### ❌ 미구현/임시 구현
+- **OAuth 클라이언트 설정**: Placeholder 값 사용 중
+  - `GOOGLE_CLIENT_ID: your-google-client-id`
+  - `GOOGLE_CLIENT_SECRET: your-google-client-secret`
+  - `KAKAO_CLIENT_ID: your-kakao-client-id`
+  - `KAKAO_CLIENT_SECRET: your-kakao-client-secret`
+- **AI API 키 설정**: Placeholder 값 사용 중
+  - `ROBOFLOW_API_KEY: your-roboflow-api-key`
+  - `ROBOFLOW_WORKSPACE_URL: your-workspace-url`
+  - `OPENROUTER_API_KEY: your-openrouter-api-key`
+- **보안 설정**: 안전하지 않은 기본값
+  - `JWT_SECRET: mySecretKey...` (하드코딩)
+  - `DB_PASSWORD: password` (기본값)
+- **로컬 환경 의존성**: 하드코딩된 localhost 설정
+  - PostgreSQL: `localhost:5432`
+  - Redis: `localhost:6379`
+  - Kafka: `localhost:9092`
+- **운영 환경 설정**: 미완성
+  - 컨테이너 환경 설정 부족
+  - 환경별 설정 검증 로직 미구현
+  - 설정 암호화 메커니즘 미적용
+
+## 6. 참고/비고
+- 보안 정책 수립 및 키 관리 도구 활용 필요
+- 컨테이너 환경에서의 설정 관리 방안 필요
+- 운영 환경 배포 전 필수 설정값 검증 로직 구현 시급

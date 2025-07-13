@@ -106,4 +106,5 @@ jar {
 
 bootJar {
     archiveFileName = "${project.name}-${project.version}.jar"
+    mainClass = 'com.jeonbuk.report.JeonbukReportPlatformApplication'
 }

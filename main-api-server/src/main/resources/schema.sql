@@ -214,3 +214,84 @@ CREATE INDEX idx_comments_report_id ON comments(report_id);
 CREATE INDEX idx_comments_user_id ON comments(user_id);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+
+-- AI 분석 결과 테이블
+CREATE TABLE ai_analysis_results (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    report_id VARCHAR(36) NOT NULL,
+    report_file_id VARCHAR(36),
+    
+    -- AI 서비스 정보
+    ai_service VARCHAR(50) NOT NULL, -- ROBOFLOW, OPENROUTER, OPENAI, CUSTOM
+    
+    -- 분석 결과
+    raw_response TEXT,              -- AI 서비스의 원본 응답 (JSON)
+    parsed_result TEXT,             -- 파싱된 분석 결과 (JSON)
+    status VARCHAR(20) NOT NULL,    -- PENDING, PROCESSING, COMPLETED, FAILED, RETRYING
+    confidence_score DECIMAL(5, 2), -- 신뢰도 점수 (0.00 - 1.00)
+    
+    -- 오류 및 처리 정보
+    error_message TEXT,             -- 실패 시 오류 메시지
+    processing_time_ms BIGINT,      -- 처리 시간 (밀리초)
+    retry_count INTEGER NOT NULL DEFAULT 0, -- 재시도 횟수
+    
+    -- 메타데이터
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    -- 외래 키 제약 조건
+    FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,
+    FOREIGN KEY (report_file_id) REFERENCES report_files(id) ON DELETE CASCADE
+);
+
+-- AI 분석 결과 인덱스
+CREATE INDEX idx_ai_analysis_report_id ON ai_analysis_results(report_id);
+CREATE INDEX idx_ai_analysis_file_id ON ai_analysis_results(report_file_id);
+CREATE INDEX idx_ai_analysis_status ON ai_analysis_results(status);
+CREATE INDEX idx_ai_analysis_service ON ai_analysis_results(ai_service);
+CREATE INDEX idx_ai_analysis_created_at ON ai_analysis_results(created_at);
+CREATE INDEX idx_ai_analysis_confidence ON ai_analysis_results(confidence_score);
+CREATE INDEX idx_ai_analysis_report_service ON ai_analysis_results(report_id, ai_service);
+CREATE INDEX idx_ai_analysis_status_retry ON ai_analysis_results(status, retry_count);
+
+-- 알림/경고 테이블 (notifications와는 별도의 더 긴급한 알림 시스템)
+CREATE TABLE alerts (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    report_id VARCHAR(36),
+    
+    -- 알림 정보
+    type VARCHAR(50) NOT NULL, -- CRITICAL, HIGH_PRIORITY, SYSTEM_ERROR, SECURITY_BREACH, etc.
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL, -- JSON으로 구조화된 알림 데이터
+    severity VARCHAR(20) NOT NULL DEFAULT 'MEDIUM', -- LOW, MEDIUM, HIGH, CRITICAL
+    
+    -- 상태 및 처리 정보
+    is_read BOOLEAN DEFAULT false,
+    is_resolved BOOLEAN DEFAULT false,
+    read_at TIMESTAMP,
+    resolved_at TIMESTAMP,
+    resolved_by_user_id VARCHAR(36),
+    
+    -- 메타데이터
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP, -- 알림 만료 시간 (자동 삭제)
+    
+    -- 외래 키 제약 조건
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE SET NULL,
+    FOREIGN KEY (resolved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- 알림 인덱스
+CREATE INDEX idx_alerts_user_id ON alerts(user_id);
+CREATE INDEX idx_alerts_report_id ON alerts(report_id);
+CREATE INDEX idx_alerts_type ON alerts(type);
+CREATE INDEX idx_alerts_severity ON alerts(severity);
+CREATE INDEX idx_alerts_is_read ON alerts(is_read);
+CREATE INDEX idx_alerts_is_resolved ON alerts(is_resolved);
+CREATE INDEX idx_alerts_created_at ON alerts(created_at);
+CREATE INDEX idx_alerts_expires_at ON alerts(expires_at);
+CREATE INDEX idx_alerts_user_unread ON alerts(user_id, is_read, created_at);
+CREATE INDEX idx_alerts_user_severity ON alerts(user_id, severity, created_at);

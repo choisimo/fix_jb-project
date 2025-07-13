@@ -1,4 +1,3 @@
-# Spring Boot Configuration
 spring:
   application:
     name: jeonbuk-report-platform
@@ -7,15 +6,15 @@ spring:
   
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/jeonbuk_report_db
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
@@ -28,9 +27,9 @@ spring:
   # Redis Configuration
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      host: ${REDIS_HOST}
+      port: 6379
+      password: ${REDIS_PASSWORD}
       timeout: 2000ms
       lettuce:
         pool:
@@ -40,10 +39,10 @@ spring:
   
   # Kafka Configuration
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         enable.idempotence: true
         acks: all
@@ -51,9 +50,8 @@ spring:
     consumer:
       group-id: report-service-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
-        spring.json.trusted.packages: "com.jeonbuk.report.dto"
         auto.offset.reset: earliest
   
   # File Upload Configuration
@@ -69,12 +67,12 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: profile,email
           kakao:
-            client-id: ${KAKAO_CLIENT_ID:your-kakao-client-id}
-            client-secret: ${KAKAO_CLIENT_SECRET:your-kakao-client-secret}
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
@@ -89,22 +87,23 @@ spring:
 # Application Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:mySecretKey12345678901234567890123456789012345678901234567890}
+    secret: ${JWT_SECRET}
     expiration: 86400000 # 24 hours
     refresh-expiration: 604800000 # 7 days
   
   file:
-    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+    upload-dir: ${FILE_STORAGE_PATH}
+    base-url: ${FILE_BASE_URL}
     max-size: 50MB
     allowed-types: image/jpeg,image/png,image/gif,video/mp4,video/avi
   
   roboflow:
-    api-key: ${ROBOFLOW_API_KEY:your-roboflow-api-key}
-    workspace-url: ${ROBOFLOW_WORKSPACE_URL:your-workspace-url}
+    api-key: ${ROBOFLOW_API_KEY}
+    model-id: ${ROBOFLOW_MODEL_ID}
   
   openrouter:
     api:
-      key: ${OPENROUTER_API_KEY:your-openrouter-api-key}
+      key: ${OPENROUTER_API_KEY}
       base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
       model: ${OPENROUTER_MODEL:qwen/qwen2.5-vl-72b-instruct:free}
   
@@ -116,7 +115,7 @@ app:
 
 # Server Configuration
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
   address: 0.0.0.0
   
 # Logging Configuration

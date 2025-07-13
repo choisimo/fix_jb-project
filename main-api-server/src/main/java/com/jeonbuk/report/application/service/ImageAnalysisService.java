@@ -527,6 +527,8 @@ public class ImageAnalysisService {
     private java.time.LocalDateTime analysisEndTime;
     private boolean error;
     private String errorMessage;
+    private double confidenceScore;
+    private java.util.List<String> detectedObjects = new java.util.ArrayList<>();
 
     // Getters and setters
     public String getFileName() {
@@ -655,6 +657,29 @@ public class ImageAnalysisService {
 
     public void setErrorMessage(String errorMessage) {
       this.errorMessage = errorMessage;
+    }
+
+    public double getConfidenceScore() {
+      return confidenceScore;
+    }
+
+    public void setConfidenceScore(double confidenceScore) {
+      this.confidenceScore = confidenceScore;
+    }
+
+    public java.util.List<String> getDetectedObjects() {
+      return detectedObjects;
+    }
+
+    public void setDetectedObjects(java.util.List<String> detectedObjects) {
+      this.detectedObjects = detectedObjects;
+    }
+
+    public void addDetectedObject(String detectedObject) {
+      if (this.detectedObjects == null) {
+        this.detectedObjects = new java.util.ArrayList<>();
+      }
+      this.detectedObjects.add(detectedObject);
     }
   }
 }

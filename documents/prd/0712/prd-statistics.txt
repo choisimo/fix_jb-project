@@ -1,0 +1,40 @@
+# 통계/우선순위/티켓 서비스 PRD
+
+## 1. 목적 및 개요
+- 리포트/알림 등 주요 데이터의 통계 제공, 우선순위 자동 조정, 티켓 관리 등
+
+## 2. 상세 요구사항
+- 통계 데이터 집계/조회 API 구현
+- 우선순위 자동 조정 로직 구현
+- Kafka 기반 티켓 발급/처리 연동
+
+## 3. 동작 플로우
+1. 리포트/알림 등 데이터 발생
+2. 통계 집계/조회, 우선순위 조정, 티켓 발급
+3. 관리자/사용자에게 결과 제공
+
+## 4. 예외/에러 처리
+- 데이터 집계 오류, Kafka 장애, 권한 없음 등
+
+## 5. 구현 상태 및 미구현/임시 구현 현황
+### ✅ 구현 완료
+- StatisticsService 기본 구조 및 일부 메서드
+- 기본적인 통계 조회 인터페이스
+
+### ❌ 미구현/임시 구현
+- **StatisticsService**: placeholder 로직 사용 중 ("For now, returning a placeholder")
+- **StatisticsService**: getPendingReports()에서 가정값 사용 (Assume 20% pending)
+- **PriorityEscalationService**: 
+  - `escalateIfNeeded()` 메서드 - TODO: Implement escalation logic
+  - `shouldEscalate()` 메서드 - TODO: Implement escalation criteria
+- **KafkaTicketService**:
+  - `sendToWorkspace()` 메서드 - TODO: Implement Kafka message sending logic
+  - `sendPriorityAlert()` 메서드 - TODO: Implement priority alert sending
+- 실제 통계 집계 알고리즘 미구현
+- 우선순위 자동 조정 규칙 미정의
+- Kafka 기반 티켓 발급 시스템 미완성
+- 실시간 통계 업데이트 메커니즘 미구축
+
+## 6. 참고/비고
+- 대용량 데이터/실시간성 고려 필요
+- 통계 정확성과 성능 간의 균형점 찾기 필요

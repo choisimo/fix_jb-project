@@ -1,0 +1,39 @@
+# AI 분석/통합 에이전트 PRD
+
+## 1. 목적 및 개요
+- 리포트 이미지 등 입력 데이터에 대해 Roboflow/OpenRouter 등 AI 분석 결과 제공
+- AI 분석 결과를 리포트/알림 등과 연동
+
+## 2. 상세 요구사항
+- Roboflow/OpenRouter API 연동 및 결과 파싱
+- AI 분석 결과 DB 저장 및 리포트와 연동
+- 분석 실패/재시도/예외 처리
+- 통합 에이전트(IntegratedAiAgentService) 통한 다양한 AI 분석 지원
+
+## 3. 동작 플로우
+1. 리포트 생성 시 이미지 등 입력
+2. AI 분석 요청 및 결과 수신
+3. 결과 파싱 및 리포트/DB 저장
+4. 분석 실패 시 재시도/에러 처리
+
+## 4. 예외/에러 처리
+- 외부 API 실패, 파싱 오류, 재시도 로직 등
+
+## 5. 구현 상태 및 미구현/임시 구현 현황
+### ✅ 구현 완료
+- IntegratedAiAgentService 기본 구조 및 API 호출 로직
+- Roboflow/OpenRouter API 클라이언트 기본 연동
+- AiRoutingController 기본 엔드포인트
+
+### ❌ 미구현/임시 구현
+- **IntegratedAiAgentService**: JSON 파싱 로직이 간단한 문자열 추출로만 구현 (TODO: 더 정교한 JSON 파싱 로직 구현)
+- **RoboflowDto**: Critical object detection 로직 미구현 (TODO: Implement critical object detection logic)
+- **RoboflowDto**: Dominant category 로직 미구현 (TODO: Implement dominant category logic)
+- **AiRoutingController**: 실제 통계 정보 수집 로직 미구현 (TODO: 실제 통계 정보 수집 로직 추가)
+- RoboflowApiClient에서 Mock fallback 로직 사용 중
+- 복잡한 JSON 응답 구조 파싱 미완성
+- AI 분석 실패 시 상세한 재시도 로직 미구현
+
+## 6. 참고/비고
+- 외부 API 변경/장애에 대한 견고한 처리 필요
+- JSON 파싱 로직의 정교한 구현이 시급함

@@ -365,7 +365,7 @@ public class AuthController {
     /**
      * HTTP 요청에서 JWT 토큰 추출
      */
-    @Value("${oauth2.google.client-id}")
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
     @Operation(summary = "모바일 OAuth2 로그인", description = "모바일 앱에서 ID 토큰으로 로그인합니다.")

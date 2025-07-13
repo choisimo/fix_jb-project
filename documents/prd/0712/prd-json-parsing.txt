@@ -1,0 +1,49 @@
+# JSON 파싱 및 데이터 변환 PRD
+
+## 1. 목적 및 개요
+- AI 분석 결과 JSON 응답의 정교한 파싱
+- DTO 변환 로직 완전 구현
+- 데이터 검증 및 오류 처리
+
+## 2. 상세 요구사항
+- Roboflow API 응답 JSON 정교한 파싱
+- OpenRouter API 응답 JSON 정교한 파싱
+- RoboflowDto 변환 로직 완전 구현
+- Jackson 기반 JSON 처리 최적화
+- 스키마 검증 및 예외 처리
+
+## 3. 동작 플로우
+1. 외부 API로부터 JSON 응답 수신
+2. JSON 구조 검증 및 스키마 확인
+3. DTO 객체로 변환 및 데이터 검증
+4. 비즈니스 로직에서 활용할 수 있는 형태로 가공
+
+## 4. 예외/에러 처리
+- JSON 형식 오류, 스키마 불일치, 필수 필드 누락 등
+
+## 5. 구현 상태 및 미구현/임시 구현 현황
+### ✅ 구현 완료
+- 기본적인 JSON 응답 수신 로직
+- Jackson 라이브러리 설정
+
+### ❌ 미구현/임시 구현
+- **IntegratedAiAgentService**: 간단한 JSON 추출 로직만 구현
+  - `// JSON 부분 추출 (TODO: 더 정교한 JSON 파싱 로직 구현)`
+  - `// 간단한 JSON 추출 로직 (TODO: 더 정교하게 구현)`
+- **AlertService**: JSON 파싱 구현 미완료
+  - `// TODO: JSON 파싱 구현`
+  - 현재 "임시 구현 - 실제로는 JSON 파싱 필요" 상태
+- **ImageAnalysisService**: JSON 파싱 구현 미완료
+  - `// TODO: JSON 파싱 구현`
+  - 현재 "임시 구현 - 실제로는 Jackson으로 JSON 파싱" 상태
+- **RoboflowDto**: 핵심 로직들 미구현
+  - Critical object detection 로직 미구현
+  - Dominant category 로직 미구현
+- 복잡한 중첩 JSON 구조 파싱 미완성
+- JSON 스키마 검증 메커니즘 미구현
+- 오류 처리 및 fallback 로직 부족
+
+## 6. 참고/비고
+- JSON 스키마 변경에 대한 유연한 대응 필요
+- 성능 최적화 및 메모리 효율성 고려 필요
+- AI API 응답 형식 변경에 대한 대응 방안 수립 필요

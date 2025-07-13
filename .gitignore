@@ -181,3 +181,93 @@ ios/Flutter/flutter_export_environment.sh
 **/secrets.json
 **/credentials.*
 **/config.ini
+
+# SSL certificates and keys
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+ssl/
+**/ssl/
+
+# ===== BUILD FILES & CACHES =====
+# Java/Gradle build files
+*.class
+*.jar
+!gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+.gradle/
+gradle-app.setting
+!gradle-wrapper.properties
+bin/
+target/
+out/
+
+# Spring Boot
+*.original
+spring-boot-*.jar
+
+# Android build files
+*.dex
+*.apk
+*.aab
+*.ap_
+*.aab
+local.properties
+.externalNativeBuild/
+.cxx/
+captures/
+.navigation/
+*.jks
+*.keystore
+
+# iOS build files
+*.ipa
+*.app
+*.dSYM/
+*.xcworkspace/
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace/
+
+# Native libraries
+*.so
+*.dll
+*.dylib
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+*.orig
+
+# Test coverage reports
+lcov.info
+coverage.json
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Editor files
+*.sublime-*
+*.swp
+*.swo
+
+# Package files
+*.deb
+*.rpm
+*.msi
+*.dmg
+*.pkg
+
+# Backup files
+*~
+*.backup
+*.bak
+*.old

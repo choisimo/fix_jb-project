@@ -1,0 +1,690 @@
+# 빌드/컴파일 오류 해결 PRD
+
+## 1. 목적 및 개요
+- 현재 프로젝트의 54개 컴파일 오류 완전 해결
+- 패키지 구조 통일 및 의존성 정리
+- 안정적인 빌드 시스템 구축
+
+## 2. 현재 빌드 오류 분석
+
+### 🔴 Critical 빌드 이슈
+
+#### 2.1 패키지 구조 불일치
+**현재 상태:**
+```
+❌ 혼재된 패키지 구조:
+- com.jbreport.platform.*     (오래된 구조)
+- com.jeonbuk.report.*        (새로운 구조)
+```
+
+**오류 예시:**
+```java
+// AlertController.java:4
+import com.jbreport.platform.entity.Alert;  // ❌ 존재하지 않는 패키지
+
+// 실제 위치
+import com.jeonbuk.report.domain.entity.Alert;  // ✅ 올바른 경로
+```
+
+**영향범위:** 54개 컴파일 오류, 애플리케이션 실행 불가
+
+#### 2.2 엔티티 클래스 Import 실패
+**현재 오류:**
+```bash
+error: package com.jbreport.platform.entity does not exist
+import com.jbreport.platform.entity.Alert;
+error: package com.jbreport.platform.entity does not exist  
+import com.jbreport.platform.entity.User;
+error: package com.jbreport.platform.exception does not exist
+import com.jbreport.platform.exception.ResourceNotFoundException;
+```
+
+**원인:** 
+- 엔티티 클래스들이 `com.jeonbuk.report.domain.entity` 패키지에 실제 존재
+- 컨트롤러/서비스에서 잘못된 패키지 경로로 import 시도
+
+#### 2.3 의존성 누락 및 충돌
+**현재 이슈:**
+- JPA Criteria API import 실패
+- MockMvc 테스트 의존성 누락
+- Spring Security OAuth2 설정 불일치
+
+## 3. 해결 계획 및 구현 요구사항
+
+### 📋 Phase 1: 패키지 구조 통일 (1일)
+
+#### 3.1 전체 패키지 구조 재정의
+**목표:** 모든 Java 클래스를 일관된 패키지 구조로 통일
+
+**새로운 패키지 구조:**
+```
+com.jeonbuk.report
+├── JeonbukReportApplication.java           # 메인 애플리케이션
+├── application/                            # 애플리케이션 레이어
+│   ├── service/                           # 비즈니스 로직
+│   │   ├── AlertService.java
+│   │   ├── ReportService.java
+│   │   ├── UserService.java
+│   │   ├── FileService.java
+│   │   └── IntegratedAiAgentService.java
+│   └── dto/                               # 데이터 전송 객체
+│       ├── AlertDTO.java
+│       ├── ReportDTO.java
+│       └── UserDTO.java
+├── domain/                                # 도메인 레이어
+│   ├── entity/                           # JPA 엔티티
+│   │   ├── Alert.java
+│   │   ├── Report.java
+│   │   ├── User.java
+│   │   ├── ReportFile.java
+│   │   └── Comment.java
+│   └── repository/                       # 데이터 접근
+│       ├── AlertRepository.java
+│       ├── ReportRepository.java
+│       └── UserRepository.java
+├── infrastructure/                        # 인프라 레이어
+│   ├── external/                         # 외부 API 연동
+│   │   ├── roboflow/
+│   │   └── openrouter/
+│   ├── kafka/                           # 메시징
+│   └── config/                          # 설정
+├── presentation/                          # 프레젠테이션 레이어
+│   ├── controller/                       # REST 컨트롤러
+│   │   ├── AlertController.java
+│   │   ├── ReportController.java
+│   │   └── UserController.java
+│   └── security/                        # 보안 설정
+└── common/                               # 공통 유틸리티
+    ├── exception/                       # 예외 처리
+    └── util/                           # 유틸리티
+```
+
+#### 3.2 패키지 이전 스크립트 작성
+**자동화 스크립트:**
+```bash
+#!/bin/bash
+# package-migration.sh
+
+echo "Starting package structure migration..."
+
+# 1. 기존 잘못된 패키지 경로 찾기
+find src/main/java -name "*.java" -exec grep -l "com.jbreport.platform" {} \; > files_to_fix.txt
+
+# 2. 패키지 선언 수정
+sed -i 's/package com\.jbreport\.platform\./package com.jeonbuk.report./g' $(cat files_to_fix.txt)
+
+# 3. import 문 수정
+sed -i 's/import com\.jbreport\.platform\./import com.jeonbuk.report./g' src/main/java/**/*.java
+
+# 4. 특정 패키지 경로 수정
+sed -i 's/com\.jbreport\.platform\.entity/com.jeonbuk.report.domain.entity/g' src/main/java/**/*.java
+sed -i 's/com\.jbreport\.platform\.service/com.jeonbuk.report.application.service/g' src/main/java/**/*.java
+sed -i 's/com\.jbreport\.platform\.controller/com.jeonbuk.report.presentation.controller/g' src/main/java/**/*.java
+sed -i 's/com\.jbreport\.platform\.repository/com.jeonbuk.report.domain.repository/g' src/main/java/**/*.java
+sed -i 's/com\.jbreport\.platform\.exception/com.jeonbuk.report.common.exception/g' src/main/java/**/*.java
+
+echo "Package migration completed!"
+```
+
+#### 3.3 수동 수정이 필요한 파일들
+**AlertController.java 수정:**
+```java
+// ❌ 기존 코드
+package com.jbreport.platform.controller;
+import com.jbreport.platform.entity.Alert;
+
+// ✅ 수정된 코드
+package com.jeonbuk.report.presentation.controller;
+import com.jeonbuk.report.domain.entity.Alert;
+import com.jeonbuk.report.application.service.AlertService;
+import com.jeonbuk.report.application.dto.AlertDTO;
+```
+
+**AlertService.java 수정:**
+```java
+// ❌ 기존 코드
+package com.jbreport.platform.service;
+import com.jbreport.platform.entity.Alert;
+import com.jbreport.platform.entity.User;
+import com.jbreport.platform.exception.ResourceNotFoundException;
+
+// ✅ 수정된 코드
+package com.jeonbuk.report.application.service;
+import com.jeonbuk.report.domain.entity.Alert;
+import com.jeonbuk.report.domain.entity.User;
+import com.jeonbuk.report.common.exception.ResourceNotFoundException;
+import com.jeonbuk.report.domain.repository.AlertRepository;
+import com.jeonbuk.report.domain.repository.UserRepository;
+```
+
+### 📋 Phase 2: 누락된 클래스 생성 (반나절)
+
+#### 2.1 예외 클래스 생성
+**ResourceNotFoundException.java:**
+```java
+package com.jeonbuk.report.common.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+    
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+    
+    public ResourceNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+    
+    public ResourceNotFoundException(String resource, String field, Object value) {
+        super(String.format("%s not found with %s: %s", resource, field, value));
+    }
+}
+```
+
+#### 2.2 DTO 클래스 생성
+**AlertDTO.java:**
+```java
+package com.jeonbuk.report.application.dto;
+
+import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AlertDTO {
+    private Long id;
+    private String type;
+    private String severity;
+    private String title;
+    private String message;
+    private String targetUserId;
+    private String referenceId;
+    private String referenceType;
+    private Boolean isRead;
+    private LocalDateTime expiresAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+```
+
+**ReportDTO.java:**
+```java
+package com.jeonbuk.report.application.dto;
+
+import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReportDTO {
+    private Long id;
+    private String title;
+    private String description;
+    private String category;
+    private String status;
+    private String priority;
+    private String location;
+    private Double latitude;
+    private Double longitude;
+    private Long userId;
+    private String userEmail;
+    private List<ReportFileDTO> files;
+    private List<CommentDTO> comments;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+```
+
+**ReportCreateDTO.java:**
+```java
+package com.jeonbuk.report.application.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReportCreateDTO {
+    
+    @NotBlank(message = "제목은 필수입니다")
+    @Size(max = 200, message = "제목은 200자를 초과할 수 없습니다")
+    private String title;
+    
+    @NotBlank(message = "설명은 필수입니다")
+    @Size(max = 2000, message = "설명은 2000자를 초과할 수 없습니다")
+    private String description;
+    
+    @NotBlank(message = "카테고리는 필수입니다")
+    private String category;
+    
+    @NotBlank(message = "위치는 필수입니다")
+    private String location;
+    
+    @NotNull(message = "위도는 필수입니다")
+    private Double latitude;
+    
+    @NotNull(message = "경도는 필수입니다")
+    private Double longitude;
+    
+    private String priority = "MEDIUM";
+}
+```
+
+#### 2.3 누락된 서비스 클래스 생성
+**FileStorageService.java:**
+```java
+package com.jeonbuk.report.application.service;
+
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
+@Slf4j
+@Service
+public class FileStorageService {
+    
+    @Value("${app.file.upload-dir:./uploads}")
+    private String uploadDir;
+    
+    public String storeFile(MultipartFile file) {
+        try {
+            // 업로드 디렉토리 생성
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            // 파일명 생성 (UUID + 원본 확장자)
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String filename = UUID.randomUUID().toString() + extension;
+            
+            // 파일 저장
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            
+            log.info("File stored successfully: {}", filename);
+            return filename;
+            
+        } catch (IOException e) {
+            log.error("Failed to store file: {}", e.getMessage(), e);
+            throw new RuntimeException("파일 저장에 실패했습니다", e);
+        }
+    }
+    
+    public Path loadFileAsResource(String filename) {
+        try {
+            Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
+            if (Files.exists(filePath)) {
+                return filePath;
+            } else {
+                throw new RuntimeException("파일을 찾을 수 없습니다: " + filename);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("파일을 찾을 수 없습니다: " + filename, e);
+        }
+    }
+}
+```
+
+### 📋 Phase 3: 의존성 정리 (반나절)
+
+#### 3.1 build.gradle 의존성 수정
+```gradle
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.kafka:spring-kafka'
+    
+    // 데이터베이스
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.hibernate:hibernate-spatial:6.2.7.Final'
+    
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    
+    // JSON 처리
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    
+    // 유틸리티
+    implementation 'org.apache.commons:commons-lang3'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // 테스트
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+}
+```
+
+#### 3.2 누락된 Kafka 관련 클래스 생성
+**KafkaProducerService.java:**
+```java
+package com.jeonbuk.report.infrastructure.kafka;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class KafkaProducerService {
+    
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    
+    public void sendMessage(String topic, Object message) {
+        try {
+            kafkaTemplate.send(topic, message);
+            log.info("Message sent to topic {}: {}", topic, message);
+        } catch (Exception e) {
+            log.error("Failed to send message to topic {}: {}", topic, e.getMessage(), e);
+            throw new RuntimeException("메시지 전송에 실패했습니다", e);
+        }
+    }
+    
+    public void sendReportCreated(Long reportId) {
+        sendMessage("report-created", reportId);
+    }
+    
+    public void sendAnalysisRequest(Long reportId, String imageUrl) {
+        AnalysisRequest request = new AnalysisRequest(reportId, imageUrl);
+        sendMessage("analysis-requests", request);
+    }
+    
+    public static class AnalysisRequest {
+        private Long reportId;
+        private String imageUrl;
+        
+        public AnalysisRequest(Long reportId, String imageUrl) {
+            this.reportId = reportId;
+            this.imageUrl = imageUrl;
+        }
+        
+        // getters and setters
+        public Long getReportId() { return reportId; }
+        public void setReportId(Long reportId) { this.reportId = reportId; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    }
+}
+```
+
+### 📋 Phase 4: 컴파일 검증 및 테스트 (반나절)
+
+#### 4.1 컴파일 검증 스크립트
+```bash
+#!/bin/bash
+# build-verification.sh
+
+echo "=== 빌드 검증 시작 ==="
+
+# 1. 클린 빌드
+echo "1. 클린 빌드 실행..."
+./gradlew clean
+if [ $? -ne 0 ]; then
+    echo "❌ 클린 빌드 실패"
+    exit 1
+fi
+
+# 2. 컴파일 확인
+echo "2. 컴파일 확인..."
+./gradlew compileJava
+if [ $? -ne 0 ]; then
+    echo "❌ 컴파일 실패"
+    exit 1
+fi
+
+# 3. 테스트 컴파일 확인
+echo "3. 테스트 컴파일 확인..."
+./gradlew compileTestJava
+if [ $? -ne 0 ]; then
+    echo "❌ 테스트 컴파일 실패"
+    exit 1
+fi
+
+# 4. 패키지 구조 검증
+echo "4. 패키지 구조 검증..."
+WRONG_PACKAGES=$(find src/main/java -name "*.java" -exec grep -l "com.jbreport.platform" {} \;)
+if [ ! -z "$WRONG_PACKAGES" ]; then
+    echo "❌ 잘못된 패키지 구조가 발견됨:"
+    echo "$WRONG_PACKAGES"
+    exit 1
+fi
+
+# 5. 빌드 성공
+echo "5. 전체 빌드..."
+./gradlew build -x test
+if [ $? -ne 0 ]; then
+    echo "❌ 빌드 실패"
+    exit 1
+fi
+
+echo "✅ 모든 빌드 검증 완료!"
+```
+
+#### 4.2 Import 검증 테스트
+```java
+@SpringBootTest
+class PackageStructureTest {
+    
+    @Test
+    void shouldHaveCorrectPackageStructure() {
+        // 핵심 클래스들이 올바른 패키지에 있는지 확인
+        assertDoesNotThrow(() -> {
+            Class.forName("com.jeonbuk.report.domain.entity.Alert");
+            Class.forName("com.jeonbuk.report.domain.entity.User");
+            Class.forName("com.jeonbuk.report.domain.entity.Report");
+            Class.forName("com.jeonbuk.report.application.service.AlertService");
+            Class.forName("com.jeonbuk.report.presentation.controller.AlertController");
+        });
+    }
+    
+    @Test
+    void shouldNotHaveOldPackageReferences() {
+        // 소스 코드에 이전 패키지 참조가 없는지 확인
+        Path srcPath = Paths.get("src/main/java");
+        try (Stream<Path> paths = Files.walk(srcPath)) {
+            paths.filter(path -> path.toString().endsWith(".java"))
+                 .forEach(this::verifyNoOldPackageReferences);
+        }
+    }
+    
+    private void verifyNoOldPackageReferences(Path javaFile) {
+        try {
+            String content = Files.readString(javaFile);
+            assertFalse(content.contains("com.jbreport.platform"), 
+                "File " + javaFile + " contains old package reference");
+        } catch (IOException e) {
+            fail("Failed to read file: " + javaFile);
+        }
+    }
+}
+```
+
+## 4. 빌드 최적화
+
+### 4.1 Gradle 설정 최적화
+```gradle
+// build.gradle
+plugins {
+    id 'org.springframework.boot' version '3.1.5'
+    id 'io.spring.dependency-management' version '1.1.3'
+    id 'java'
+}
+
+java {
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+// 빌드 성능 최적화
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:unchecked', '-Xlint:deprecation']
+}
+
+// 테스트 설정
+test {
+    useJUnitPlatform()
+    maxHeapSize = '1G'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
+
+// Docker 빌드를 위한 JAR 최적화
+jar {
+    enabled = false
+    archiveClassifier = ''
+}
+
+bootJar {
+    enabled = true
+    archiveClassifier = ''
+    layered {
+        enabled = true
+    }
+}
+```
+
+### 4.2 IDE 설정 최적화
+**IntelliJ IDEA 설정 (.idea/compiler.xml):**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.30/..." />
+        </processorPath>
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="17" />
+  </component>
+</project>
+```
+
+## 5. 배포 빌드 검증
+
+### 5.1 Docker 빌드 테스트
+```dockerfile
+# Dockerfile (멀티스테이지 빌드)
+FROM openjdk:17-jdk-slim as builder
+WORKDIR /app
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY src src
+RUN chmod +x gradlew
+RUN ./gradlew build -x test
+
+FROM openjdk:17-jre-slim
+WORKDIR /app
+COPY --from=builder /app/build/libs/*.jar app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+### 5.2 CI/CD 빌드 검증
+```yaml
+# .github/workflows/build-verification.yml
+name: Build Verification
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+    
+    - name: Verify package structure
+      run: |
+        if grep -r "com.jbreport.platform" src/main/java/; then
+          echo "❌ Old package structure found!"
+          exit 1
+        fi
+        echo "✅ Package structure verified!"
+    
+    - name: Compile and build
+      run: ./gradlew build -x test
+    
+    - name: Run tests
+      run: ./gradlew test
+```
+
+## 6. 성공 기준 및 체크리스트
+
+### ✅ 컴파일 성공 요구사항
+- [ ] 컴파일 오류 0개
+- [ ] 모든 import 문 해결
+- [ ] 패키지 구조 일관성 확보
+- [ ] 누락된 클래스 모두 생성
+
+### ✅ 빌드 성공 요구사항
+- [ ] `./gradlew clean build` 성공
+- [ ] 테스트 컴파일 성공
+- [ ] JAR 파일 생성 성공
+- [ ] Docker 이미지 빌드 성공
+
+### ✅ 코드 품질 요구사항
+- [ ] 이전 패키지 참조 0개
+- [ ] 코딩 컨벤션 준수
+- [ ] Javadoc 주석 완성
+- [ ] TODO/FIXME 주석 정리
+
+이 PRD를 통해 모든 컴파일 오류를 해결하고 안정적인 빌드 시스템을 구축할 수 있습니다.

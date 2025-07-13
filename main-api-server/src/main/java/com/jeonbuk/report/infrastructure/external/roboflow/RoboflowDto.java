@@ -105,6 +105,23 @@ public class RoboflowDto {
       return "GENERAL";
     }
 
+    public Double getConfidence() {
+      return getMaxConfidence();
+    }
+
+    public String getDetectedClass() {
+      if (detectedObjects == null || detectedObjects.isEmpty()) {
+        return "UNKNOWN";
+      }
+      // Return the class with highest confidence
+      return detectedObjects.stream()
+          .max((o1, o2) -> Double.compare(
+              o1.getConfidence() != null ? o1.getConfidence() : 0.0,
+              o2.getConfidence() != null ? o2.getConfidence() : 0.0))
+          .map(DetectedObject::getClassName)
+          .orElse("UNKNOWN");
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -113,6 +130,14 @@ public class RoboflowDto {
       private Double confidence;
       private BoundingBox boundingBox;
       private Map<String, Object> additionalData;
+
+      public String getClassName() {
+        return objectType;
+      }
+
+      public void setClassName(String className) {
+        this.objectType = className;
+      }
 
       @Data
       @NoArgsConstructor
@@ -148,6 +173,14 @@ public class RoboflowDto {
       private Double confidence;
       private BoundingBox boundingBox;
       private Map<String, Object> additionalData;
+
+      public String getClassName() {
+        return objectType;
+      }
+
+      public void setClassName(String className) {
+        this.objectType = className;
+      }
 
       @Data
       @NoArgsConstructor

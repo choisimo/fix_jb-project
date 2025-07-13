@@ -1,0 +1,625 @@
+# Production 보안 설정 강화 PRD
+
+## 1. 목적 및 개요
+- Production 환경에서 안전한 운영을 위한 보안 설정 강화
+- 모든 민감 정보의 안전한 관리 체계 구축
+- 보안 정책 준수 및 취약점 제거
+
+## 2. 현재 보안 취약점 분석
+
+### 🔴 Critical 보안 이슈
+
+#### 2.1 하드코딩된 민감 정보
+**위치:** `application.yml`, `application-prod.yml`
+**현재 상태:**
+```yaml
+# 위험한 현재 설정
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: your-google-client-id      # ❌ placeholder
+            client-secret: your-google-client-secret  # ❌ placeholder
+          kakao:
+            client-id: your-kakao-client-id       # ❌ placeholder
+            client-secret: your-kakao-client-secret   # ❌ placeholder
+
+app:
+  jwt:
+    secret: mySecretKey12345678901234567890123456789012345678901234567890  # ❌ 하드코딩
+  roboflow:
+    api-key: your-roboflow-api-key               # ❌ placeholder
+  openrouter:
+    api:
+      key: your-openrouter-api-key               # ❌ placeholder
+
+spring:
+  datasource:
+    password: password                           # ❌ 기본값
+```
+
+**보안 위험도:** CRITICAL
+**공격 벡터:** 소스코드 노출, 무단 API 접근, 토큰 위조
+
+#### 2.2 암호화되지 않은 설정 파일
+**현재 상태:** 모든 설정이 평문으로 저장
+**위험도:** HIGH
+**필요 조치:** 설정 암호화 및 런타임 복호화
+
+## 3. 보안 강화 구현 요구사항
+
+### 📋 Phase 1: 환경변수 기반 설정 완성
+
+#### 3.1 OAuth 클라이언트 보안 설정
+**목표:** OAuth 클라이언트 정보의 안전한 관리
+
+**구현 요구사항:**
+```yaml
+# application-prod.yml (보안 강화 버전)
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:#{null}}
+            client-secret: ${GOOGLE_CLIENT_SECRET:#{null}}
+            scope: profile,email
+            redirect-uri: ${APP_BASE_URL}/login/oauth2/code/google
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID:#{null}}
+            client-secret: ${KAKAO_CLIENT_SECRET:#{null}}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: ${APP_BASE_URL}/login/oauth2/code/kakao
+            scope: profile_nickname,account_email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+```
+
+**보안 검증 로직:**
+```java
+@Component
+@ConfigurationProperties(prefix = "spring.security.oauth2.client.registration")
+public class OAuthSecurityValidator {
+    
+    @PostConstruct
+    public void validateOAuthConfiguration() {
+        validateGoogleConfiguration();
+        validateKakaoConfiguration();
+    }
+    
+    private void validateGoogleConfiguration() {
+        String clientId = environment.getProperty("GOOGLE_CLIENT_ID");
+        String clientSecret = environment.getProperty("GOOGLE_CLIENT_SECRET");
+        
+        if (isPlaceholderValue(clientId) || isPlaceholderValue(clientSecret)) {
+            throw new SecurityException("Google OAuth credentials not properly configured");
+        }
+        
+        // 클라이언트 ID 형식 검증 (Google의 경우)
+        if (!clientId.matches("\\d+-[a-zA-Z0-9]+\\.apps\\.googleusercontent\\.com")) {
+            throw new SecurityException("Invalid Google Client ID format");
+        }
+    }
+    
+    private boolean isPlaceholderValue(String value) {
+        return value == null || value.startsWith("your-") || value.equals("#{null}");
+    }
+}
+```
+
+#### 3.2 JWT 보안 강화
+**목표:** JWT 토큰의 안전한 생성 및 검증
+
+**구현 요구사항:**
+```yaml
+# application-prod.yml
+app:
+  jwt:
+    secret: ${JWT_SECRET:#{null}}
+    expiration: ${JWT_EXPIRATION:86400000}    # 24시간
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일
+    issuer: ${JWT_ISSUER:jeonbuk-report-platform}
+    algorithm: ${JWT_ALGORITHM:HS256}
+```
+
+**JWT 보안 설정 클래스:**
+```java
+@Component
+@ConfigurationProperties(prefix = "app.jwt")
+public class JwtSecurityConfig {
+    
+    private String secret;
+    private long expiration;
+    private long refreshExpiration;
+    private String issuer;
+    private String algorithm;
+    
+    @PostConstruct
+    public void validateJwtConfiguration() {
+        validateSecret();
+        validateExpiration();
+        validateAlgorithm();
+    }
+    
+    private void validateSecret() {
+        if (secret == null || secret.length() < 64) {
+            throw new SecurityException("JWT secret must be at least 256 bits (64 characters)");
+        }
+        
+        if (secret.startsWith("mySecretKey") || secret.contains("placeholder")) {
+            throw new SecurityException("JWT secret appears to be a placeholder value");
+        }
+        
+        // 엔트로피 검증 (랜덤성 확인)
+        if (calculateEntropy(secret) < 4.0) {
+            throw new SecurityException("JWT secret has insufficient entropy");
+        }
+    }
+    
+    private double calculateEntropy(String input) {
+        Map<Character, Integer> charCounts = new HashMap<>();
+        for (char c : input.toCharArray()) {
+            charCounts.put(c, charCounts.getOrDefault(c, 0) + 1);
+        }
+        
+        double entropy = 0.0;
+        int length = input.length();
+        for (int count : charCounts.values()) {
+            double probability = (double) count / length;
+            entropy -= probability * (Math.log(probability) / Math.log(2));
+        }
+        return entropy;
+    }
+}
+```
+
+#### 3.3 데이터베이스 보안 설정
+**목표:** 데이터베이스 연결 정보의 안전한 관리
+
+**구현 요구사항:**
+```yaml
+# application-prod.yml
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/jeonbuk_report_db}
+    username: ${DB_USERNAME:#{null}}
+    password: ${DB_PASSWORD:#{null}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+```
+
+**데이터베이스 보안 검증:**
+```java
+@Component
+public class DatabaseSecurityValidator {
+    
+    @EventListener
+    public void validateOnDataSourceInitialization(DataSourceInitializedEvent event) {
+        validateDatabaseCredentials();
+        validateConnectionSecurity();
+    }
+    
+    private void validateDatabaseCredentials() {
+        String username = environment.getProperty("DB_USERNAME");
+        String password = environment.getProperty("DB_PASSWORD");
+        
+        if ("postgres".equals(username) && "password".equals(password)) {
+            throw new SecurityException("Database using default credentials - security risk!");
+        }
+        
+        if (password == null || password.length() < 12) {
+            throw new SecurityException("Database password must be at least 12 characters");
+        }
+    }
+    
+    private void validateConnectionSecurity() {
+        String dbUrl = environment.getProperty("DB_URL");
+        
+        // SSL 연결 확인
+        if (isProductionProfile() && !dbUrl.contains("ssl=true")) {
+            log.warn("Database connection should use SSL in production");
+        }
+    }
+}
+```
+
+#### 3.4 외부 API 키 보안 관리
+**목표:** Roboflow, OpenRouter API 키의 안전한 관리
+
+**구현 요구사항:**
+```yaml
+# application-prod.yml
+app:
+  roboflow:
+    api-key: ${ROBOFLOW_API_KEY:#{null}}
+    workspace-url: ${ROBOFLOW_WORKSPACE_URL:#{null}}
+    timeout: ${ROBOFLOW_TIMEOUT:30000}
+    max-retries: ${ROBOFLOW_MAX_RETRIES:3}
+  
+  openrouter:
+    api:
+      key: ${OPENROUTER_API_KEY:#{null}}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+      model: ${OPENROUTER_MODEL:qwen/qwen2.5-vl-72b-instruct:free}
+      timeout: ${OPENROUTER_TIMEOUT:60000}
+      max-retries: ${OPENROUTER_MAX_RETRIES:3}
+```
+
+**API 키 보안 검증:**
+```java
+@Component
+@ConfigurationProperties(prefix = "app")
+public class ExternalApiSecurityValidator {
+    
+    @PostConstruct
+    public void validateApiKeys() {
+        validateRoboflowConfiguration();
+        validateOpenRouterConfiguration();
+    }
+    
+    private void validateRoboflowConfiguration() {
+        String apiKey = environment.getProperty("ROBOFLOW_API_KEY");
+        String workspaceUrl = environment.getProperty("ROBOFLOW_WORKSPACE_URL");
+        
+        if (isPlaceholderValue(apiKey) || isPlaceholderValue(workspaceUrl)) {
+            throw new SecurityException("Roboflow API configuration incomplete");
+        }
+        
+        // API 키 형식 검증
+        if (!apiKey.matches("[A-Za-z0-9]{20,}")) {
+            throw new SecurityException("Invalid Roboflow API key format");
+        }
+    }
+    
+    private void validateOpenRouterConfiguration() {
+        String apiKey = environment.getProperty("OPENROUTER_API_KEY");
+        
+        if (isPlaceholderValue(apiKey)) {
+            throw new SecurityException("OpenRouter API key not configured");
+        }
+        
+        // OpenRouter API 키 형식 검증
+        if (!apiKey.startsWith("sk-") || apiKey.length() < 32) {
+            throw new SecurityException("Invalid OpenRouter API key format");
+        }
+    }
+}
+```
+
+### 📋 Phase 2: 설정 파일 암호화
+
+#### 2.1 Jasypt 기반 설정 암호화
+**목표:** 민감한 설정값의 암호화 저장
+
+**의존성 추가:**
+```gradle
+// build.gradle
+implementation 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5'
+```
+
+**암호화 설정:**
+```java
+@Configuration
+@EnableEncryptableProperties
+public class EncryptionConfig {
+    
+    @Bean("jasyptStringEncryptor")
+    public StringEncryptor stringEncryptor() {
+        PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
+        SimpleStringPBEConfig config = new SimpleStringPBEConfig();
+        
+        config.setPassword(getEncryptionPassword());
+        config.setAlgorithm("PBEWITHHMACSHA512ANDAES_256");
+        config.setKeyObtentionIterations("1000");
+        config.setPoolSize("1");
+        config.setProviderName("SunJCE");
+        config.setSaltGeneratorClassName("org.jasypt.salt.RandomSaltGenerator");
+        config.setIvGeneratorClassName("org.jasypt.iv.RandomIvGenerator");
+        config.setStringOutputType("base64");
+        
+        encryptor.setConfig(config);
+        return encryptor;
+    }
+    
+    private String getEncryptionPassword() {
+        String password = System.getenv("JASYPT_ENCRYPTOR_PASSWORD");
+        if (password == null) {
+            throw new SecurityException("JASYPT_ENCRYPTOR_PASSWORD environment variable not set");
+        }
+        return password;
+    }
+}
+```
+
+**암호화된 설정 예시:**
+```yaml
+# application-prod.yml (암호화 적용 후)
+spring:
+  datasource:
+    password: ENC(encrypted_password_here)
+
+app:
+  jwt:
+    secret: ENC(encrypted_jwt_secret_here)
+  roboflow:
+    api-key: ENC(encrypted_roboflow_key_here)
+  openrouter:
+    api:
+      key: ENC(encrypted_openrouter_key_here)
+```
+
+### 📋 Phase 3: 운영 보안 강화
+
+#### 3.1 HTTPS 및 SSL/TLS 설정
+**목표:** 모든 통신의 암호화
+
+**Nginx 설정:**
+```nginx
+# nginx.conf
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+    
+    ssl_certificate /etc/ssl/certs/your-cert.pem;
+    ssl_certificate_key /etc/ssl/private/your-key.pem;
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers on;
+    
+    # HSTS 헤더
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    # 보안 헤더
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    
+    location / {
+        proxy_pass http://app-backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# HTTP to HTTPS redirect
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+#### 3.2 보안 헤더 설정
+**Spring Security 설정:**
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .headers(headers -> headers
+                .frameOptions().deny()
+                .contentTypeOptions().and()
+                .xssProtection().and()
+                .referrerPolicy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                    .maxAgeInSeconds(31536000)
+                    .includeSubdomains(true)
+                )
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+            );
+            
+        return http.build();
+    }
+}
+```
+
+## 4. 환경변수 관리 가이드
+
+### 4.1 개발 환경 (.env.dev)
+```bash
+# OAuth 설정
+GOOGLE_CLIENT_ID=your-dev-google-client-id
+GOOGLE_CLIENT_SECRET=your-dev-google-client-secret
+KAKAO_CLIENT_ID=your-dev-kakao-client-id
+KAKAO_CLIENT_SECRET=your-dev-kakao-client-secret
+
+# JWT 설정
+JWT_SECRET=dev-jwt-secret-minimum-64-characters-long-for-security-purposes
+JWT_EXPIRATION=86400000
+JWT_REFRESH_EXPIRATION=604800000
+
+# 데이터베이스 설정
+DB_URL=jdbc:postgresql://localhost:5432/jeonbuk_report_dev
+DB_USERNAME=dev_user
+DB_PASSWORD=dev_secure_password123
+
+# API 키 설정
+ROBOFLOW_API_KEY=your-dev-roboflow-api-key
+ROBOFLOW_WORKSPACE_URL=https://detect.roboflow.com/your-dev-workspace
+OPENROUTER_API_KEY=sk-or-dev-api-key-here
+
+# 암호화 키
+JASYPT_ENCRYPTOR_PASSWORD=dev-encryption-password
+```
+
+### 4.2 운영 환경 (.env.prod)
+```bash
+# OAuth 설정 (실제 운영 값)
+GOOGLE_CLIENT_ID=123456789-abcdefghijklmnop.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-actual-google-client-secret
+KAKAO_CLIENT_ID=actual-kakao-app-id
+KAKAO_CLIENT_SECRET=actual-kakao-client-secret
+
+# JWT 설정 (강력한 운영 키)
+JWT_SECRET=production-jwt-secret-extremely-long-and-random-string-with-high-entropy-256-bits
+JWT_EXPIRATION=3600000
+JWT_REFRESH_EXPIRATION=604800000
+
+# 데이터베이스 설정 (운영 DB)
+DB_URL=jdbc:postgresql://prod-db-server:5432/jeonbuk_report_prod?ssl=true
+DB_USERNAME=prod_report_user
+DB_PASSWORD=production-database-secure-password-with-special-chars!@#
+
+# API 키 설정 (실제 운영 키)
+ROBOFLOW_API_KEY=actual-roboflow-production-api-key
+ROBOFLOW_WORKSPACE_URL=https://detect.roboflow.com/actual-production-workspace
+OPENROUTER_API_KEY=sk-or-actual-production-api-key
+
+# 암호화 키 (강력한 운영 키)
+JASYPT_ENCRYPTOR_PASSWORD=production-encryption-password-very-secure
+
+# 추가 운영 설정
+APP_BASE_URL=https://your-production-domain.com
+REDIS_PASSWORD=production-redis-password
+KAFKA_SASL_PASSWORD=production-kafka-password
+```
+
+## 5. 보안 검증 및 테스트
+
+### 5.1 자동화된 보안 검증
+```java
+@Component
+public class ProductionSecurityChecker {
+    
+    @EventListener
+    public void validateSecurityOnStartup(ApplicationReadyEvent event) {
+        validateAllSecurityRequirements();
+    }
+    
+    private void validateAllSecurityRequirements() {
+        List<String> violations = new ArrayList<>();
+        
+        // 1. 환경변수 검증
+        violations.addAll(validateEnvironmentVariables());
+        
+        // 2. placeholder 값 검증
+        violations.addAll(validateNoPlaceholderValues());
+        
+        // 3. 암호 강도 검증
+        violations.addAll(validatePasswordStrength());
+        
+        // 4. SSL/TLS 설정 검증
+        violations.addAll(validateSslConfiguration());
+        
+        if (!violations.isEmpty()) {
+            String errorMessage = "Security validation failed:\n" + 
+                String.join("\n", violations);
+            throw new SecurityException(errorMessage);
+        }
+        
+        log.info("✅ All security requirements validated successfully");
+    }
+}
+```
+
+### 5.2 보안 테스트 케이스
+```java
+@SpringBootTest
+@ActiveProfiles("test")
+class SecurityConfigurationTest {
+    
+    @Test
+    void shouldFailWithPlaceholderValues() {
+        // placeholder 값으로 설정 시 시작 실패 확인
+        System.setProperty("GOOGLE_CLIENT_ID", "your-google-client-id");
+        
+        assertThrows(SecurityException.class, () -> {
+            SpringApplication.run(Application.class);
+        });
+    }
+    
+    @Test
+    void shouldValidateJwtSecretStrength() {
+        // 약한 JWT secret 검증
+        System.setProperty("JWT_SECRET", "weak");
+        
+        assertThrows(SecurityException.class, () -> {
+            new JwtSecurityConfig().validateJwtConfiguration();
+        });
+    }
+    
+    @Test
+    void shouldEnforceHttpsInProduction() {
+        // 운영 환경에서 HTTPS 강제 확인
+        System.setProperty("spring.profiles.active", "prod");
+        
+        // HTTPS 리다이렉트 테스트
+        // 보안 헤더 존재 확인
+    }
+}
+```
+
+## 6. 배포 보안 체크리스트
+
+### ✅ 필수 보안 요구사항
+- [ ] 모든 placeholder 값 제거
+- [ ] 환경변수로 모든 민감 정보 관리
+- [ ] JWT secret 256bit 이상
+- [ ] HTTPS 적용 (인증서 설정)
+- [ ] 보안 헤더 설정 완료
+- [ ] 데이터베이스 SSL 연결
+- [ ] API 키 유효성 검증
+- [ ] 암호화 설정 적용
+
+### ✅ 운영 환경 설정
+- [ ] 방화벽 규칙 설정
+- [ ] 불필요한 포트 차단
+- [ ] 로그 모니터링 설정
+- [ ] 침입 탐지 시스템 연동
+- [ ] 정기적 보안 업데이트 계획
+- [ ] 백업 및 복구 계획
+- [ ] 사고 대응 계획 수립
+
+## 7. 보안 모니터링
+
+### 7.1 실시간 보안 모니터링
+```java
+@Component
+public class SecurityMonitor {
+    
+    @EventListener
+    public void handleAuthenticationFailure(AbstractAuthenticationFailureEvent event) {
+        // 로그인 실패 모니터링
+        log.warn("Authentication failure: {}", event.getException().getMessage());
+        
+        // 일정 횟수 이상 실패 시 알림
+        if (isExcessiveFailures(event.getAuthentication().getName())) {
+            alertService.sendSecurityAlert("Excessive login failures detected");
+        }
+    }
+    
+    @EventListener
+    public void handleSuspiciousActivity(SuspiciousActivityEvent event) {
+        // 의심스러운 활동 감지
+        log.error("Suspicious activity detected: {}", event.getDescription());
+        alertService.sendSecurityAlert(event.getDescription());
+    }
+}
+```
+
+이 PRD를 통해 Production 환경에서 안전하게 운영할 수 있는 보안 체계를 구축할 수 있습니다.

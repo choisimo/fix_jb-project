@@ -1,0 +1,48 @@
+# 리포트(Report) 서비스 PRD
+
+## 1. 목적 및 개요
+- 사용자가 도로/시설물 등 이슈를 리포트(신고)할 수 있는 핵심 서비스
+- 리포트 생성, 조회, 수정, 삭제(CRUD) 및 파일(이미지) 업로드, AI 분석 연동 등 제공
+
+## 2. 상세 요구사항
+- 리포트 생성/수정/삭제/조회 API 완전 구현
+- 파일(이미지) 업로드 및 AI 분석 결과 연동
+- 상태(임시저장, 제출, 처리중, 완료 등) 관리
+- 사용자 인증/권한 체크
+- 예외/에러 상황(권한 없음, 데이터 없음 등) 처리
+
+## 3. 동작 플로우
+1. 사용자가 리포트 작성(필수/선택 입력)
+2. 파일 업로드 및 AI 분석 요청(선택)
+3. 리포트 저장(임시저장/제출)
+4. 관리자/담당자 처리 및 상태 변경
+5. 사용자/관리자 알림 연동
+
+## 4. 예외/에러 처리
+- 필수 입력값 누락, 권한 없음, 파일 업로드 실패, AI 분석 실패 등
+
+## 5. 구현 상태 및 미구현/임시 구현 현황
+### ✅ 구현 완료
+- main-api-server의 ReportService 기본 구조
+- ReportController 엔드포인트 일부
+- 기본적인 CRUD 인터페이스 정의
+
+### ❌ 미구현/임시 구현
+- **ai-analysis-server의 ReportService**: 9개 핵심 메서드 모두 `UnsupportedOperationException` 상태
+  - `createReport()` - TODO: 실제 구현
+  - `getReports()` - TODO: 실제 구현  
+  - `getReport()` - TODO: 실제 구현
+  - `updateReport()` - TODO: 실제 구현
+  - `deleteReport()` - TODO: 실제 구현
+  - `getMyReports()` - TODO: 실제 구현
+  - `getStatistics()` - TODO: 실제 구현
+  - `updateReportStatus()` - TODO: 실제 구현
+  - `submitReport()` - TODO: 실제 구현
+- 파일 업로드/AI 분석 연동 메커니즘 미완성
+- DRAFT 상태 처리 로직 임시 구현
+- 리포트 상태 전환 규칙 미정의
+- 사용자 권한별 접근 제어 미완성
+
+## 6. 참고/비고
+- ai-analysis-server와 main-api-server 간 코드 중복 해결 필요
+- 실제 구현시 상세 API 명세 및 DB 모델 참고 필요

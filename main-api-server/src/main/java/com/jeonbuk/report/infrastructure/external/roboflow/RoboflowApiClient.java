@@ -268,7 +268,7 @@ public class RoboflowApiClient {
     
     return new AnalysisResult(
         roboflowResult.getModelId(),
-        roboflowResult.getDetectedObjects(),
+        convertDetectedObjects(roboflowResult.getDetectedObjects()),
         roboflowResult.getAverageConfidence(),
         java.time.LocalDateTime.now().toString(),
         roboflowResult.isSuccess(),
@@ -335,7 +335,7 @@ public class RoboflowApiClient {
       
       // Create a mock detected object for fallback
       RoboflowAnalysisResult.DetectedObject.BoundingBox mockBoundingBox = 
-          new RoboflowAnalysisResult.DetectedObject.BoundingBox(0, 0, 100, 100);
+          new RoboflowAnalysisResult.DetectedObject.BoundingBox(0.0, 0.0, 100.0, 100.0);
       
       RoboflowAnalysisResult.DetectedObject mockObject = 
           new RoboflowAnalysisResult.DetectedObject(
@@ -347,7 +347,7 @@ public class RoboflowApiClient {
       
       return new AnalysisResult(
           "fallback-analysis",
-          List.of(mockObject),
+          convertDetectedObjects(List.of(mockObject)),
           confidence,
           java.time.LocalDateTime.now().toString(),
           true,
@@ -369,6 +369,45 @@ public class RoboflowApiClient {
           0.0
       );
     }
+  }
+
+  /**
+   * Convert RoboflowAnalysisResult.DetectedObject to AnalysisResult.DetectedObject
+   */
+  private List<RoboflowDto.AnalysisResult.DetectedObject> convertDetectedObjects(
+      List<RoboflowDto.RoboflowAnalysisResult.DetectedObject> roboflowObjects) {
+    if (roboflowObjects == null) {
+      return Collections.emptyList();
+    }
+    
+    return roboflowObjects.stream()
+        .map(this::convertDetectedObject)
+        .collect(Collectors.toList());
+  }
+
+  private RoboflowDto.AnalysisResult.DetectedObject convertDetectedObject(
+      RoboflowDto.RoboflowAnalysisResult.DetectedObject roboflowObject) {
+    if (roboflowObject == null) {
+      return null;
+    }
+    
+    RoboflowDto.AnalysisResult.DetectedObject.BoundingBox convertedBoundingBox = null;
+    if (roboflowObject.getBoundingBox() != null) {
+      RoboflowDto.RoboflowAnalysisResult.DetectedObject.BoundingBox originalBox = roboflowObject.getBoundingBox();
+      convertedBoundingBox = new RoboflowDto.AnalysisResult.DetectedObject.BoundingBox(
+          originalBox.getX(),
+          originalBox.getY(),
+          originalBox.getWidth(),
+          originalBox.getHeight()
+      );
+    }
+    
+    return new RoboflowDto.AnalysisResult.DetectedObject(
+        roboflowObject.getObjectType(),
+        roboflowObject.getConfidence(),
+        convertedBoundingBox,
+        roboflowObject.getAdditionalData()
+    );
   }
 
   /**
