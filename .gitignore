@@ -162,9 +162,19 @@ dev-debug.log
 flutter-app/lib/core/ai/roboflow_api_config.dart
 flutter-app/lib/core/ai/roboflow_config.dart
 
-# Docker environment files
+# Environment variables and sensitive configuration
+.env
+.env.*
 *.env
 docker-compose.override.yml
+
+# API Keys and secrets
+**/api-keys.*
+**/secrets.*
+**/credentials.*
+**/config.ini
+*.key
+*.secret
 
 # Python virtual environments (expanded coverage)
 venv/
