@@ -5,32 +5,456 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3b632acb-09c7-466c-bc5d-5fb645d8a000" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.prod.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.prod.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/android/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/android/gradle.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/ios/Runner/GeneratedPluginRegistrant.m" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/ios/Runner/GeneratedPluginRegistrant.m" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ACTUAL_VERIFICATION_TEST_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/apis/api-overview.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/architecture/system-architecture.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/context/project-overview.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/context/tech-stack.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/database/schema-overview.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/integrations/roboflow-integration.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/services/ai-analysis-server.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/services/main-api-server.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI-agent/workflows/coding-standards.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/API_KEYS_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/COMPREHENSIVE_ANALYSIS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/OAUTH2_SETUP_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PRODUCTION_REFACTORING_PROGRESS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QUICK_START_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/STABILITY_TEST_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/JeonbukReportPlatformApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/JeonbukReportPlatformApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/domain/entity/Report.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/domain/entity/Report.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/domain/entity/ReportFile.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/domain/entity/ReportFile.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/domain/entity/Status.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/domain/entity/Status.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/category/CategoryDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/category/CategoryDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/category/ReportCategoryResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/category/ReportCategoryResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/common/ReportSearchCondition.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/common/ReportSearchCondition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/LocationInfo.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/LocationInfo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportCreateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportCreateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportDetailResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportDetailResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportFileResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportFileResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportStatusUpdateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportStatusUpdateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportSummaryResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportSummaryResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportUpdateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportUpdateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/StatusResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/StatusResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/repository/CategoryRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/repository/ReportCategoryRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/AiAgentAnalysisService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/AiAgentAnalysisService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/AiAnalysisService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/AiAnalysisService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/GoogleCloudVisionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/GoogleCloudVisionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/RoboflowService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/java/com/jeonbuk/report/service/RoboflowService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/ai-analysis-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api-gateway/src/main/java/com/jbplatform/gateway/config/SecurityConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/api-gateway/src/main/java/com/jbplatform/gateway/filter/GlobalLoggingFilter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/api-gateway/src/main/resources/application.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs-optimization-completion-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs-optimization-mapping.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/completion-status/ACTUAL_BUILD_STATUS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/completion-status/ADMIN_MANAGEMENT_ANALYSIS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/completion-status/DOCUMENT_CLEANUP_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/completion-status/PRODUCTION_REFACTORING_PROGRESS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/completion-status/PROJECT_COMPLETION_STATUS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/completion-status/SERVICE_COMPLETION_TEST_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/error-reports/2025-07-13_planning_document-management-system-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/error-reports/specs_AI_ROUTER_SPECIFICATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/error-reports/specs_SPRING_BOOT_DOMAIN_DTO_DESIGN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/analysis/error-reports/templates_api-specification-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/classification-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/2025-07-11_07_guideline_documentation.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/COMPREHENSIVE_PROJECT_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/INDEX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/NEXT_STEPS_EXECUTION_PLAN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/SETTINGS_SAVE_ISSUE_RESOLVED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/SYSTEM_ENVIRONMENT_SOLUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/code-review-integration-guide.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/code_review-report-1.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/database-structure.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/templates_error-analysis-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/general/documentation/templates_meeting-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/infrastructure/database/AI_ANALYSIS_DATABASE_SCHEMA_FIX_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/infrastructure/setup/API_KEYS_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/00-flutter-comprehensive-prd-index.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/01-user-authentication-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/02-report-management-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/03-realtime-notification-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/04-user-profile-management-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/05-map-location-services-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/06-admin-features-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/07-offline-sync-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/08-performance-optimization-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/09-statistics-analytics-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/10-security-privacy-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/AI_ANALYSIS_DATABASE_SCHEMA_FIX_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/PRODUCTION_DEPLOYMENT_REFACTORING_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/comprehensive-implementation-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/implementation-requirements-specification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/jb-platform-critical-issues-fix-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/jb-project-refactoring-for-actual-testing.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/mobile-app-backend-integration-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd-documentation-cleanup-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_AI_ANALYSIS_DATABASE_SCHEMA_FIX_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_PRODUCTION_DEPLOYMENT_REFACTORING_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_comprehensive-implementation-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_00-flutter-comprehensive-prd-index.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_01-user-authentication-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_02-report-management-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_03-realtime-notification-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_04-user-profile-management-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_05-map-location-services-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_06-admin-features-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_07-offline-sync-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_08-performance-optimization-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_09-statistics-analytics-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_flutter-features_10-security-privacy-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_implementation-requirements-specification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_jb-platform-critical-issues-fix-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_jb-project-refactoring-for-actual-testing.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_mobile-app-backend-integration-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_prd-documentation-cleanup-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/prd_service-completion-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/planning/prd/service-completion-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/api/LOGGING_SERVICE_DESIGN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/api/NOTIFICATION_SERVICE_IMPLEMENTATION_PLAN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/api/SERVICE_COMPLETION_TEST_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-11_01_common_module_refactoring.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-11_02_folder_structure_unification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-11_03_naming_convention_unification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-11_04_code_style_unification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-11_05_gradle_multimodule_setup.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-11_06_test_code_migration.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-13_README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-13_comprehensive-microservices-audit-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/2025-07-13_service-completion-analysis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/specs_AI_ANALYSIS_IMPROVEMENT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/specs_AI_ROUTER_ENHANCEMENT_SPECIFICATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/specs_feature-ai-report-analysis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/specs_feature-kafka-logging-mongodb.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/specs_feature-push-notification-sse.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/specs_springboot-module.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/service/implementation/templates_general-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/testing/validation/ACTUAL_VERIFICATION_TEST_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/testing/validation/SERVICE_COMPLETION_TEST_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents-classified/testing/validation/TEST_ACCOUNTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/.~lock.API_DOCUMENTATION.md#" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/01_common_module_refactoring.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/02_folder_structure_unification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/03_naming_convention_unification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/04_code_style_unification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/05_gradle_multimodule_setup.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/06_test_code_migration.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/07_guideline_documentation.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-11/PROJECT_COMPLETION_STATUS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/AUTH_FEATURES_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/GOOGLE_ML_OCR_API_SETUP_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/NOTIFICATION_FEATURES_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/REPORT_MANAGEMENT_FEATURES_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/comprehensive-microservices-audit-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/flutter-app-feature-documentation.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/planning/document-management-system-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/python-ai-services-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/service-completion-analysis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/2025-07-13/visual-user-flow-documentation.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/ACTUAL_BUILD_STATUS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/ADMIN_MANAGEMENT_ANALYSIS_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/API_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/API_ERROR_SOLUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/COMPREHENSIVE_PROJECT_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/DOCUMENT_CLEANUP_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/FLUTTER_ERROR_RESOLVED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/FLUTTER_ROBOFLOW_SETUP_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/INDEX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/JB_PLATFORM_ADMIN_UI_DEVELOPMENT_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/KAFKA_DOCKER_TROUBLESHOOTING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/KAFKA_SOLUTION_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/NEXT_STEPS_EXECUTION_PLAN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/PROJECT_STATUS_COMPREHENSIVE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/ROBOFLOW_COMPLETE_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/SERVICE_COMPLETION_TEST_REPORT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/SETTINGS_SAVE_ISSUE_RESOLVED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/SYSTEM_ENVIRONMENT_SOLUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/USER_GUIDE_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/code-review-integration-guide.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/code_review-report-1.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/database-structure.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-ai-integration.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-alert.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-build-compile-fix.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-database-schema.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-environment-configuration.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-file-upload.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-flutter-enhancement.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-json-parsing.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-kafka-messaging.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-mock-test.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-oauth-social-login.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-performance-monitoring.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-production-deployment-critical.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-report-crud-implementation.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-report.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-security-auth.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-security-enhancement.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-sse-implementation.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-statistics-metrics.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-statistics.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-temp-token.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-test-improvement.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/0712/prd-websocket-realtime.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/AI_ANALYSIS_DATABASE_SCHEMA_FIX_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/PRODUCTION_DEPLOYMENT_REFACTORING_PRD.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/comprehensive-implementation-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/00-flutter-comprehensive-prd-index.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/01-user-authentication-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/02-report-management-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/03-realtime-notification-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/04-user-profile-management-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/05-map-location-services-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/06-admin-features-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/07-offline-sync-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/08-performance-optimization-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/09-statistics-analytics-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/flutter-features/10-security-privacy-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/frontend-backend-api-mapping-analysis-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/implementation-requirements-specification.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/jb-platform-critical-issues-fix-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/jb-project-refactoring-for-actual-testing.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/mobile-app-backend-integration-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/prd-documentation-cleanup-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/prd/service-completion-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/records/TEST_ACCOUNTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/report-db.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/AI_ANALYSIS_IMPROVEMENT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/AI_ROUTER_ENHANCEMENT_SPECIFICATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/AI_ROUTER_SPECIFICATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/LOGGING_SERVICE_DESIGN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/NOTIFICATION_SERVICE_IMPLEMENTATION_PLAN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/SPRING_BOOT_DOMAIN_DTO_DESIGN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/feature-ai-report-analysis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/feature-kafka-logging-mongodb.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/feature-push-notification-sse.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/specs/springboot-module.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/templates/api-specification-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/templates/error-analysis-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/templates/general-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/templates/meeting-template.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/todo-prd.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/android/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/android/app/src/main/res/xml/network_security_config.xml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/android/app/src/main/res/xml/network_security_config.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/core/config/app_config.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/core/config/app_config.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/core/constants/api_constants.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/core/constants/api_constants.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/core/providers/service_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/core/providers/service_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/core/utils/image_upload_helper.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/core/utils/image_upload_helper.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/auth/data/auth_repository.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/auth/data/auth_repository.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/domain/models/image_analysis_result.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/domain/models/image_analysis_result.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/domain/services/image_analysis_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/domain/services/image_analysis_service.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/presentation/providers/image_analysis_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/presentation/providers/image_analysis_provider.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/maps/domain/services/map_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/maps/domain/services/map_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/maps/presentation/providers/map_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/maps/presentation/providers/map_provider.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/maps/presentation/widgets/naver_map_widget.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/maps/presentation/widgets/naver_map_widget.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/report/data/api/ai_api_client.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/report/data/api/ai_api_client.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/report/data/api/report_api_client.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/report/data/api/report_api_client.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/report/presentation/create_report_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/report/presentation/create_report_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/app_integrity_verification.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/app_integrity_verification.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/biometric_authentication_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/biometric_authentication_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/data_encryption_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/data_encryption_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/privacy_protection_manager.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/privacy_protection_manager.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/security_monitoring_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/data/services/security_monitoring_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/domain/models/privacy_settings.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/domain/models/privacy_settings.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/domain/models/security_event.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/domain/models/security_event.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/domain/models/security_state.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/domain/models/security_state.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/security/presentation/controllers/security_controller.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/security/presentation/controllers/security_controller.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/presentation/screens/image_analysis_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/image_analysis/presentation/screens/image_analysis_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/report/data/providers/report_providers.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/report/data/providers/report_providers.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/report/data/report_repository.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/report/data/report_repository.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/report/presentation/report_list_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/report/presentation/report_list_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/settings/presentation/settings_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/settings/presentation/settings_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/system_monitoring/presentation/providers/system_monitoring_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/system_monitoring/presentation/providers/system_monitoring_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/features/user_management/presentation/providers/user_management_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/features/user_management/presentation/providers/user_management_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/screens/ai/new_analysis_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/screens/ai/new_analysis_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/screens/reports/report_detail_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/lib/screens/reports/report_detail_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter-app/lib/test_model.dart" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter-app/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/pubspec.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter-app/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/pubspec.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter-app/test/features/report/data/services/ocr_service_test.mocks.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter-app/test/features/report/data/services/ocr_service_test.mocks.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/image.nodove.com.conf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/init-scripts/01-create-database.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jbplatform/api/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jbplatform/api/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jbplatform/api/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jbplatform/api/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jbreport/platform/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jbreport/platform/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/application/service/KafkaTicketService.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/application/service/KafkaTicketService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/application/service/VerificationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/application/service/VerificationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/domain/entity/Comment.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/domain/entity/Comment.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/domain/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/domain/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/presentation/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/presentation/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/presentation/dto/response/AuthResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/presentation/dto/response/AuthResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/presentation/dto/response/UserResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/java/com/jeonbuk/report/presentation/dto/response/UserResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/EmailVerificationStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/EmailVerificationStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/IntegratedStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/IntegratedStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/JwtTokenServiceStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/JwtTokenServiceStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/NiceIdentityVerificationStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/NiceIdentityVerificationStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/RedisServiceStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/RedisServiceStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/SmsVerificationStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/SmsVerificationStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/StabilityTestFramework.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/StabilityTestFramework.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/UserServiceStabilityTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/main-api-server/src/test/java/com/jeonbuk/report/test/stability/UserServiceStabilityTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservices-audit-20250713_174348/01-project-structure.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservices-audit-20250713_174352/01-project-structure.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/nginx/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/nginx/nginx.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nodove.com.tar.gz" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/actual-build-test.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/classify-remaining-docs.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/create-admin-user.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/create-missing-entities.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/daily-docs-setup.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/deploy-production.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/direct-analysis.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/document-classifier.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/fix-ai-integration.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/fix-dependencies.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/fix-package-structure.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/microservices-audit.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/quick-microservices-analysis.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/run-all-fixes.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/run-integration-tests.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/run-stability-tests.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/setup-api-keys.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/setup-file-storage.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/setup-google-ocr-keys.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/simple-document-classifier.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/start-all-services.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/stop-all-services.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test-ai-integration.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test-api-keys.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test-build.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test-file-operations.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/validate-docs.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/.metadata" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/analysis_options.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/build.gradle.kts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/debug/AndroidManifest.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/AndroidManifest.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/kotlin/com/example/simple_test_app/MainActivity.kt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/drawable-v21/launch_background.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/drawable/launch_background.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/mipmap-hdpi/ic_launcher.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/values-night/styles.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/main/res/values/styles.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/app/src/profile/AndroidManifest.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/build.gradle.kts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/gradle.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/android/settings.gradle.kts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Flutter/AppFrameworkInfo.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Flutter/Debug.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Flutter/Release.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner.xcodeproj/project.pbxproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/AppDelegate.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Base.lproj/LaunchScreen.storyboard" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Base.lproj/Main.storyboard" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/Runner/Runner-Bridging-Header.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/ios/RunnerTests/RunnerTests.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/lib/main.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/flutter/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/flutter/generated_plugin_registrant.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/flutter/generated_plugin_registrant.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/flutter/generated_plugins.cmake" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/runner/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/runner/main.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/runner/my_application.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/linux/runner/my_application.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Flutter/Flutter-Debug.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Flutter/Flutter-Release.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner.xcodeproj/project.pbxproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/AppDelegate.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_128.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_64.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Base.lproj/MainMenu.xib" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Configs/AppInfo.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Configs/Debug.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Configs/Release.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Configs/Warnings.xcconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/DebugProfile.entitlements" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/MainFlutterWindow.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/Runner/Release.entitlements" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/macos/RunnerTests/RunnerTests.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/pubspec.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/pubspec.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/test/widget_test.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/favicon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/icons/Icon-192.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/icons/Icon-512.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/icons/Icon-maskable-192.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/icons/Icon-maskable-512.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/web/manifest.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/flutter/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/flutter/generated_plugin_registrant.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/flutter/generated_plugins.cmake" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/Runner.rc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/flutter_window.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/flutter_window.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/resource.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/resources/app_icon.ico" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/runner.exe.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/utils.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/utils.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/win32_window.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test_app/windows/runner/win32_window.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/api-tests/static-analysis-test.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/build-dependency-analysis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/comprehensive-test-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/database-tests/schema-validation-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/final-comprehensive-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/integration-tests/service-communication-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-report/service-analysis-report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_images/construction_1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_images/graffiti_1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_images/pothole_1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_images/road_damage_1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_images/street_light_1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_images/trash_1.jpg" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,9 +480,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 2
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
   <component name="ProjectId" id="2zqbGzU8Tye2RX2eoQpl2bZ5kHU" />
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1" />
@@ -72,20 +496,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "develop0714",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/nodove/workspace/fix_jb-project",
-    "settings.editor.selected.configurable": "gradle.compiler"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;develop0714&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/nodove/workspace/fix_jb-project&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;gradle.compiler&quot;
   }
-}]]></component>
+}</component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">

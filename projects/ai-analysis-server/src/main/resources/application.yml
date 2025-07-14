@@ -1,0 +1,178 @@
+spring:
+  application:
+    name: jeonbuk-report-platform
+  
+  main:
+    allow-bean-definition-overriding: true
+  
+  # Database Configuration (PostgreSQL)
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          time_zone: Asia/Seoul
+        hbm2ddl:
+          auto: none
+        globally_quoted_identifiers: false
+        globally_quoted_identifiers_skip_column_definitions: true
+  
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+      password: ${REDIS_PASSWORD}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+  
+  # File Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 200MB
+      enabled: true
+  
+  # Security Configuration
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile,email
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: profile_nickname,account_email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+# Application Configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: 86400000 # 24 hours
+    refresh-expiration: 604800000 # 7 days
+  
+  file:
+    upload-dir: ${FILE_STORAGE_PATH}
+    max-size: 50MB
+    allowed-types: image/jpeg,image/png,image/gif,video/mp4,video/avi
+  
+  roboflow:
+    api-key: ${ROBOFLOW_API_KEY}
+    workspace-url: ${ROBOFLOW_WORKSPACE_URL}
+  
+  openrouter:
+    api:
+      key: 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
+      base-url: https://openrouter.ai/api/v1
+      model: openai/gpt-4o
+  
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    topics:
+      image-requests: ${KAFKA_TOPIC_IMAGE_REQUESTS:image_requests}
+      analysis-results: ${KAFKA_TOPIC_ANALYSIS_RESULTS:ai_analysis_results}
+      analysis-errors: ${KAFKA_TOPIC_ANALYSIS_ERRORS:ai_analysis_errors}
+      validation-results: ${KAFKA_TOPIC_VALIDATION_RESULTS:ai_validation_results}
+      notifications: ${KAFKA_TOPIC_NOTIFICATIONS:notifications}
+
+# Google Cloud Configuration
+google:
+  cloud:
+    project-id: 
+    vision:
+      enabled: false
+      credentials-path:
+
+# AI Agent Configuration  
+ai:
+  agent:
+    enabled: true
+    api:
+      url: https://openrouter.ai/api/v1
+      key: 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
+      timeout: 30000
+    features:
+      scene-analysis: true
+      object-detection: true
+      context-integration: true
+
+# Async Processing Configuration
+async:
+  processing:
+    core-pool-size: ${ASYNC_CORE_POOL_SIZE:4}
+    max-pool-size: ${ASYNC_MAX_POOL_SIZE:8}
+    queue-capacity: ${ASYNC_QUEUE_CAPACITY:100}
+    timeout: ${ASYNC_TIMEOUT:30000}
+    fallback-enabled: ${ASYNC_FALLBACK_ENABLED:true}
+
+# Server Configuration
+server:
+  port: 8084
+  servlet:
+    context-path: /api/v1
+  
+# Logging Configuration
+logging:
+  level:
+    com.jeonbuk.report: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${SQL_PARAM_LOG_LEVEL:WARN}
+    com.google.cloud: ${GOOGLE_CLOUD_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/application.log
+
+# Management Configuration (Actuator)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+# SpringDoc (Swagger) Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha

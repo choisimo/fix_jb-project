@@ -1,19 +1,185 @@
 {
-	"mcpServers": {
-		"task-master-ai": {
-			"command": "npx",
-			"args": ["-y", "--package=task-master-ai", "task-master-ai"],
-			"env": {
-				"ANTHROPIC_API_KEY": "ANTHROPIC_API_KEY_HERE",
-				"PERPLEXITY_API_KEY": "PERPLEXITY_API_KEY_HERE",
-				"OPENAI_API_KEY": "OPENAI_API_KEY_HERE",
-				"GOOGLE_API_KEY": "GOOGLE_API_KEY_HERE",
-				"XAI_API_KEY": "XAI_API_KEY_HERE",
-				"OPENROUTER_API_KEY": "OPENROUTER_API_KEY_HERE",
-				"MISTRAL_API_KEY": "MISTRAL_API_KEY_HERE",
-				"AZURE_OPENAI_API_KEY": "AZURE_OPENAI_API_KEY_HERE",
-				"OLLAMA_API_KEY": "OLLAMA_API_KEY_HERE"
-			}
-		}
-	}
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-memory"],
+      "env": {},
+      "description": "Anthropic Memory MCP Server for knowledge persistence"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "sequential-thinking"],
+      "env": {},
+      "description": "Sequential thinking MCP server for complex problem solving"
+    },
+    "prisma-mcp-se": {
+      "command": "npx",
+      "args": ["-y", "prisma-mcp-se"],
+      "env": {
+        "DATABASE_URL": "postgresql://jb_user:jb_password@localhost:5434/jb_main"
+      },
+      "description": "Prisma MCP server for database operations"
+    },
+    "task-master-ai": {
+      "command": "npx",
+      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
+      "env": {
+        "ANTHROPIC_API_KEY": "ANTHROPIC_API_KEY_HERE",
+        "PERPLEXITY_API_KEY": "PERPLEXITY_API_KEY_HERE",
+        "OPENAI_API_KEY": "OPENAI_API_KEY_HERE",
+        "GOOGLE_API_KEY": "AIzaSyCkrToDTZge67AfxsZSwLC9X3afrzF7LiE",
+        "XAI_API_KEY": "XAI_API_KEY_HERE",
+        "OPENROUTER_API_KEY": "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",
+        "MISTRAL_API_KEY": "MISTRAL_API_KEY_HERE",
+        "AZURE_OPENAI_API_KEY": "AZURE_OPENAI_API_KEY_HERE",
+        "OLLAMA_API_KEY": "OLLAMA_API_KEY_HERE"
+      },
+      "description": "Task Master AI for intelligent task management"
+    },
+    "postgres-main": {
+      "command": "docker",
+      "args": ["exec", "-i", "postgres-main", "psql", "-U", "jb_user", "-d", "jb_main"],
+      "env": {
+        "POSTGRES_DB": "jb_main",
+        "POSTGRES_USER": "jb_user", 
+        "POSTGRES_PASSWORD": "jb_password",
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5434",
+        "DATABASE_URL": "postgresql://jb_user:jb_password@localhost:5434/jb_main"
+      },
+      "description": "Main PostgreSQL database for application (running on port 5434)"
+    },
+    "postgres-ai": {
+      "command": "docker",
+      "args": ["exec", "-i", "postgres-ai", "psql", "-U", "jb_user", "-d", "jb_ai"],
+      "env": {
+        "POSTGRES_DB": "jb_ai",
+        "POSTGRES_USER": "jb_user",
+        "POSTGRES_PASSWORD": "jb_password",
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5433",
+        "DATABASE_URL": "postgresql://jb_user:jb_password@localhost:5433/jb_ai"
+      },
+      "description": "AI analysis PostgreSQL database (running on port 5433)"
+    },
+    "redis": {
+      "command": "docker",
+      "args": ["exec", "-i", "redis", "redis-cli", "-a", "EJy4rXAY/N5cjkrBnvtJzGRkySCe+GKZbCwzfM3jp7k="],
+      "env": {
+        "REDIS_PASSWORD": "EJy4rXAY/N5cjkrBnvtJzGRkySCe+GKZbCwzfM3jp7k=",
+        "REDIS_HOST": "localhost",
+        "REDIS_PORT": "6379",
+        "REDIS_URL": "redis://:EJy4rXAY/N5cjkrBnvtJzGRkySCe+GKZbCwzfM3jp7k=@localhost:6379"
+      },
+      "description": "Redis cache server (running on port 6379)"
+    },
+    "kafka": {
+      "command": "docker",
+      "args": ["exec", "-i", "kafka", "kafka-console-producer", "--bootstrap-server", "localhost:9092", "--topic", "test"],
+      "env": {
+        "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092"
+      },
+      "description": "Kafka message broker (currently stopped - use docker-compose up kafka to start)"
+    },
+    "openrouter": {
+      "command": "curl",
+      "args": ["-H", "Authorization: Bearer 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", "-H", "Content-Type: application/json", "https://openrouter.ai/api/v1/chat/completions"],
+      "env": {
+        "OPENROUTER_API_KEY": "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",
+        "OPENROUTER_BASE_URL": "https://openrouter.ai/api/v1",
+        "OPENROUTER_MODEL": "openai/gpt-4o"
+      },
+      "description": "OpenRouter AI API endpoint with GPT-4o"
+    },
+    "ai-agent": {
+      "command": "curl",
+      "args": ["-H", "Authorization: Bearer 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", "-H", "Content-Type: application/json", "https://openrouter.ai/api/v1/chat/completions"],
+      "env": {
+        "AI_AGENT_API_KEY": "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",
+        "AI_AGENT_API_URL": "https://openrouter.ai/api/v1"
+      },
+      "description": "AI Agent API endpoint for document analysis"
+    },
+    "gcp-vision-api": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "-X", "POST", "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyCkrToDTZge67AfxsZSwLC9X3afrzF7LiE"],
+      "env": {
+        "GOOGLE_API_KEY": "AIzaSyCkrToDTZge67AfxsZSwLC9X3afrzF7LiE",
+        "GOOGLE_CLOUD_PROJECT_ID": "jeonbuk-report-platform",
+        "GOOGLE_CLOUD_VISION_ENABLED": "true"
+      },
+      "description": "Google Cloud Vision API for OCR and image analysis"
+    },
+    "roboflow": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "-X", "POST"],
+      "env": {
+        "ROBOFLOW_API_KEY": "rxOi7KxBaYYoOvueATVf",
+        "ROBOFLOW_WORKSPACE": "jeonbuk-reports",
+        "ROBOFLOW_PROJECT": "integrated-detection",
+        "ROBOFLOW_MODEL_ID": "integrated-detection/1",
+        "ROBOFLOW_WORKSPACE_URL": "https://detect.roboflow.com/fixjeonbukapplication"
+      },
+      "description": "Roboflow API for computer vision and object detection"
+    },
+    "main-api-server": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:8080/actuator/health"],
+      "env": {
+        "API_BASE_URL": "http://localhost:8080",
+        "SERVER_PORT": "8080"
+      },
+      "description": "Main API Server health check (Spring Boot on port 8080)"
+    },
+    "ai-analysis-server": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:8081/actuator/health"],
+      "env": {
+        "AI_ANALYSIS_PORT": "8081",
+        "AI_API_BASE_URL": "http://localhost:8081"
+      },
+      "description": "AI Analysis Server health check (Spring Boot on port 8081)"
+    },
+    "keycloak": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:8180/auth/realms/jb-platform/.well-known/openid_configuration"],
+      "env": {
+        "KEYCLOAK_URL": "http://localhost:8180",
+        "KEYCLOAK_REALM": "jb-platform"
+      },
+      "description": "Keycloak authentication server (running on port 8180)"
+    },
+    "elasticsearch": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:9200/_cluster/health"],
+      "env": {
+        "ELASTICSEARCH_URL": "http://localhost:9200"
+      },
+      "description": "Elasticsearch cluster (running on port 9200)"
+    },
+    "grafana": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:3000/api/health"],
+      "env": {
+        "GRAFANA_URL": "http://localhost:3000"
+      },
+      "description": "Grafana monitoring dashboard (running on port 3000)"
+    },
+    "prometheus": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:9090/-/healthy"],
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090"
+      },
+      "description": "Prometheus metrics server (running on port 9090)"
+    },
+    "kibana": {
+      "command": "curl",
+      "args": ["-H", "Content-Type: application/json", "http://localhost:5601/api/status"],
+      "env": {
+        "KIBANA_URL": "http://localhost:5601"
+      },
+      "description": "Kibana analytics dashboard (running on port 5601)"
+    }
+  }
 }
