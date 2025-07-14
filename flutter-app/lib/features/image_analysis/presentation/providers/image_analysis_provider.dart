@@ -24,10 +24,14 @@ class ImageAnalysisNotifier extends StateNotifier<AsyncValue<ImageAnalysisResult
     
     try {
       final ocrResult = await _service.performOCR(imageFile);
-      final currentResult = state.value ?? ImageAnalysisResult();
+      final currentResult = state.value ?? const ImageAnalysisResult();
       
       state = AsyncValue.data(
-        currentResult.copyWith(ocrResult: ocrResult),
+        currentResult.copyWith(
+          ocrResult: ocrResult,
+          imagePath: imageFile.path,  // 이미지 경로 저장
+          analyzedAt: DateTime.now(),
+        ),
       );
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -42,10 +46,14 @@ class ImageAnalysisNotifier extends StateNotifier<AsyncValue<ImageAnalysisResult
         imageFile,
         analysisType: analysisType,
       );
-      final currentResult = state.value ?? ImageAnalysisResult();
+      final currentResult = state.value ?? const ImageAnalysisResult();
       
       state = AsyncValue.data(
-        currentResult.copyWith(aiResult: aiResult),
+        currentResult.copyWith(
+          aiResult: aiResult,
+          imagePath: imageFile.path,  // 이미지 경로 저장
+          analyzedAt: DateTime.now(),
+        ),
       );
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -54,5 +62,12 @@ class ImageAnalysisNotifier extends StateNotifier<AsyncValue<ImageAnalysisResult
   
   void reset() {
     state = const AsyncValue.data(null);
+  }
+  
+  @override
+  void dispose() {
+    // Provider 종료시 임시 파일 정리
+    _service.cleanupTempFiles();
+    super.dispose();
   }
 }

@@ -1,22 +1,46 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-import '../../../report/domain/models/report.dart';
+import '../models/ai_analysis_dto.dart';
 
 part 'ai_api_client.g.dart';
 
-@RestApi()
+@RestApi(baseUrl: '/api/v1/ai')
 abstract class AiApiClient {
   factory AiApiClient(Dio dio, {String baseUrl}) = _AiApiClient;
 
-  @POST('/api/v1/ai/analyze/comprehensive')
+  @POST('/analyze')
   @MultiPart()
-  Future<Map<String, dynamic>> analyzeImageComprehensive(
-    @Part() MultipartFile image,
+  Future<AiAnalysisDto> analyzeDocument(
+    @Part(name: 'file') File file,  // MultipartFile 대신 File 사용
+    @Part(name: 'options') String analysisOptions,
   );
 
-  @GET('/api/v1/ai/health')
-  Future<Map<String, dynamic>> getHealthStatus();
+  @POST('/analyze/batch')
+  @MultiPart()
+  Future<List<AiAnalysisDto>> batchAnalyze(
+    @Part(name: 'files') List<File> files,  // MultipartFile 대신 File 사용
+    @Part(name: 'options') String analysisOptions,
+  );
 
-  @GET('/api/v1/ai/capabilities')
-  Future<Map<String, dynamic>> getCapabilities();
+  @GET('/analysis/{id}')
+  Future<AiAnalysisDto> getAnalysisResult(@Path('id') String id);
+
+  @GET('/analysis/report/{reportId}')
+  Future<List<AiAnalysisDto>> getAnalysisByReportId(
+    @Path('reportId') String reportId,
+  );
+
+  @POST('/extract-text')
+  @MultiPart()
+  Future<Map<String, dynamic>> extractText(
+    @Part(name: 'file') File file,  // MultipartFile 대신 File 사용
+  );
+
+  @POST('/validate')
+  @MultiPart()
+  Future<Map<String, dynamic>> validateDocument(
+    @Part(name: 'file') File file,  // MultipartFile 대신 File 사용
+    @Part(name: 'rules') String validationRules,
+  );
 }

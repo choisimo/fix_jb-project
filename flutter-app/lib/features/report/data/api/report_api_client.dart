@@ -1,65 +1,48 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-import '../../domain/models/report.dart';
+import '../models/report_dto.dart';
 
 part 'report_api_client.g.dart';
 
-@RestApi()
+@RestApi(baseUrl: '/api/v1')
 abstract class ReportApiClient {
   factory ReportApiClient(Dio dio, {String baseUrl}) = _ReportApiClient;
 
   @GET('/reports')
-  Future<Map<String, dynamic>> getReports(@Queries() Map<String, dynamic> queries);
+  Future<List<ReportDto>> getReports({
+    @Query('page') int? page,
+    @Query('size') int? size,
+    @Query('status') String? status,
+  });
 
   @GET('/reports/{id}')
-  Future<Map<String, dynamic>> getReport(@Path() String id);
+  Future<ReportDto> getReportById(@Path('id') String id);
 
   @POST('/reports')
-  Future<Map<String, dynamic>> createReport(@Body() Map<String, dynamic> request);
+  Future<ReportDto> createReport(@Body() ReportDto report);
 
   @PUT('/reports/{id}')
-  Future<Map<String, dynamic>> updateReport(
-    @Path() String id,
-    @Body() Map<String, dynamic> request,
+  Future<ReportDto> updateReport(
+    @Path('id') String id,
+    @Body() ReportDto report,
   );
 
   @DELETE('/reports/{id}')
-  Future<void> deleteReport(@Path() String id);
+  Future<void> deleteReport(@Path('id') String id);
 
-  @POST('/reports/{id}/submit')
-  Future<Map<String, dynamic>> submitReport(@Path() String id);
-
-  @POST('/reports/{id}/like')
-  Future<void> likeReport(@Path() String id);
-
-  @DELETE('/reports/{id}/like')
-  Future<void> unlikeReport(@Path() String id);
-
-  @POST('/reports/{id}/bookmark')
-  Future<void> bookmarkReport(@Path() String id);
-
-  @DELETE('/reports/{id}/bookmark')
-  Future<void> unbookmarkReport(@Path() String id);
-
-  @GET('/reports/{id}/comments')
-  Future<List<Map<String, dynamic>>> getReportComments(@Path() String id);
-
-  @POST('/reports/{id}/comments')
-  Future<Map<String, dynamic>> addComment(
-    @Path() String id,
-    @Body() Map<String, dynamic> request,
-  );
-
-  @PUT('/comments/{id}')
-  Future<Map<String, dynamic>> updateComment(
-    @Path() String id,
-    @Body() Map<String, dynamic> request,
-  );
-
-  @DELETE('/comments/{id}')
-  Future<void> deleteComment(@Path() String id);
-
-  @POST('/files/upload')
+  @POST('/reports/{id}/upload')
   @MultiPart()
-  Future<Map<String, dynamic>> uploadImage(@Part() MultipartFile file);
+  Future<ReportDto> uploadReportFile(
+    @Path('id') String id,
+    @Part(name: 'file') File file, // MultipartFile 대신 File 사용
+    @Part(name: 'type') String fileType,
+  );
+
+  @POST('/reports/batch-upload')
+  @MultiPart()
+  Future<List<ReportDto>> batchUploadReports(
+    @Part(name: 'files') List<File> files, // MultipartFile 대신 File 사용
+    @Part(name: 'metadata') String metadata,
+  );
 }

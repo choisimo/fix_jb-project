@@ -30,12 +30,6 @@
 @import file_picker;
 #endif
 
-#if __has_include(<firebase_analytics/FirebaseAnalyticsPlugin.h>)
-#import <firebase_analytics/FirebaseAnalyticsPlugin.h>
-#else
-@import firebase_analytics;
-#endif
-
 #if __has_include(<firebase_core/FLTFirebaseCorePlugin.h>)
 #import <firebase_core/FLTFirebaseCorePlugin.h>
 #else
@@ -46,12 +40,6 @@
 #import <firebase_crashlytics/FLTFirebaseCrashlyticsPlugin.h>
 #else
 @import firebase_crashlytics;
-#endif
-
-#if __has_include(<firebase_messaging/FLTFirebaseMessagingPlugin.h>)
-#import <firebase_messaging/FLTFirebaseMessagingPlugin.h>
-#else
-@import firebase_messaging;
 #endif
 
 #if __has_include(<flutter_local_notifications/FlutterLocalNotificationsPlugin.h>)
@@ -66,10 +54,10 @@
 @import flutter_naver_map;
 #endif
 
-#if __has_include(<flutter_secure_storage_darwin/FlutterSecureStorageDarwinPlugin.h>)
-#import <flutter_secure_storage_darwin/FlutterSecureStorageDarwinPlugin.h>
+#if __has_include(<flutter_secure_storage/FlutterSecureStoragePlugin.h>)
+#import <flutter_secure_storage/FlutterSecureStoragePlugin.h>
 #else
-@import flutter_secure_storage_darwin;
+@import flutter_secure_storage;
 #endif
 
 #if __has_include(<geocoding_ios/GeocodingPlugin.h>)
@@ -156,12 +144,6 @@
 @import sqflite_darwin;
 #endif
 
-#if __has_include(<syncfusion_flutter_pdfviewer/SyncfusionFlutterPdfViewerPlugin.h>)
-#import <syncfusion_flutter_pdfviewer/SyncfusionFlutterPdfViewerPlugin.h>
-#else
-@import syncfusion_flutter_pdfviewer;
-#endif
-
 #if __has_include(<url_launcher_ios/URLLauncherPlugin.h>)
 #import <url_launcher_ios/URLLauncherPlugin.h>
 #else
@@ -175,13 +157,11 @@
   [ConnectivityPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"ConnectivityPlusPlugin"]];
   [FPPDeviceInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPDeviceInfoPlusPlugin"]];
   [FilePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FilePickerPlugin"]];
-  [FirebaseAnalyticsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FirebaseAnalyticsPlugin"]];
   [FLTFirebaseCorePlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseCorePlugin"]];
   [FLTFirebaseCrashlyticsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseCrashlyticsPlugin"]];
-  [FLTFirebaseMessagingPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseMessagingPlugin"]];
   [FlutterLocalNotificationsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterLocalNotificationsPlugin"]];
   [FlutterNaverMapPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterNaverMapPlugin"]];
-  [FlutterSecureStorageDarwinPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterSecureStorageDarwinPlugin"]];
+  [FlutterSecureStoragePlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterSecureStoragePlugin"]];
   [GeocodingPlugin registerWithRegistrar:[registry registrarForPlugin:@"GeocodingPlugin"]];
   [GeolocatorPlugin registerWithRegistrar:[registry registrarForPlugin:@"GeolocatorPlugin"]];
   [FLTGoogleSignInPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleSignInPlugin"]];
@@ -196,7 +176,6 @@
   [FPPSharePlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPSharePlusPlugin"]];
   [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
   [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];
-  [SyncfusionFlutterPdfViewerPlugin registerWithRegistrar:[registry registrarForPlugin:@"SyncfusionFlutterPdfViewerPlugin"]];
   [URLLauncherPlugin registerWithRegistrar:[registry registrarForPlugin:@"URLLauncherPlugin"]];
 }
 

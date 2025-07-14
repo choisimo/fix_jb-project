@@ -5,21 +5,17 @@ import 'package:geolocator/geolocator.dart';
 import '../providers/map_provider.dart';
 
 class NaverMapWidget extends ConsumerStatefulWidget {
-  final double? initialLatitude;
-  final double? initialLongitude;
-  final Function(NLatLng)? onLocationSelected;
+  final NCameraPosition? initialCameraPosition;
+  final Function(NLatLng)? onMapTapped;
   final List<MapMarker>? markers;
   final bool showCurrentLocation;
-  final bool enableLocationSelection;
-  
+
   const NaverMapWidget({
     Key? key,
-    this.initialLatitude,
-    this.initialLongitude,
-    this.onLocationSelected,
+    this.initialCameraPosition,
+    this.onMapTapped,
     this.markers,
     this.showCurrentLocation = true,
-    this.enableLocationSelection = false,
   }) : super(key: key);
   
   @override
@@ -54,11 +50,8 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
       children: [
         NaverMap(
           options: NaverMapViewOptions(
-            initialCameraPosition: NCameraPosition(
-              target: NLatLng(
-                widget.initialLatitude ?? 37.5666805,
-                widget.initialLongitude ?? 126.9784147,
-              ),
+            initialCameraPosition: widget.initialCameraPosition ?? const NCameraPosition(
+              target: NLatLng(37.5666805, 126.9784147),
               zoom: 15,
             ),
             mapType: NMapType.basic,
@@ -73,13 +66,9 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
             _controller = controller;
             await _setupMap();
           },
-          onMapTapped: widget.enableLocationSelection ? _onMapTapped : null,
-          onCameraChange: (position, reason) {
-            ref.read(mapProvider.notifier).updateCameraPosition(
-              position.target.latitude,
-              position.target.longitude,
-              position.zoom,
-            );
+          onMapTapped: _onMapTapped,
+          onCameraChange: (reason, animated) {
+            // 필요한 경우 카메라 변경 처리 로직 추가
           },
         ),
         
@@ -117,54 +106,7 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
           ),
         ),
         
-        // Location selection indicator
-        if (widget.enableLocationSelection && _selectedLocation != null)
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Selected Location',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Lat: ${_selectedLocation!.latitude.toStringAsFixed(6)}\n'
-                      'Lng: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            setState(() => _selectedLocation = null);
-                            _updateSelectedMarker(null);
-                          },
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (_selectedLocation != null) {
-                              widget.onLocationSelected?.call(_selectedLocation!);
-                            }
-                          },
-                          child: const Text('Confirm'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+
           
         // Search bar
         Positioned(
@@ -264,8 +206,9 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
   }
   
   void _onMapTapped(NPoint point, NLatLng latLng) {
-    setState(() => _selectedLocation = latLng);
-    _updateSelectedMarker(latLng);
+    if (widget.onMapTapped != null) {
+      widget.onMapTapped!(latLng);
+    }
   }
   
   Future<void> _updateSelectedMarker(NLatLng? location) async {

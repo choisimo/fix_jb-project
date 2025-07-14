@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import '../models/image_analysis_result.dart';
 
 class ImageAnalysisService {
@@ -10,28 +13,33 @@ class ImageAnalysisService {
   
   Future<OCRResult> performOCR(File imageFile) async {
     try {
-      // Prepare image for OCR
-      final bytes = await imageFile.readAsBytes();
-      final image = img.decodeImage(bytes);
-      
-      if (image == null) {
-        throw Exception('Failed to decode image');
+      // 이미지 파일 검증
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist');
       }
       
-      // Create form data
+      // 이미지 처리 (필요시)
+      final processedFile = await _preprocessImage(imageFile);
+      
+      // Form data 생성 - MultipartFile.fromFile 사용
       final formData = FormData.fromMap({
         'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: 'image.jpg',
+          processedFile.path,
+          filename: path.basename(processedFile.path),
         ),
-        'language': 'ko+en', // Korean + English
+        'language': 'ko+en',
         'detect_orientation': true,
       });
       
-      // Call OCR API
+      // API 호출
       final response = await _dio.post(
         '/api/v1/ai/ocr',
         data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
       );
       
       if (response.statusCode == 200) {
@@ -39,39 +47,136 @@ class ImageAnalysisService {
       } else {
         throw Exception('OCR failed: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+      throw Exception('Network error during OCR: ${e.message}');
     } catch (e) {
       throw Exception('OCR error: $e');
     }
   }
   
-  Future<AIAnalysisResult> performAIAnalysis(
-    File imageFile, {
-    String analysisType = 'general',
-  }) async {
+  Future<ComprehensiveAnalysisResult> performComprehensiveAnalysis(File imageFile) async {
     try {
-      // Create form data
+      // 이미지 파일 검증
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist');
+      }
+      
+      // 이미지 크기 최적화
+      final optimizedFile = await _optimizeImageForUpload(imageFile);
+      
+      // Form data 생성
       final formData = FormData.fromMap({
         'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: 'image.jpg',
+          optimizedFile.path,
+          filename: path.basename(optimizedFile.path),
         ),
-        'analysis_type': analysisType,
-        'extract_fields': true,
       });
       
-      // Call AI analysis API
+      // 통합 AI 분석 API 호출
       final response = await _dio.post(
-        '/api/v1/ai/analyze',
+        '/ai/analyze/image',
         data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
       );
       
       if (response.statusCode == 200) {
-        return AIAnalysisResult.fromJson(response.data);
+        return ComprehensiveAnalysisResult.fromJson(response.data);
       } else {
-        throw Exception('AI analysis failed: ${response.statusCode}');
+        throw Exception('Comprehensive analysis failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error during comprehensive analysis: ${e.message}');
+    } catch (e) {
+      throw Exception('Comprehensive analysis error: $e');
+    }
+  }
+  
+  // 이미지 전처리 (OCR 정확도 향상)
+  Future<File> _preprocessImage(File imageFile) async {
+    try {
+      final bytes = await imageFile.readAsBytes();
+      var image = img.decodeImage(bytes);
+      
+      if (image == null) {
+        return imageFile; // 디코딩 실패시 원본 반환
+      }
+      
+      // 이미지 처리: 그레이스케일 변환, 대비 향상
+      image = img.grayscale(image);
+      image = img.adjustColor(image, contrast: 1.2);
+      
+      // 임시 파일로 저장
+      final tempDir = await getTemporaryDirectory();
+      final processedPath = path.join(
+        tempDir.path, 
+        'processed_${DateTime.now().millisecondsSinceEpoch}.jpg'
+      );
+      
+      final processedFile = File(processedPath);
+      await processedFile.writeAsBytes(img.encodeJpg(image, quality: 95));
+      
+      return processedFile;
+    } catch (e) {
+      // 전처리 실패시 원본 반환
+      return imageFile;
+    }
+  }
+  
+  // 이미지 크기 최적화 (업로드 속도 향상)
+  Future<File> _optimizeImageForUpload(File imageFile) async {
+    try {
+      final bytes = await imageFile.readAsBytes();
+      var image = img.decodeImage(bytes);
+      
+      if (image == null) {
+        return imageFile;
+      }
+      
+      // 이미지가 너무 크면 리사이즈
+      const maxDimension = 2048;
+      if (image.width > maxDimension || image.height > maxDimension) {
+        if (image.width > image.height) {
+          image = img.copyResize(image, width: maxDimension);
+        } else {
+          image = img.copyResize(image, height: maxDimension);
+        }
+      }
+      
+      // 임시 파일로 저장
+      final tempDir = await getTemporaryDirectory();
+      final optimizedPath = path.join(
+        tempDir.path,
+        'optimized_${DateTime.now().millisecondsSinceEpoch}.jpg'
+      );
+      
+      final optimizedFile = File(optimizedPath);
+      await optimizedFile.writeAsBytes(img.encodeJpg(image, quality: 85));
+      
+      return optimizedFile;
+    } catch (e) {
+      // 최적화 실패시 원본 반환
+      return imageFile;
+    }
+  }
+  
+  // 임시 파일 정리
+  Future<void> cleanupTempFiles() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final files = tempDir.listSync();
+      
+      for (final file in files) {
+        if (file is File && 
+            (file.path.contains('processed_') || file.path.contains('optimized_'))) {
+          await file.delete();
+        }
       }
     } catch (e) {
-      throw Exception('AI analysis error: $e');
+      // 정리 실패는 무시
     }
   }
   

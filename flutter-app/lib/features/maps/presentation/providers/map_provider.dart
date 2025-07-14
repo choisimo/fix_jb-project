@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../domain/models/map_state.dart';
 import '../../domain/services/map_service.dart';
-import '../../../core/providers/service_provider.dart';
+import '../../../../core/providers/service_provider.dart';
 
 final mapServiceProvider = Provider<MapService>((ref) {
   final dio = ref.watch(dioProvider);

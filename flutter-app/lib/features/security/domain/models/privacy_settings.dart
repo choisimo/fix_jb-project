@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../../core/enums/privacy_enums.dart';
 
 part 'privacy_settings.freezed.dart';
 part 'privacy_settings.g.dart';
@@ -6,32 +7,29 @@ part 'privacy_settings.g.dart';
 @freezed
 class PrivacySettings with _$PrivacySettings {
   const factory PrivacySettings({
-    @Default(false) bool allowDataCollection,
-    @Default(false) bool allowLocationTracking,
-    @Default(false) bool allowAnalytics,
-    @Default(false) bool allowMarketing,
-    @Default(DataRetentionPeriod.oneYear) DataRetentionPeriod retention,
-    List<String>? consentedPurposes,
+    @Default(true) bool dataCollection,
+    @Default(true) bool analytics,
+    @Default(false) bool marketing,
+    @Default(true) bool crashReporting,
+    @Default(false) bool locationTracking,
+    Map<ConsentType, bool>? consents,
     DateTime? lastUpdated,
-    @Default(false) bool allowPersonalization,
-    @Default(false) bool allowThirdPartySharing,
-    @Default(true) bool requireExplicitConsent,
   }) = _PrivacySettings;
-
+  
   factory PrivacySettings.fromJson(Map<String, dynamic> json) =>
       _$PrivacySettingsFromJson(json);
 }
 
-@JsonEnum()
-enum DataRetentionPeriod {
-  @JsonValue('3_months')
-  threeMonths,
-  @JsonValue('6_months')
-  sixMonths,
-  @JsonValue('1_year')
-  oneYear,
-  @JsonValue('2_years')
-  twoYears,
-  @JsonValue('indefinite')
-  indefinite,
+@freezed
+class DataSubjectRightResponse with _$DataSubjectRightResponse {
+  const factory DataSubjectRightResponse({
+    required DataSubjectRight right,
+    required bool granted,
+    required DateTime timestamp,
+    String? reference,
+    String? details,
+  }) = _DataSubjectRightResponse;
+  
+  factory DataSubjectRightResponse.fromJson(Map<String, dynamic> json) =>
+      _$DataSubjectRightResponseFromJson(json);
 }

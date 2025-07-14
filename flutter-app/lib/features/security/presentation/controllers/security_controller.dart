@@ -1,470 +1,187 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../domain/models/security_state.dart';
-import '../domain/models/security_event.dart';
-import '../domain/models/privacy_settings.dart';
-import '../data/services/data_encryption_service.dart';
-import '../data/services/biometric_authentication_service.dart';
-import '../data/services/app_integrity_verification.dart';
-import '../data/services/privacy_protection_manager.dart';
-import '../data/services/security_monitoring_service.dart';
-import '../../../core/di/service_locator.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/models/security_state.dart';
+import '../../domain/models/security_event.dart' hide BiometricAuthResult; // BiometricAuthResult 충돌 해결
+import '../../domain/models/privacy_settings.dart' hide DataSubjectRightResponse; // DataSubjectRightResponse 충돌 해결
+import '../../../../core/enums/security_enums.dart';
+import '../../../../core/enums/privacy_enums.dart';
+import '../../data/services/data_encryption_service.dart';
+import '../../data/services/biometric_authentication_service.dart';
+import '../../data/services/app_integrity_verification.dart';
+import '../../data/services/privacy_protection_manager.dart';
+import '../../data/services/security_monitoring_service.dart';
+import '../providers/security_providers.dart';
+// BiometricAuthResult는 security_event.dart에서 가져옴
+import '../../domain/models/security_event.dart' show BiometricAuthResult;
+// DataSubjectRightResponse는 privacy_settings.dart에서 가져옴
+import '../../domain/models/privacy_settings.dart' show DataSubjectRightResponse;
 
-part 'security_controller.g.dart';
+final securityControllerProvider = StateNotifierProvider<SecurityController, SecurityState>((ref) {
+  final dataEncryption = ref.watch(dataEncryptionServiceProvider);
+  final biometricAuth = ref.watch(biometricAuthenticationServiceProvider);
+  final appIntegrity = ref.watch(appIntegrityVerificationProvider);
+  final privacyManager = ref.watch(privacyProtectionManagerProvider);
+  final monitoringService = ref.watch(securityMonitoringServiceProvider);
+  
+  return SecurityController(
+    dataEncryption,
+    biometricAuth,
+    appIntegrity,
+    privacyManager,
+    monitoringService,
+  );
+});
 
-@riverpod
-class SecurityController extends _$SecurityController {
-  late final DataEncryptionService _encryptionService;
-  late final BiometricAuthenticationService _biometricService;
-  late final AppIntegrityVerification _integrityVerification;
-  late final PrivacyProtectionManager _privacyManager;
-  late final SecurityMonitoringService _monitoringService;
-
-  @override
-  SecurityState build() {
-    _initializeServices();
-    return const SecurityState();
+class SecurityController extends StateNotifier<SecurityState> {
+  final DataEncryptionService _dataEncryption;
+  final BiometricAuthenticationService _biometricAuth;
+  final AppIntegrityVerification _appIntegrity;
+  final PrivacyProtectionManager _privacyManager;
+  final SecurityMonitoringService _monitoringService;
+  
+  SecurityController(
+    this._dataEncryption,
+    this._biometricAuth,
+    this._appIntegrity,
+    this._privacyManager,
+    this._monitoringService,
+  ) : super(const SecurityState()) {
+    _initialize();
   }
-
-  void _initializeServices() {
-    _encryptionService = ref.read(dataEncryptionServiceProvider);
-    _biometricService = ref.read(biometricAuthenticationServiceProvider);
-    _integrityVerification = ref.read(appIntegrityVerificationProvider);
-    _privacyManager = ref.read(privacyProtectionManagerProvider);
-    _monitoringService = ref.read(securityMonitoringServiceProvider);
+  
+  Future<void> _initialize() async {
+    await checkIntegrity();
+    await _loadRecentEvents();
   }
-
-  /// Initialize security system
-  Future<void> initialize() async {
-    try {
-      state = state.copyWith(isDeviceSecure: false);
-
-      // Initialize all security services
-      await Future.wait([
-        _encryptionService.initialize(),
-        _biometricService.initialize(),
-        _integrityVerification.initialize(),
-        _privacyManager.initialize(),
-        _monitoringService.initialize(),
-      ]);
-
-      // Perform initial security checks
-      await _performInitialSecurityCheck();
-
-      // Load privacy settings
-      final privacySettings = _privacyManager.getPrivacySettings();
-      
-      state = state.copyWith(
-        privacySettings: privacySettings,
-        lastSecurityCheck: DateTime.now(),
-        error: null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to initialize security system: ${e.toString()}',
-        isDeviceSecure: false,
-      );
-      rethrow;
-    }
+  
+  Future<void> _loadRecentEvents() async {
+    final events = await _monitoringService.getRecentEvents(limit: 10);
+    state = state.copyWith(recentEvents: events);
   }
-
-  /// Enable biometric authentication
-  Future<bool> enableBiometric() async {
-    try {
-      final result = await _biometricService.enableBiometric();
-      
-      if (result) {
-        state = state.copyWith(
-          isBiometricEnabled: true,
-          error: null,
-        );
-        
-        await _monitoringService.logSecurityEvent(
-          SecurityEvent(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: SecurityEventType.loginAttempt,
-            level: SecurityLevel.low,
-            description: 'Biometric authentication enabled',
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-      
-      return result;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to enable biometric authentication: ${e.toString()}',
-      );
-      return false;
-    }
-  }
-
-  /// Disable biometric authentication
-  Future<bool> disableBiometric() async {
-    try {
-      final result = await _biometricService.disableBiometric();
-      
-      if (result) {
-        state = state.copyWith(
-          isBiometricEnabled: false,
-          error: null,
-        );
-        
-        await _monitoringService.logSecurityEvent(
-          SecurityEvent(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: SecurityEventType.loginAttempt,
-            level: SecurityLevel.low,
-            description: 'Biometric authentication disabled',
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-      
-      return result;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to disable biometric authentication: ${e.toString()}',
-      );
-      return false;
-    }
-  }
-
-  /// Authenticate with biometric
-  Future<BiometricAuthResult> authenticateWithBiometric({
-    required String reason,
-  }) async {
-    try {
-      final result = await _biometricService.authenticateWithBiometric(
-        reason: reason,
-      );
-
-      // Update failed attempts count
-      if (result == BiometricAuthResult.failed) {
-        final failedAttempts = state.failedAuthAttempts + 1;
-        state = state.copyWith(
-          failedAuthAttempts: failedAttempts,
-          lastFailedAuth: DateTime.now(),
-        );
-
-        // Log failed authentication
-        await _monitoringService.logSecurityEvent(
-          SecurityEvent(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: SecurityEventType.authFailure,
-            level: SecurityLevel.medium,
-            description: 'Biometric authentication failed (attempt $failedAttempts)',
-            timestamp: DateTime.now(),
-          ),
-        );
-      } else if (result == BiometricAuthResult.success) {
-        state = state.copyWith(
-          failedAuthAttempts: 0,
-          lastFailedAuth: null,
-          error: null,
-        );
-
-        // Log successful authentication
-        await _monitoringService.logSecurityEvent(
-          SecurityEvent(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: SecurityEventType.loginAttempt,
-            level: SecurityLevel.low,
-            description: 'Biometric authentication successful',
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-
-      return result;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Biometric authentication error: ${e.toString()}',
-      );
-      return BiometricAuthResult.unknown;
-    }
-  }
-
-  /// Perform security check
-  Future<void> performSecurityCheck() async {
-    try {
-      state = state.copyWith(lastSecurityCheck: DateTime.now());
-
-      // Perform integrity check
-      final integrityResult = await _integrityVerification.performIntegrityCheck();
-      
-      final isDeviceSecure = integrityResult.status == IntegrityStatus.secure;
-      final isRootDetected = integrityResult.checks['root_jailbreak']?.passed == false;
-      final isDebugMode = integrityResult.checks['debug_mode']?.passed == false;
-      final isTampered = integrityResult.checks['app_signature']?.passed == false;
-
-      state = state.copyWith(
-        isDeviceSecure: isDeviceSecure,
-        isRootDetected: isRootDetected,
-        isDebugMode: isDebugMode,
-        isTampered: isTampered,
-        currentLevel: _mapThreatLevelToSecurityLevel(integrityResult.threatLevel),
-      );
-
-      // Update recent events with integrity check result
-      if (!isDeviceSecure) {
-        await _monitoringService.logSecurityEvent(
-          SecurityEvent(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: SecurityEventType.integrityBreach,
-            level: _mapThreatLevelToSecurityLevel(integrityResult.threatLevel),
-            description: 'Device integrity compromised: ${integrityResult.threatLevel}',
-            timestamp: DateTime.now(),
-            metadata: {
-              'integrity_status': integrityResult.status.toString(),
-              'threat_level': integrityResult.threatLevel.toString(),
-            },
-          ),
-        );
-      }
-
-      // Load recent events
-      await _loadRecentSecurityEvents();
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Security check failed: ${e.toString()}',
-        isDeviceSecure: false,
-      );
-    }
-  }
-
-  /// Update privacy settings
-  Future<bool> updatePrivacySettings(PrivacySettings settings) async {
-    try {
-      final result = await _privacyManager.updatePrivacySettings(settings);
-      
-      if (result) {
-        state = state.copyWith(
-          privacySettings: settings,
-          error: null,
-        );
-
-        await _monitoringService.logSecurityEvent(
-          SecurityEvent(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: SecurityEventType.dataAccess,
-            level: SecurityLevel.low,
-            description: 'Privacy settings updated',
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-      
-      return result;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to update privacy settings: ${e.toString()}',
-      );
-      return false;
-    }
-  }
-
-  /// Request consent for data processing
-  Future<bool> requestConsent({
-    required ConsentType type,
-    required String purpose,
-    required String description,
-    bool required = false,
-  }) async {
-    try {
-      final granted = await _privacyManager.requestConsent(
-        type: type,
-        purpose: purpose,
-        description: description,
-        required: required,
-      );
-
-      // Reload privacy settings to reflect consent
-      final updatedSettings = _privacyManager.getPrivacySettings();
-      state = state.copyWith(privacySettings: updatedSettings);
-
-      return granted;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to request consent: ${e.toString()}',
-      );
-      return false;
-    }
-  }
-
-  /// Withdraw consent
-  Future<bool> withdrawConsent(ConsentType type) async {
-    try {
-      final result = await _privacyManager.withdrawConsent(type);
-      
-      if (result) {
-        // Reload privacy settings
-        final updatedSettings = _privacyManager.getPrivacySettings();
-        state = state.copyWith(privacySettings: updatedSettings);
-      }
-      
-      return result;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to withdraw consent: ${e.toString()}',
-      );
-      return false;
-    }
-  }
-
-  /// Exercise data subject rights (GDPR)
-  Future<DataSubjectRightResponse> exerciseDataSubjectRight({
-    required DataSubjectRight right,
-    String? specificData,
-  }) async {
-    try {
-      final response = await _privacyManager.exerciseDataSubjectRight(
-        right: right,
-        specificData: specificData,
-      );
-
-      await _monitoringService.logSecurityEvent(
-        SecurityEvent(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: SecurityEventType.dataAccess,
-          level: SecurityLevel.medium,
-          description: 'Data subject right exercised: ${right.toString()}',
-          timestamp: DateTime.now(),
-          metadata: {
-            'right_type': right.toString(),
-            'success': response.success,
-          },
-        ),
-      );
-
-      return response;
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to exercise data subject right: ${e.toString()}',
-      );
-      return DataSubjectRightResponse(
-        success: false,
-        message: 'Error: ${e.toString()}',
+  
+  Future<void> checkIntegrity() async {
+    final status = await _appIntegrity.verifyIntegrity();
+    final threatLevel = _assessThreatLevel(status);
+    
+    state = state.copyWith(
+      securityLevel: _mapThreatToSecurityLevel(threatLevel),
+      threatLevel: threatLevel,
+    );
+    
+    await _monitoringService.logEvent(
+      SecurityEvent(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: SecurityEventType.dataAccess,
+        level: SecurityLevel.normal,
         timestamp: DateTime.now(),
-      );
-    }
-  }
-
-  /// Get security dashboard data
-  Future<Map<String, dynamic>> getSecurityDashboard() async {
-    try {
-      return await _monitoringService.getSecurityDashboard();
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to load security dashboard: ${e.toString()}',
-      );
-      return {'error': e.toString()};
-    }
-  }
-
-  /// Get security events
-  List<SecurityEvent> getSecurityEvents({
-    SecurityEventType? type,
-    SecurityLevel? level,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? limit,
-  }) {
-    return _monitoringService.getSecurityEvents(
-      type: type,
-      level: level,
-      startDate: startDate,
-      endDate: endDate,
-      limit: limit,
+        description: 'Integrity check completed: $status',
+      ),
     );
   }
-
-  /// Get biometric authentication status
-  Future<Map<String, dynamic>> getBiometricStatus() async {
-    try {
-      return await _biometricService.getStatus();
-    } catch (e) {
-      return {'error': e.toString()};
-    }
-  }
-
-  /// Get privacy transparency report
-  Future<Map<String, dynamic>> getTransparencyReport() async {
-    try {
-      return await _privacyManager.getTransparencyReport();
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to generate transparency report: ${e.toString()}',
-      );
-      return {'error': e.toString()};
-    }
-  }
-
-  /// Check if consent is valid for specific processing
-  bool hasValidConsent(ConsentType type) {
-    return _privacyManager.hasValidConsent(type);
-  }
-
-  /// Clear error state
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
-
-  /// Reset failed authentication attempts
-  Future<void> resetFailedAttempts() async {
-    try {
-      await _biometricService.clearLockout();
-      state = state.copyWith(
-        failedAuthAttempts: 0,
-        lastFailedAuth: null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to reset failed attempts: ${e.toString()}',
-      );
-    }
-  }
-
-  // Private helper methods
-
-  Future<void> _performInitialSecurityCheck() async {
-    // Check biometric status
-    final isBiometricEnabled = await _biometricService.isBiometricEnabled();
+  
+  Future<BiometricAuthResult> authenticateWithBiometrics() async {
+    final result = await _biometricAuth.authenticate();
     
-    // Perform integrity check
-    await performSecurityCheck();
+    await _monitoringService.logEvent(
+      SecurityEvent(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: SecurityEventType.biometricAuth,
+        level: result.success ? SecurityLevel.normal : SecurityLevel.high,
+        timestamp: DateTime.now(),
+        description: result.message,
+      ),
+    );
     
-    state = state.copyWith(isBiometricEnabled: isBiometricEnabled);
-  }
-
-  Future<void> _loadRecentSecurityEvents() async {
-    try {
-      final recentEvents = _monitoringService.getSecurityEvents(
-        startDate: DateTime.now().subtract(const Duration(hours: 24)),
-        limit: 10,
+    if (result.success) {
+      state = state.copyWith(
+        isAuthenticated: true,
+        biometricEnabled: true,
       );
-      
-      state = state.copyWith(recentEvents: recentEvents);
-    } catch (e) {
-      // Don't update error state for this non-critical operation
-      debugPrint('Failed to load recent security events: $e');
+    }
+    
+    return result;
+  }
+  
+  Future<String> encryptSensitiveData(String data) async {
+    return await _dataEncryption.encryptData(data);
+  }
+  
+  Future<String> decryptSensitiveData(String encryptedData) async {
+    return await _dataEncryption.decryptData(encryptedData);
+  }
+  
+  Future<PrivacySettings> getPrivacySettings() async {
+    return await _privacyManager.getPrivacySettings();
+  }
+  
+  Future<void> updatePrivacySettings(PrivacySettings settings) async {
+    await _privacyManager.updatePrivacySettings(settings);
+    
+    await _monitoringService.logEvent(
+      SecurityEvent(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: SecurityEventType.privacyUpdate,
+        level: SecurityLevel.normal,
+        timestamp: DateTime.now(),
+        description: 'Privacy settings updated',
+      ),
+    );
+  }
+  
+  Future<void> updateConsent(ConsentType type, bool granted) async {
+    await _privacyManager.updateConsent(type, granted);
+  }
+  
+  Future<DataSubjectRightResponse> exerciseDataSubjectRight(DataSubjectRight right) async {
+    final response = await _privacyManager.exerciseDataSubjectRight(
+      right: right,
+      userId: 'current_user', // TODO: Get actual user ID
+    );
+    
+    await _monitoringService.logEvent(
+      SecurityEvent(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: SecurityEventType.dataAccess,
+        level: SecurityLevel.high,
+        timestamp: DateTime.now(),
+        description: 'Data subject right exercised: ${right.name}',
+      ),
+    );
+    
+    return response;
+  }
+  
+  SecurityThreatLevel _assessThreatLevel(IntegrityStatus status) {
+    switch (status) {
+      case IntegrityStatus.verified:
+        return SecurityThreatLevel.none;
+      case IntegrityStatus.checking:
+        return SecurityThreatLevel.low;
+      case IntegrityStatus.unverified:
+        return SecurityThreatLevel.medium;
+      case IntegrityStatus.compromised:
+        return SecurityThreatLevel.critical;
     }
   }
-
-  SecurityLevel _mapThreatLevelToSecurityLevel(SecurityThreatLevel threatLevel) {
-    switch (threatLevel) {
+  
+  SecurityLevel _mapThreatToSecurityLevel(SecurityThreatLevel threat) {
+    switch (threat) {
       case SecurityThreatLevel.none:
-        return SecurityLevel.low;
+        return SecurityLevel.normal;
       case SecurityThreatLevel.low:
-        return SecurityLevel.low;
+        return SecurityLevel.normal;
       case SecurityThreatLevel.medium:
-        return SecurityLevel.medium;
-      case SecurityThreatLevel.high:
         return SecurityLevel.high;
+      case SecurityThreatLevel.high:
+        return SecurityLevel.critical;
       case SecurityThreatLevel.critical:
         return SecurityLevel.critical;
-      case SecurityThreatLevel.unknown:
-      default:
-        return SecurityLevel.medium;
     }
+  }
+  
+  @override
+  void dispose() {
+    _monitoringService.dispose();
+    super.dispose();
   }
 }
