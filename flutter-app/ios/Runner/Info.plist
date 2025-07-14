@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- ...existing code... -->
+    
+    <!-- Naver Map -->
+    <key>NMFClientId</key>
+    <string>YOUR_NAVER_CLIENT_ID</string>
+    
+    <!-- Permissions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs access to location when open to show your current location on the map.</string>
+    
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app needs access to location to track reports near you.</string>
+    
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs camera access to take photos for reports.</string>
+    
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs photo library access to select images for reports.</string>
+    
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app needs permission to save photos to your library.</string>
+    
+    <!-- URL Schemes for Naver Map -->
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>nmap</string>
+        <string>naversearchapp</string>
+    </array>
+    
+    <!-- ...existing code... -->
+</dict>
+</plist>

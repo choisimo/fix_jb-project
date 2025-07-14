@@ -9,10 +9,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * 알림 서비스 REST API 컨트롤러
@@ -30,6 +34,10 @@ import java.util.concurrent.CompletableFuture;
 public class AlertController {
 
     private final AlertService alertService;
+    
+    // SSE 연결 관리
+    private final Map<String, SseEmitter> sseConnections = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     /**
      * 비동기 알림 분석 요청
@@ -179,13 +187,8 @@ public class AlertController {
     @Operation(summary = "알림 분석 통계", description = "알림 처리 통계 정보를 제공합니다")
     public ResponseEntity<Map<String, Object>> getAlertStats() {
         
-        // TODO: 실제 통계 구현
-        Map<String, Object> stats = Map.of(
-                "totalProcessed", 0,
-                "averageProcessingTime", 0,
-                "successRate", 100.0,
-                "lastUpdate", LocalDateTime.now().toString()
-        );
+        Map<String, Object> stats = alertService.getAlertProcessingStats();
+        stats.put("lastUpdate", LocalDateTime.now().toString());
 
         return ResponseEntity.ok(stats);
     }
@@ -195,10 +198,130 @@ public class AlertController {
      */
     @GetMapping(value = "/stream", produces = "text/event-stream")
     @Operation(summary = "실시간 알림 스트림", description = "실시간으로 알림 분석 결과를 스트리밍합니다")
-    public org.springframework.http.codec.ServerSentEvent<String> streamAlerts() {
-        // TODO: SSE 구현
-        return org.springframework.http.codec.ServerSentEvent.<String>builder()
-                .data("Alert stream initialized")
-                .build();
+    public SseEmitter streamAlerts(@RequestParam(required = false) String clientId) {
+        
+        String connectionId = clientId != null ? clientId : "ai-client-" + System.currentTimeMillis();
+        SseEmitter emitter = new SseEmitter(300000L); // 5분 타임아웃
+        
+        log.info("🔗 AI Alert SSE 연결 시작 - ID: {}", connectionId);
+        
+        // 연결 등록
+        sseConnections.put(connectionId, emitter);
+        
+        // 연결 해제 시 정리
+        emitter.onCompletion(() -> {
+            sseConnections.remove(connectionId);
+            log.info("✅ AI Alert SSE 연결 종료 - ID: {}", connectionId);
+        });
+        
+        emitter.onTimeout(() -> {
+            sseConnections.remove(connectionId);
+            log.info("⏰ AI Alert SSE 연결 타임아웃 - ID: {}", connectionId);
+        });
+        
+        emitter.onError((ex) -> {
+            sseConnections.remove(connectionId);
+            log.error("❌ AI Alert SSE 연결 오류 - ID: {}", connectionId, ex);
+        });
+        
+        try {
+            // 초기 연결 확인 메시지 전송
+            emitter.send(SseEmitter.event()
+                .name("connection")
+                .data(Map.of(
+                    "message", "AI Alert stream connected",
+                    "connectionId", connectionId,
+                    "serverType", "AI_ANALYSIS_SERVER",
+                    "timestamp", LocalDateTime.now())));
+                    
+            // 주기적으로 heartbeat 전송 (연결 유지)
+            scheduler.scheduleAtFixedRate(() -> {
+                try {
+                    if (sseConnections.containsKey(connectionId)) {
+                        emitter.send(SseEmitter.event()
+                            .name("heartbeat")
+                            .data(Map.of(
+                                "timestamp", LocalDateTime.now(),
+                                "serverType", "AI_ANALYSIS_SERVER")));
+                    }
+                } catch (Exception e) {
+                    log.debug("AI Alert Heartbeat 전송 실패 - ID: {}", connectionId);
+                    sseConnections.remove(connectionId);
+                }
+            }, 30, 30, java.util.concurrent.TimeUnit.SECONDS);
+            
+        } catch (Exception e) {
+            log.error("초기 AI Alert SSE 메시지 전송 실패 - ID: {}", connectionId, e);
+            emitter.completeWithError(e);
+        }
+        
+        return emitter;
+    }
+    
+    /**
+     * AI 분석 결과를 연결된 클라이언트들에게 스트리밍
+     */
+    @PostMapping("/stream/analysis")
+    @Operation(summary = "AI 분석 결과 스트리밍", description = "AI 분석 결과를 실시간으로 스트리밍합니다")
+    public ResponseEntity<Map<String, Object>> streamAnalysisResult(
+            @RequestBody AlertAnalysisResult analysisResult,
+            @RequestParam(required = false) String targetClientId) {
+        
+        log.info("📤 AI 분석 결과 스트리밍 - ID: {}", analysisResult.getId());
+        
+        int sentCount = 0;
+        int failedCount = 0;
+        
+        // 특정 클라이언트 또는 모든 클라이언트에게 전송
+        Map<String, SseEmitter> targetConnections = targetClientId != null ? 
+            Map.of(targetClientId, sseConnections.get(targetClientId)) :
+            new ConcurrentHashMap<>(sseConnections);
+        
+        for (Map.Entry<String, SseEmitter> entry : targetConnections.entrySet()) {
+            String connId = entry.getKey();
+            SseEmitter emitter = entry.getValue();
+            
+            if (emitter != null) {
+                try {
+                    emitter.send(SseEmitter.event()
+                        .name("analysis_result")
+                        .data(Map.of(
+                            "connectionId", connId,
+                            "analysisResult", analysisResult,
+                            "serverType", "AI_ANALYSIS_SERVER",
+                            "timestamp", LocalDateTime.now())));
+                    sentCount++;
+                } catch (Exception e) {
+                    log.warn("AI 분석 결과 클라이언트 {} 전송 실패", connId, e);
+                    sseConnections.remove(connId);
+                    failedCount++;
+                }
+            }
+        }
+        
+        Map<String, Object> response = Map.of(
+            "sent", sentCount,
+            "failed", failedCount,
+            "totalConnections", sseConnections.size(),
+            "analysisId", analysisResult.getId(),
+            "timestamp", LocalDateTime.now());
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * AI 서버 SSE 연결 상태 조회
+     */
+    @GetMapping("/stream/status")
+    @Operation(summary = "AI 서버 스트림 연결 상태", description = "현재 AI 서버의 활성 SSE 연결 상태를 조회합니다")
+    public ResponseEntity<Map<String, Object>> getStreamStatus() {
+        
+        Map<String, Object> status = Map.of(
+            "serverType", "AI_ANALYSIS_SERVER",
+            "activeConnections", sseConnections.size(),
+            "connectionIds", sseConnections.keySet(),
+            "timestamp", LocalDateTime.now());
+        
+        return ResponseEntity.ok(status);
     }
 }

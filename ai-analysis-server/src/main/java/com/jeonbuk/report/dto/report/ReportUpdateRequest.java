@@ -1,5 +1,6 @@
 package com.jeonbuk.report.dto.report;
 
+import com.jeonbuk.report.domain.entity.Report;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,17 +23,14 @@ public record ReportUpdateRequest(
         @Size(max = 2000, message = "설명은 2000자를 초과할 수 없습니다")
         String description,
 
-        @Schema(description = "위도")
-        Double latitude,
+        @Schema(description = "카테고리 ID")
+        Long categoryId,
 
-        @Schema(description = "경도")
-        Double longitude,
+        @Schema(description = "우선순위")
+        Report.Priority priority,
 
-        @Schema(description = "주소")
-        String address,
-
-        @Schema(description = "상세 위치")
-        String detailedLocation,
+        @Schema(description = "위치 정보")
+        LocationInfo location,
 
         @Schema(description = "태그 목록")
         List<String> tags

@@ -22,27 +22,41 @@ final authApiClientProvider = Provider<AuthApiClient>((ref) {
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final authApiClient = ref.watch(authApiClientProvider);
   final tokenService = ref.watch(tokenServiceProvider);
-  return AuthRepository(authApiClient, tokenService);
+  final apiClient = ref.watch(apiClientProvider); // Dio 인스턴스에 직접 접근
+  return AuthRepository(authApiClient, tokenService, apiClient.dio);
 });
 
 class AuthRepository {
   final AuthApiClient _authApiClient;
   final TokenService _tokenService;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final Dio _dio; // Dio 인스턴스 추가
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: null, // Android용 별도 설정이 필요한 경우 추가
+  );
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
   final Uuid _uuid = const Uuid();
   
-  AuthRepository(this._authApiClient, this._tokenService);
+  AuthRepository(this._authApiClient, this._tokenService, this._dio);
   
   Future<AuthResponse> login(LoginRequest request) async {
     try {
       final deviceInfo = await _getDeviceInfo();
-      final requestData = request.copyWith(
-        deviceId: deviceInfo['deviceId'],
-        deviceName: deviceInfo['deviceName'],
-      ).toJson();
       
-      final response = await _authApiClient.login(requestData);
+      // 서버 LoginRequest 형식에 맞춰 데이터 변환 (email, password만 필요)
+      final requestData = {
+        'email': request.email,
+        'password': request.password,
+      };
+      
+      // 직접 API 호출하여 서버 응답 구조에 맞게 파싱
+      final apiResponse = await _dio.post('/auth/login', data: requestData);
+      
+      // 서버 응답 구조: { success, message, data: { ... }, timestamp, errorCode }
+      final responseData = apiResponse.data as Map<String, dynamic>;
+      final authData = responseData['data'] as Map<String, dynamic>;
+      
+      // AuthResponse 생성
+      final response = AuthResponse.fromJson(authData);
       
       await _tokenService.saveTokens(
         accessToken: response.accessToken,
@@ -64,12 +78,25 @@ class AuthRepository {
   Future<AuthResponse> signup(SignupRequest request) async {
     try {
       final deviceInfo = await _getDeviceInfo();
-      final requestData = request.copyWith(
-        deviceId: deviceInfo['deviceId'],
-        deviceName: deviceInfo['deviceName'],
-      ).toJson();
       
-      final response = await _authApiClient.signup(requestData);
+      // 서버 RegisterRequest 형식에 맞춰 데이터 변환
+      final requestData = {
+        'email': request.email,
+        'password': request.password,
+        'name': request.fullName ?? request.username,  // fullName이 없으면 username 사용
+        'phone': request.phoneNumber,
+        'department': '일반',  // 기본 부서
+      };
+      
+      // 직접 API 호출하여 서버 응답 구조에 맞게 파싱
+      final apiResponse = await _dio.post('/auth/register', data: requestData);
+      
+      // 서버 응답 구조: { success, message, data: { ... }, timestamp, errorCode }
+      final responseData = apiResponse.data as Map<String, dynamic>;
+      final authData = responseData['data'] as Map<String, dynamic>;
+      
+      // AuthResponse 생성
+      final response = AuthResponse.fromJson(authData);
       
       await _tokenService.saveTokens(
         accessToken: response.accessToken,
@@ -106,7 +133,15 @@ class AuthRepository {
         deviceName: deviceInfo['deviceName'],
       );
       
-      final response = await _authApiClient.socialLogin(request.toJson());
+      // 직접 API 호출하여 서버 응답 구조에 맞게 파싱
+      final apiResponse = await _dio.post('/auth/social-login', data: request.toJson());
+      
+      // 서버 응답 구조: { success, message, data: { ... }, timestamp, errorCode }
+      final responseData = apiResponse.data as Map<String, dynamic>;
+      final authData = responseData['data'] as Map<String, dynamic>;
+      
+      // AuthResponse 생성
+      final response = AuthResponse.fromJson(authData);
       
       await _tokenService.saveTokens(
         accessToken: response.accessToken,
@@ -145,7 +180,15 @@ class AuthRepository {
         deviceName: deviceInfo['deviceName'],
       );
       
-      final response = await _authApiClient.socialLogin(request.toJson());
+      // 직접 API 호출하여 서버 응답 구조에 맞게 파싱
+      final apiResponse = await _dio.post('/auth/social-login', data: request.toJson());
+      
+      // 서버 응답 구조: { success, message, data: { ... }, timestamp, errorCode }
+      final responseData = apiResponse.data as Map<String, dynamic>;
+      final authData = responseData['data'] as Map<String, dynamic>;
+      
+      // AuthResponse 생성
+      final response = AuthResponse.fromJson(authData);
       
       await _tokenService.saveTokens(
         accessToken: response.accessToken,
@@ -168,7 +211,16 @@ class AuthRepository {
       }
       
       final request = RefreshTokenRequest(refreshToken: refreshToken);
-      final response = await _authApiClient.refreshToken(request.toJson());
+      
+      // 직접 API 호출하여 서버 응답 구조에 맞게 파싱
+      final apiResponse = await _dio.post('/auth/refresh', data: request.toJson());
+      
+      // 서버 응답 구조: { success, message, data: { ... }, timestamp, errorCode }
+      final responseData = apiResponse.data as Map<String, dynamic>;
+      final authData = responseData['data'] as Map<String, dynamic>;
+      
+      // AuthResponse 생성
+      final response = AuthResponse.fromJson(authData);
       
       await _tokenService.updateAccessToken(response.accessToken);
       
@@ -197,7 +249,18 @@ class AuthRepository {
   
   Future<User> getCurrentUser() async {
     try {
-      return await _authApiClient.getCurrentUser();
+      // 직접 API 호출하여 서버 응답 구조에 맞게 파싱
+      final apiResponse = await _dio.get('/auth/me');
+      
+      // 서버 응답이 감싸진 형태인지 확인
+      final responseData = apiResponse.data as Map<String, dynamic>;
+      
+      // 만약 { data: { ... } } 형태라면 data 필드 추출, 아니면 직접 사용
+      final userData = responseData.containsKey('data') 
+          ? responseData['data'] as Map<String, dynamic>
+          : responseData;
+      
+      return User.fromJson(userData);
     } on DioException catch (e) {
       throw _handleError(e);
     }

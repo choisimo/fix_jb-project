@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'dart:ui';
+import '../../firebase_options.dart';
 
 class AppInitializer {
   static bool _isInitialized = false;
@@ -12,6 +17,9 @@ class AppInitializer {
     try {
       // Flutter 바인딩 초기화
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Firebase 초기화 (임시 비활성화)
+      // await _initializeFirebase();
 
       // 시스템 UI 설정
       await _setupSystemUI();
@@ -25,11 +33,61 @@ class AppInitializer {
       // 디바이스 정보 초기화
       await _initializeDeviceInfo();
 
+      // 네이버 맵 초기화
+      await _initializeNaverMap();
+
       _isInitialized = true;
       debugPrint('✅ App initialization completed successfully');
     } catch (e) {
       debugPrint('❌ App initialization failed: $e');
+      // Firebase Crashlytics로 오류 전송 (임시 비활성화)
+      // if (FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled) {
+      //   FirebaseCrashlytics.instance.recordError(e, null, fatal: true);
+      // }
       rethrow;
+    }
+  }
+
+  /// Firebase 초기화
+  static Future<void> _initializeFirebase() async {
+    try {
+      // Firebase 초기화
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      
+      // Crashlytics 설정
+      await _setupCrashlytics();
+      
+      debugPrint('✅ Firebase initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Firebase initialization failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Firebase Crashlytics 설정
+  static Future<void> _setupCrashlytics() async {
+    try {
+      // Flutter 프레임워크 오류를 Crashlytics에 전송
+      FlutterError.onError = (errorDetails) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      };
+      
+      // PlatformDispatcher 오류를 Crashlytics에 전송
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+      
+      // 사용자 정보 설정 (개인정보 제외)
+      await FirebaseCrashlytics.instance.setUserIdentifier('anonymous');
+      await FirebaseCrashlytics.instance.setCustomKey('app_version', '1.0.0');
+      await FirebaseCrashlytics.instance.setCustomKey('platform', 'flutter');
+      
+      debugPrint('✅ Firebase Crashlytics setup completed');
+    } catch (e) {
+      debugPrint('❌ Firebase Crashlytics setup failed: $e');
     }
   }
 
@@ -96,6 +154,23 @@ class AppInitializer {
       debugPrint('✅ Device info initialized');
     } catch (e) {
       debugPrint('❌ Device info initialization failed: $e');
+    }
+  }
+
+  /// 네이버 맵 초기화
+  static Future<void> _initializeNaverMap() async {
+    try {
+      // 네이버 맵 SDK 초기화
+      await NaverMapSdk.instance.initialize(
+        clientId: 'ncp:location:public', // 개발용 기본 클라이언트 ID
+        onAuthFailed: (ex) {
+          debugPrint('❌ Naver Map auth failed: $ex');
+        },
+      );
+      debugPrint('✅ Naver Map SDK initialized');
+    } catch (e) {
+      debugPrint('❌ Naver Map initialization failed: $e');
+      // 네이버 맵 초기화 실패는 치명적이지 않으므로 계속 진행
     }
   }
 

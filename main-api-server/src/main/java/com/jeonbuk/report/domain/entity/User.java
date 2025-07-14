@@ -51,7 +51,7 @@ public class User {
   @Column(name = "department", length = 100)
   private String department;
 
-  @Enumerated(EnumType.STRING)
+  @Convert(converter = UserRoleConverter.class)
   @Column(name = "role", nullable = false)
   @Builder.Default
   private UserRole role = UserRole.USER;
@@ -142,6 +142,11 @@ public class User {
 
     public String getDescription() {
       return description;
+    }
+    
+    @Override
+    public String toString() {
+      return name().toLowerCase();
     }
   }
 }

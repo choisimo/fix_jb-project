@@ -1,5 +1,7 @@
 package com.jeonbuk.report.application.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import javax.imageio.ImageIO;
 public class ImageAnalysisService {
 
     private final OpenRouterApiClient openRouterApiClient;
+    private final ObjectMapper objectMapper;
     private final Executor imageProcessingExecutor;
     private final Executor heavyTaskExecutor;
 
@@ -322,18 +325,136 @@ public class ImageAnalysisService {
     }
 
     private void parseAiAnalysisResponse(ImageAnalysisResult result, String aiResponse) {
-        // TODO: JSON 파싱 구현
-        log.debug("AI 응답 파싱: {}", aiResponse);
+        try {
+            log.debug("AI 이미지 분석 응답 파싱 시작: {}", aiResponse);
+            
+            // JSON 형태로 응답이 온 경우 파싱
+            if (aiResponse.trim().startsWith("{")) {
+                JsonNode jsonNode = objectMapper.readTree(aiResponse);
+                
+                // 심각도 레벨 파싱
+                if (jsonNode.has("severity_level")) {
+                    result.setSeverityLevel(jsonNode.get("severity_level").asText().toUpperCase());
+                } else if (jsonNode.has("severity")) {
+                    result.setSeverityLevel(jsonNode.get("severity").asText().toUpperCase());
+                }
+                
+                // 신뢰도 점수 파싱
+                if (jsonNode.has("confidence_score")) {
+                    result.setConfidenceScore(jsonNode.get("confidence_score").asDouble());
+                } else if (jsonNode.has("confidence")) {
+                    result.setConfidenceScore(jsonNode.get("confidence").asDouble());
+                }
+                
+                // 감지된 객체들 파싱
+                if (jsonNode.has("detected_objects")) {
+                    JsonNode objectsNode = jsonNode.get("detected_objects");
+                    if (objectsNode.isArray()) {
+                        List<String> detectedObjects = new java.util.ArrayList<>();
+                        objectsNode.forEach(node -> detectedObjects.add(node.asText()));
+                        result.setDetectedObjects(detectedObjects);
+                    }
+                }
+                
+                // 문제 유형 파싱
+                if (jsonNode.has("issue_type")) {
+                    result.setIssueType(jsonNode.get("issue_type").asText());
+                } else if (jsonNode.has("problem_type")) {
+                    result.setIssueType(jsonNode.get("problem_type").asText());
+                }
+                
+                // 분석 설명 파싱
+                if (jsonNode.has("analysis")) {
+                    result.setAiAnalysisText(jsonNode.get("analysis").asText());
+                } else if (jsonNode.has("description")) {
+                    result.setAiAnalysisText(jsonNode.get("description").asText());
+                } else {
+                    result.setAiAnalysisText(aiResponse);
+                }
+                
+                // 추천 행동 파싱
+                if (jsonNode.has("recommended_actions")) {
+                    JsonNode actionsNode = jsonNode.get("recommended_actions");
+                    if (actionsNode.isArray()) {
+                        List<String> actions = new java.util.ArrayList<>();
+                        actionsNode.forEach(node -> actions.add(node.asText()));
+                        result.setRecommendedActions(actions);
+                    }
+                }
+                
+                // 우선순위 점수 파싱
+                if (jsonNode.has("priority_score")) {
+                    result.setPriorityScore(jsonNode.get("priority_score").asDouble());
+                }
+                
+                log.debug("AI 이미지 분석 응답 파싱 완료 - 심각도: {}, 신뢰도: {}", 
+                    result.getSeverityLevel(), result.getConfidenceScore());
+                    
+            } else {
+                // 텍스트 형태의 응답인 경우 키워드 기반 파싱
+                parseTextImageResponse(result, aiResponse);
+            }
+            
+        } catch (Exception e) {
+            log.warn("AI 이미지 분석 응답 파싱 실패, 기본값 사용: {}", e.getMessage());
+            // 파싱 실패 시 텍스트 기반 파싱으로 폴백
+            parseTextImageResponse(result, aiResponse);
+        }
+    }
+    
+    private void parseTextImageResponse(ImageAnalysisResult result, String aiResponse) {
+        String responseUpper = aiResponse.toUpperCase();
         
-        // 임시 구현 - 실제로는 Jackson으로 JSON 파싱
-        if (aiResponse.contains("critical") || aiResponse.contains("CRITICAL")) {
+        // 심각도 레벨 추정
+        if (responseUpper.contains("CRITICAL") || responseUpper.contains("긴급") || 
+            responseUpper.contains("위험") || responseUpper.contains("DANGEROUS")) {
             result.setSeverityLevel("CRITICAL");
-        } else if (aiResponse.contains("high") || aiResponse.contains("HIGH")) {
+            result.setPriorityScore(0.9);
+        } else if (responseUpper.contains("HIGH") || responseUpper.contains("높음") || 
+                   responseUpper.contains("심각") || responseUpper.contains("SEVERE")) {
             result.setSeverityLevel("HIGH");
-        } else {
+            result.setPriorityScore(0.7);
+        } else if (responseUpper.contains("MEDIUM") || responseUpper.contains("보통") || 
+                   responseUpper.contains("MODERATE")) {
             result.setSeverityLevel("MEDIUM");
+            result.setPriorityScore(0.5);
+        } else {
+            result.setSeverityLevel("LOW");
+            result.setPriorityScore(0.3);
         }
         
+        // 문제 유형 추정
+        if (responseUpper.contains("포트홀") || responseUpper.contains("POTHOLE")) {
+            result.setIssueType("도로 포트홀");
+            result.setDetectedObjects(Arrays.asList("pothole", "road_damage"));
+        } else if (responseUpper.contains("표지판") || responseUpper.contains("SIGN")) {
+            result.setIssueType("교통 표지판 문제");
+            result.setDetectedObjects(Arrays.asList("traffic_sign", "sign_damage"));
+        } else if (responseUpper.contains("가로등") || responseUpper.contains("STREETLIGHT") || responseUpper.contains("조명")) {
+            result.setIssueType("가로등/조명 문제");
+            result.setDetectedObjects(Arrays.asList("streetlight", "lighting"));
+        } else if (responseUpper.contains("쓰레기") || responseUpper.contains("TRASH") || responseUpper.contains("GARBAGE")) {
+            result.setIssueType("쓰레기/청소 문제");
+            result.setDetectedObjects(Arrays.asList("trash", "litter"));
+        } else if (responseUpper.contains("도로") || responseUpper.contains("ROAD")) {
+            result.setIssueType("도로 손상");
+            result.setDetectedObjects(Arrays.asList("road_damage", "pavement_crack"));
+        } else {
+            result.setIssueType("일반 시설 문제");
+            result.setDetectedObjects(Arrays.asList("infrastructure_issue"));
+        }
+        
+        // 기본 추천 행동 설정
+        result.setRecommendedActions(Arrays.asList(
+            "현장 확인 필요",
+            "관련 부서 배정",
+            "우선순위에 따른 처리 계획 수립"
+        ));
+        
+        // 신뢰도 점수 설정 (텍스트 파싱의 경우 낮은 신뢰도)
+        result.setConfidenceScore(0.6);
+        
+        // 분석 텍스트 설정
         result.setAiAnalysisText(aiResponse);
     }
 
@@ -402,6 +523,13 @@ public class ImageAnalysisService {
         private java.time.LocalDateTime analysisEndTime;
         private boolean error;
         private String errorMessage;
+        
+        // Additional properties for enhanced analysis
+        private double confidenceScore;
+        private List<String> detectedObjects;
+        private String issueType;
+        private List<String> recommendedActions;
+        private double priorityScore;
 
         // Getters and setters
         public String getFileName() { return fileName; }
@@ -436,5 +564,17 @@ public class ImageAnalysisService {
         public void setError(boolean error) { this.error = error; }
         public String getErrorMessage() { return errorMessage; }
         public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+        
+        // Additional getters and setters
+        public double getConfidenceScore() { return confidenceScore; }
+        public void setConfidenceScore(double confidenceScore) { this.confidenceScore = confidenceScore; }
+        public List<String> getDetectedObjects() { return detectedObjects; }
+        public void setDetectedObjects(List<String> detectedObjects) { this.detectedObjects = detectedObjects; }
+        public String getIssueType() { return issueType; }
+        public void setIssueType(String issueType) { this.issueType = issueType; }
+        public List<String> getRecommendedActions() { return recommendedActions; }
+        public void setRecommendedActions(List<String> recommendedActions) { this.recommendedActions = recommendedActions; }
+        public double getPriorityScore() { return priorityScore; }
+        public void setPriorityScore(double priorityScore) { this.priorityScore = priorityScore; }
     }
 }

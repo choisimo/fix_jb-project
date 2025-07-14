@@ -1,5 +1,6 @@
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS jbreport_prod;
+-- Create database jbreport as well as jbreport_prod 
+SELECT 'CREATE DATABASE jbreport' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'jbreport')\gexec
+SELECT 'CREATE DATABASE jbreport_prod' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'jbreport_prod')\gexec
 
 -- Create user if not exists
 DO

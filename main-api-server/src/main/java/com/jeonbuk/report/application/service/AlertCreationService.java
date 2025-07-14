@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -246,13 +249,15 @@ public class AlertCreationService {
                 "securityEvent": "%s",
                 "details": "%s",
                 "detectedAt": "%s",
-                "userAgent": "%s"
+                "userAgent": "%s",
+                "ipAddress": "%s"
             }
             """,
             securityEvent,
             details,
             LocalDateTime.now(),
-            "Unknown" // TODO: Get from request context
+            getRequestUserAgent(),
+            getRequestIpAddress()
         );
         
         Alert alert = alertEntityService.createAlert(
@@ -369,5 +374,45 @@ public class AlertCreationService {
             return "";
         }
         return content.length() <= maxLength ? content : content.substring(0, maxLength) + "...";
+    }
+    
+    /**
+     * 현재 요청의 User-Agent 정보 가져오기
+     */
+    private String getRequestUserAgent() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                String userAgent = request.getHeader("User-Agent");
+                return userAgent != null ? userAgent : "Unknown";
+            }
+        } catch (Exception e) {
+            log.debug("Failed to get user agent from request context: {}", e.getMessage());
+        }
+        return "Unknown";
+    }
+    
+    /**
+     * 현재 요청의 IP 주소 가져오기
+     */
+    private String getRequestIpAddress() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                String ipAddress = request.getHeader("X-Forwarded-For");
+                if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+                    ipAddress = request.getHeader("X-Real-IP");
+                }
+                if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+                    ipAddress = request.getRemoteAddr();
+                }
+                return ipAddress != null ? ipAddress : "Unknown";
+            }
+        } catch (Exception e) {
+            log.debug("Failed to get IP address from request context: {}", e.getMessage());
+        }
+        return "Unknown";
     }
 }

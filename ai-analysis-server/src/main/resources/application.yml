@@ -99,9 +99,41 @@ app:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     topics:
-      image-requests: image_requests
-      analysis-results: analysis_results
-      notifications: notifications
+      image-requests: ${KAFKA_TOPIC_IMAGE_REQUESTS:image_requests}
+      analysis-results: ${KAFKA_TOPIC_ANALYSIS_RESULTS:ai_analysis_results}
+      analysis-errors: ${KAFKA_TOPIC_ANALYSIS_ERRORS:ai_analysis_errors}
+      validation-results: ${KAFKA_TOPIC_VALIDATION_RESULTS:ai_validation_results}
+      notifications: ${KAFKA_TOPIC_NOTIFICATIONS:notifications}
+
+# Google Cloud Configuration
+google:
+  cloud:
+    project-id: ${GOOGLE_CLOUD_PROJECT_ID:}
+    vision:
+      enabled: ${GOOGLE_CLOUD_VISION_ENABLED:false}
+      credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:}
+
+# AI Agent Configuration  
+ai:
+  agent:
+    enabled: ${AI_AGENT_ENABLED:false}
+    api:
+      url: ${AI_AGENT_API_URL:}
+      key: ${AI_AGENT_API_KEY:}
+      timeout: ${AI_AGENT_TIMEOUT:30000}
+    features:
+      scene-analysis: ${AI_AGENT_SCENE_ANALYSIS:true}
+      object-detection: ${AI_AGENT_OBJECT_DETECTION:true}
+      context-integration: ${AI_AGENT_CONTEXT_INTEGRATION:true}
+
+# Async Processing Configuration
+async:
+  processing:
+    core-pool-size: ${ASYNC_CORE_POOL_SIZE:4}
+    max-pool-size: ${ASYNC_MAX_POOL_SIZE:8}
+    queue-capacity: ${ASYNC_QUEUE_CAPACITY:100}
+    timeout: ${ASYNC_TIMEOUT:30000}
+    fallback-enabled: ${ASYNC_FALLBACK_ENABLED:true}
 
 # Server Configuration
 server:
@@ -116,6 +148,7 @@ logging:
     org.springframework.security: DEBUG
     org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
     org.hibernate.type.descriptor.sql.BasicBinder: ${SQL_PARAM_LOG_LEVEL:WARN}
+    com.google.cloud: ${GOOGLE_CLOUD_LOG_LEVEL:WARN}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

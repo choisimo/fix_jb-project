@@ -6,7 +6,6 @@ import com.jeonbuk.report.dto.category.ReportCategoryResponse;
 import com.jeonbuk.report.dto.comment.CommentResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,8 +79,7 @@ public record ReportDetailResponse(
                 new LocationInfo(
                         report.getLatitude(),
                         report.getLongitude(),
-                        report.getAddress(),
-                        null // detailedLocation field doesn't exist in Report entity
+                        report.getAddress()
                 ),
                 manager,
                 report.getManagerNotes(),
@@ -98,15 +96,4 @@ public record ReportDetailResponse(
                 report.getUpdatedAt()
         );
     }
-
-    /**
-     * 위치 정보 DTO
-     */
-    @Schema(description = "위치 정보")
-    public record LocationInfo(
-            @Schema(description = "위도") BigDecimal latitude,
-            @Schema(description = "경도") BigDecimal longitude,
-            @Schema(description = "주소") String address,
-            @Schema(description = "상세 위치") String detailedLocation
-    ) {}
 }

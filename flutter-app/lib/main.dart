@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jb_report_app/core/router/app_router.dart';
-import 'package:jb_report_app/core/theme/app_theme.dart';
-import 'package:jb_report_app/core/utils/app_initializer.dart';
+import 'package:go_router/go_router.dart';
+
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'core/utils/app_initializer.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize app
+  // 앱 초기화
   await AppInitializer.initialize();
   
   runApp(
@@ -25,12 +25,18 @@ class JBReportApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     
     return MaterialApp.router(
-      title: 'JB Report',
+      title: 'JB Report Platform',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          child: child!,
+        );
+      },
     );
   }
 }

@@ -1,196 +1,279 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgis/postgis:14-3.4
-    container_name: jbreport-postgres
+  # Infrastructure Services
+  postgres-main:
+    image: postgres:14-alpine
+    container_name: postgres-main
     environment:
-      POSTGRES_DB: jbreport_prod
-      POSTGRES_USER: ${DATABASE_USERNAME:-jbreport}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: jb_main
+      POSTGRES_USER: jb_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jb_password}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - postgres-main-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jbreport"]
+      test: ["CMD-SHELL", "pg_isready -U jb_user"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - jb-network
+
+  postgres-ai:
+    image: postgres:14-alpine
+    container_name: postgres-ai
+    environment:
+      POSTGRES_DB: jb_ai
+      POSTGRES_USER: jb_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jb_password}
+    volumes:
+      - postgres-ai-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jb_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jb-network
 
   redis:
     image: redis:7-alpine
-    container_name: jbreport-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    container_name: redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
     volumes:
       - redis-data:/data
     ports:
       - "6379:6379"
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - jb-network
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: jbreport-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-logs:/var/lib/zookeeper/log
-    restart: unless-stopped
-
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: jbreport-kafka
-    depends_on:
-      - zookeeper
+  # Service Discovery
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
     ports:
-      - "9092:9092"
+      - "8761:8761"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-    restart: unless-stopped
+      SPRING_PROFILES_ACTIVE: docker
     healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - jb-network
 
-  nginx:
-    image: nginx:alpine
-    container_name: jbreport-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - nginx-cache:/var/cache/nginx
-    depends_on:
-      - main-api
-      - ai-analysis
-    restart: unless-stopped
-
-  main-api:
+  # API Gateway
+  api-gateway:
     build:
-      context: ./main-api-server
+      context: ./api-gateway
       dockerfile: Dockerfile
-    container_name: jbreport-main-api
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL_AUTO: none
-      DATABASE_URL: jdbc:postgresql://postgres:5432/jbreport_prod
-      DATABASE_USERNAME: ${DATABASE_USERNAME:-jbreport}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_URI: http://eureka-server:8761/eureka
       REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      JWT_SECRET: ${JWT_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
-      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      ROBOFLOW_API_KEY: ${ROBOFLOW_API_KEY}
-      ROBOFLOW_MODEL_ID: ${ROBOFLOW_MODEL_ID}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      FILE_STORAGE_PATH: /app/uploads
-      FILE_BASE_URL: ${API_BASE_URL}/files
-    volumes:
-      - uploads-data:/app/uploads
-      - logs-data:/app/logs
-      - ./backups/uploads:/app/uploads-backup:ro
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      JWT_JWK_URI: http://keycloak:8080/auth/realms/jb-platform/protocol/openid-connect/certs
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    restart: unless-stopped
+      - eureka-server
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+    networks:
+      - jb-network
 
-  ai-analysis:
+  # Main API Server
+  main-api-server:
     build:
-      context: ./ai-analysis-server
+      context: ./main-api-server
       dockerfile: Dockerfile
-    container_name: jbreport-ai-analysis
+    container_name: main-api-server
+    ports:
+      - "8081:8081"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DATABASE_URL: jdbc:postgresql://postgres:5432/jbreport_prod
-      DATABASE_USERNAME: ${DATABASE_USERNAME:-jbreport}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_URI: http://eureka-server:8761/eureka
+      DB_HOST: postgres-main
+      DB_PORT: 5432
+      DB_NAME: jb_main
+      DB_USER: jb_user
+      DB_PASSWORD: ${DB_PASSWORD:-jb_password}
       REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      ROBOFLOW_API_KEY: ${ROBOFLOW_API_KEY}
-      ROBOFLOW_WORKSPACE_URL: ${ROBOFLOW_WORKSPACE_URL}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL}
-      JWT_SECRET: ${JWT_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
-      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      FILE_STORAGE_PATH: /app/uploads
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
     depends_on:
-      postgres:
+      postgres-main:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+    networks:
+      - jb-network
+
+  # AI Analysis Server
+  ai-analysis-server:
+    build:
+      context: ./ai-analysis-server
+      dockerfile: Dockerfile
+    container_name: ai-analysis-server
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_URI: http://eureka-server:8761/eureka
+      DB_HOST: postgres-ai
+      DB_PORT: 5432
+      DB_NAME: jb_ai
+      DB_USER: jb_user
+      DB_PASSWORD: ${DB_PASSWORD:-jb_password}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - jb-network
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - jb-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - jb-network
+
+  # ELK Stack for Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - jb-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.9
+    container_name: logstash
+    volumes:
+      - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - jb-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.9
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - jb-network
+
+  # Authentication Service (Keycloak)
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-main:5432/keycloak
+      KC_DB_USERNAME: jb_user
+      KC_DB_PASSWORD: ${DB_PASSWORD:-jb_password}
+    ports:
+      - "8180:8080"
+    command: start-dev
+    depends_on:
+      postgres-main:
+        condition: service_healthy
+    networks:
+      - jb-network
 
 volumes:
-  postgres-data:
-    driver: local
+  postgres-main-data:
+  postgres-ai-data:
   redis-data:
-    driver: local
-  zookeeper-data:
-    driver: local
-  zookeeper-logs:
-    driver: local
-  kafka-data:
-    driver: local
-  uploads-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${HOST_UPLOAD_PATH:-./data/uploads}
-  logs-data:
-    driver: local
-  nginx-cache:
-    driver: local
+  prometheus-data:
+  grafana-data:
+  elasticsearch-data:
 
 networks:
-  default:
-    name: jbreport-network
+  jb-network:
     driver: bridge

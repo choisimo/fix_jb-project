@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../data/auth_repository.dart';
-import '../data/services/token_service.dart';
+import '../auth_repository.dart';
+import '../services/token_service.dart';
+import '../api/auth_api_client.dart';
+import '../../../../core/api/api_client.dart';
+import '../../domain/models/user.dart';
 
 part 'auth_providers.g.dart';
 
@@ -11,11 +14,19 @@ TokenService tokenService(TokenServiceRef ref) {
   return TokenService();
 }
 
+/// Auth API 클라이언트 Provider
+@riverpod
+AuthApiClient authApiClient(AuthApiClientRef ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return AuthApiClient(apiClient.dio);
+}
+
 /// 인증 리포지토리 Provider  
 @riverpod
 AuthRepository authRepository(AuthRepositoryRef ref) {
+  final authApiClient = ref.watch(authApiClientProvider);
   final tokenService = ref.watch(tokenServiceProvider);
-  return AuthRepository(tokenService: tokenService);
+  return AuthRepository(authApiClient, tokenService);
 }
 
 /// 현재 사용자 Provider
@@ -101,11 +112,3 @@ class BiometricStatus extends _$BiometricStatus {
   }
 }
 
-// User import 추가 (임시)
-class User {
-  final String id;
-  final String email;
-  final String username;
-  
-  User({required this.id, required this.email, required this.username});
-}

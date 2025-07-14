@@ -12,7 +12,7 @@ abstract class AuthApiClient {
   @POST('/auth/login')
   Future<AuthResponse> login(@Body() Map<String, dynamic> request);
 
-  @POST('/auth/signup')
+  @POST('/auth/register')
   Future<AuthResponse> signup(@Body() Map<String, dynamic> request);
 
   @POST('/auth/social-login')

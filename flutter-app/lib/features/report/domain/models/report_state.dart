@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'report.dart';
-import 'report_models.dart';
 
 part 'report_state.freezed.dart';
 
@@ -23,7 +22,6 @@ class ReportListState with _$ReportListState {
     @Default(false) bool hasNext,
     @Default(false) bool isLoadingMore,
     String? error,
-    ReportListRequest? lastRequest,
   }) = _ReportListState;
 
   const ReportListState._();
@@ -41,14 +39,13 @@ class CreateReportState with _$CreateReportState {
     ReportType? type,
     ReportLocation? location,
     @Default([]) List<XFile> selectedImages,
-    @Default([]) List<ImageUploadResponse> uploadedImages,
     @Default(Priority.medium) Priority priority,
     @Default(false) bool isLoading,
     @Default(false) bool isSubmitting,
     @Default(false) bool isUploadingImages,
     @Default(false) bool isAnalyzing,
     String? error,
-    AIAnalysisResult? aiAnalysis,
+    ComprehensiveAIAnalysisResult? comprehensiveAiAnalysis,
     Map<String, String>? fieldErrors,
   }) = _CreateReportState;
 
@@ -63,8 +60,8 @@ class CreateReportState with _$CreateReportState {
       location != null &&
       selectedImages.isNotEmpty;
 
-  bool get hasImages => selectedImages.isNotEmpty || uploadedImages.isNotEmpty;
-  int get totalImages => selectedImages.length + uploadedImages.length;
+  bool get hasImages => selectedImages.isNotEmpty;
+  int get totalImages => selectedImages.length;
 }
 
 @freezed
@@ -80,44 +77,4 @@ class ReportDetailState with _$ReportDetailState {
     String? error,
     String? commentError,
   }) = _ReportDetailState;
-}
-
-@freezed
-class ReportFilterState with _$ReportFilterState {
-  const factory ReportFilterState({
-    String? search,
-    ReportType? type,
-    ReportStatus? status,
-    Priority? priority,
-    String? sortBy,
-    @Default('desc') String sortDirection,
-    ReportLocation? location,
-    @Default(1.0) double radius,
-    @Default(false) bool nearbyOnly,
-  }) = _ReportFilterState;
-
-  const ReportFilterState._();
-
-  bool get hasActiveFilters =>
-      search != null ||
-      type != null ||
-      status != null ||
-      priority != null ||
-      nearbyOnly;
-
-  ReportListRequest toRequest({int page = 0, int size = 20}) {
-    return ReportListRequest(
-      page: page,
-      size: size,
-      search: search,
-      type: type,
-      status: status,
-      priority: priority,
-      sortBy: sortBy,
-      sortDirection: sortDirection,
-      latitude: nearbyOnly ? location?.latitude : null,
-      longitude: nearbyOnly ? location?.longitude : null,
-      radius: nearbyOnly ? radius : null,
-    );
-  }
 }

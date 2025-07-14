@@ -211,16 +211,28 @@ public class AiRoutingController {
             stats.put("service", "ai-analysis-routing");
             stats.put("timestamp", System.currentTimeMillis());
 
-            // TODO: 실제 통계 정보 수집 로직 추가
-            // - 처리된 요청 수
-            // - 성공/실패 비율
-            // - 평균 처리 시간
-            // - 모델별 사용 통계
-
-            stats.put("message", "Statistics collection not yet implemented");
+            // 실제 통계 정보 수집
+            Map<String, Object> routingStats = aiRoutingService.getStatistics();
+            stats.putAll(routingStats);
 
             return ResponseEntity.ok(stats);
         });
+    }
+    
+    /**
+     * AI 라우팅 통계 초기화
+     */
+    @Operation(summary = "통계 초기화", description = "AI 라우팅 서비스의 통계를 초기화합니다.")
+    @PostMapping("/routing/stats/reset")
+    public ResponseEntity<Map<String, Object>> resetStats() {
+        aiRoutingService.resetStatistics();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "AI routing statistics have been reset");
+        response.put("timestamp", System.currentTimeMillis());
+        
+        return ResponseEntity.ok(response);
     }
 
     /**

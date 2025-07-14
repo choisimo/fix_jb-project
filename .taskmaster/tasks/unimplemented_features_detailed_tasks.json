@@ -1,0 +1,463 @@
+{
+  "project_name": "JB Report System",
+  "created_at": "2025-07-13T00:00:00Z",
+  "last_updated": "2025-07-13T00:00:00Z",
+  "priority_order": ["critical", "high", "medium", "low"],
+  "categories": {
+    "ai_analysis_server": {
+      "name": "AI Analysis Server",
+      "description": "Critical unimplemented services in AI Analysis Server",
+      "priority": "critical"
+    },
+    "main_api_server": {
+      "name": "Main API Server", 
+      "description": "Kafka and integration services in Main API Server",
+      "priority": "critical"
+    },
+    "flutter_app": {
+      "name": "Flutter Mobile App",
+      "description": "Core features and integrations in Flutter app",
+      "priority": "high"
+    },
+    "configuration": {
+      "name": "Configuration & Environment",
+      "description": "Configuration improvements and environment setup",
+      "priority": "medium"
+    }
+  },
+  "tasks": [
+    {
+      "id": "AI_REPORT_SERVICE_001",
+      "title": "Implement ReportService.createReport() method",
+      "description": "Implement the complete report creation functionality including validation, database persistence, and business logic",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 8,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 42,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Validates ReportCreateRequest input parameters",
+        "Persists report to database with proper error handling",
+        "Implements proper transaction management",
+        "Returns ReportDetailResponse with created report data",
+        "Handles duplicate reports appropriately",
+        "Includes proper logging and monitoring"
+      ],
+      "technical_notes": "Currently throws UnsupportedOperationException. Need to implement full CRUD functionality with proper validation and error handling."
+    },
+    {
+      "id": "AI_REPORT_SERVICE_002", 
+      "title": "Implement ReportService.getReports() method",
+      "description": "Implement paginated report listing with search and filter capabilities",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 51,
+      "dependencies": ["AI_REPORT_SERVICE_001"],
+      "acceptance_criteria": [
+        "Implements pagination using PageRequestDto",
+        "Supports ReportSearchCondition filtering",
+        "Returns PageResponse<ReportSummaryResponse>",
+        "Implements proper sorting options", 
+        "Handles empty results gracefully",
+        "Includes performance optimization for large datasets"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_003",
+      "title": "Implement ReportService.getReport() method", 
+      "description": "Implement single report retrieval by ID with proper authorization",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 4,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 60,
+      "dependencies": ["AI_REPORT_SERVICE_001"],
+      "acceptance_criteria": [
+        "Retrieves report by UUID with proper validation",
+        "Returns ReportDetailResponse with complete data",
+        "Implements authorization checks",
+        "Handles non-existent reports with proper error response",
+        "Includes related data (images, analysis results)",
+        "Implements caching for performance"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_004",
+      "title": "Implement ReportService.updateReport() method",
+      "description": "Implement report update functionality with versioning and audit trail",
+      "category": "ai_analysis_server", 
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 70,
+      "dependencies": ["AI_REPORT_SERVICE_001", "AI_REPORT_SERVICE_003"],
+      "acceptance_criteria": [
+        "Validates ReportUpdateRequest parameters",
+        "Implements optimistic locking for concurrent updates",
+        "Maintains audit trail of changes",
+        "Implements authorization for update operations",
+        "Handles partial updates appropriately",
+        "Returns updated ReportDetailResponse"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_005",
+      "title": "Implement ReportService.deleteReport() method",
+      "description": "Implement soft delete functionality with cascade operations",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending", 
+      "estimated_hours": 4,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 80,
+      "dependencies": ["AI_REPORT_SERVICE_001"],
+      "acceptance_criteria": [
+        "Implements soft delete (marking as deleted, not physical removal)",
+        "Handles cascade deletion of related entities",
+        "Implements authorization checks",
+        "Maintains referential integrity",
+        "Logs deletion operations for audit",
+        "Handles related file cleanup"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_006",
+      "title": "Implement ReportService.getMyReports() method",
+      "description": "Implement user-specific report listing with proper filtering",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 4,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java", 
+      "line_number": 89,
+      "dependencies": ["AI_REPORT_SERVICE_002"],
+      "acceptance_criteria": [
+        "Filters reports by authenticated user",
+        "Implements pagination support",
+        "Returns PageResponse<ReportSummaryResponse>",
+        "Handles different user roles appropriately",
+        "Includes proper authorization",
+        "Supports sorting and filtering options"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_007",
+      "title": "Implement ReportService.getStatistics() method",
+      "description": "Implement comprehensive report statistics and analytics",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 98,
+      "dependencies": ["AI_REPORT_SERVICE_001"],
+      "acceptance_criteria": [
+        "Returns ReportStatisticsResponse with comprehensive data",
+        "Includes counts by status, type, and time periods",
+        "Implements caching for performance",
+        "Supports date range filtering",
+        "Includes trend analysis data",
+        "Handles large datasets efficiently"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_008",
+      "title": "Implement ReportService.updateReportStatus() method",
+      "description": "Implement status transition management with workflow validation",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 5,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 108,
+      "dependencies": ["AI_REPORT_SERVICE_001"],
+      "acceptance_criteria": [
+        "Validates status transitions according to business rules",
+        "Implements authorization for status changes",
+        "Maintains status change history",
+        "Triggers appropriate notifications",
+        "Handles concurrent status updates",
+        "Includes proper error handling"
+      ]
+    },
+    {
+      "id": "AI_REPORT_SERVICE_009",
+      "title": "Implement ReportService.submitReport() method",
+      "description": "Implement report submission workflow with validation and processing",
+      "category": "ai_analysis_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/service/ReportService.java",
+      "line_number": 118,
+      "dependencies": ["AI_REPORT_SERVICE_001", "AI_REPORT_SERVICE_008"],
+      "acceptance_criteria": [
+        "Validates report completeness before submission",
+        "Implements business logic for submission workflow",
+        "Triggers AI analysis and processing",
+        "Sends notifications to relevant parties",
+        "Updates report status appropriately",
+        "Handles submission failures gracefully"
+      ]
+    },
+    {
+      "id": "MAIN_KAFKA_SERVICE_001",
+      "title": "Implement KafkaTicketService.sendToWorkspace() method",
+      "description": "Implement Kafka message sending to workspace routing system",
+      "category": "main_api_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "main-api-server/src/main/java/com/jeonbuk/report/application/service/KafkaTicketService.java",
+      "line_number": 11,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Implements proper Kafka message serialization",
+        "Handles different workspace routing logic",
+        "Includes error handling and retry mechanisms",
+        "Implements message acknowledgment",
+        "Includes proper logging and monitoring",
+        "Handles Kafka connectivity issues gracefully"
+      ],
+      "technical_notes": "Need to integrate with existing Kafka configuration and implement workspace-specific routing logic."
+    },
+    {
+      "id": "MAIN_KAFKA_SERVICE_002",
+      "title": "Implement KafkaTicketService.sendPriorityAlert() method",
+      "description": "Implement priority alert messaging system for urgent reports",
+      "category": "main_api_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 4,
+      "file_path": "main-api-server/src/main/java/com/jeonbuk/report/application/service/KafkaTicketService.java",
+      "line_number": 16,
+      "dependencies": ["MAIN_KAFKA_SERVICE_001"],
+      "acceptance_criteria": [
+        "Implements priority-based message routing",
+        "Includes alert escalation logic",
+        "Handles different alert types appropriately",
+        "Implements real-time notification delivery",
+        "Includes fallback mechanisms for failures",
+        "Integrates with existing alert infrastructure"
+      ]
+    },
+    {
+      "id": "MAIN_ESCALATION_SERVICE_001",
+      "title": "Implement PriorityEscalationService.escalateIfNeeded() method",
+      "description": "Implement automatic escalation logic based on business rules",
+      "category": "main_api_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 8,
+      "file_path": "main-api-server/src/main/java/com/jeonbuk/report/application/service/PriorityEscalationService.java",
+      "line_number": 11,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Implements time-based escalation rules",
+        "Handles different priority levels appropriately",
+        "Includes escalation notification system",
+        "Implements proper authorization checks",
+        "Maintains escalation audit trail",
+        "Integrates with alert and notification systems"
+      ]
+    },
+    {
+      "id": "MAIN_ESCALATION_SERVICE_002",
+      "title": "Implement PriorityEscalationService.shouldEscalate() method",
+      "description": "Implement escalation criteria evaluation logic",
+      "category": "main_api_server",
+      "priority": "critical",
+      "status": "pending",
+      "estimated_hours": 4,
+      "file_path": "main-api-server/src/main/java/com/jeonbuk/report/application/service/PriorityEscalationService.java",
+      "line_number": 16,
+      "dependencies": ["MAIN_ESCALATION_SERVICE_001"],
+      "acceptance_criteria": [
+        "Evaluates time-based escalation criteria",
+        "Considers report priority and status",
+        "Includes business rule engine integration",
+        "Handles different escalation scenarios",
+        "Returns boolean decision with reasoning",
+        "Implements configurable escalation rules"
+      ]
+    },
+    {
+      "id": "FLUTTER_CRASHLYTICS_001",
+      "title": "Implement Firebase Crashlytics integration",
+      "description": "Integrate Firebase Crashlytics for error reporting and monitoring",
+      "category": "flutter_app",
+      "priority": "high",
+      "status": "pending",
+      "estimated_hours": 4,
+      "file_path": "flutter-app/lib/core/error/error_handler.dart",
+      "line_number": 167,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Integrates Firebase Crashlytics SDK",
+        "Implements automatic crash reporting",
+        "Includes custom error logging",
+        "Handles different error types appropriately",
+        "Includes user identification for debugging",
+        "Implements proper privacy controls"
+      ]
+    },
+    {
+      "id": "FLUTTER_FILTER_001",
+      "title": "Implement home screen filter dialog",
+      "description": "Implement comprehensive filtering system for reports on home screen",
+      "category": "flutter_app",
+      "priority": "high",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "flutter-app/lib/features/home/presentation/home_screen.dart",
+      "line_number": 284,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Creates interactive filter dialog UI",
+        "Implements multiple filter criteria (status, date, type)",
+        "Includes search functionality",
+        "Implements filter persistence",
+        "Integrates with report listing API",
+        "Includes filter reset functionality"
+      ]
+    },
+    {
+      "id": "FLUTTER_ENCRYPTION_001",
+      "title": "Implement ChaCha20Poly1305 encryption library",
+      "description": "Replace placeholder AES implementation with actual ChaCha20Poly1305 encryption",
+      "category": "flutter_app",
+      "priority": "high",
+      "status": "pending",
+      "estimated_hours": 8,
+      "file_path": "flutter-app/lib/features/security/data/services/data_encryption_service.dart",
+      "line_number": 253,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Integrates ChaCha20Poly1305 encryption library",
+        "Implements proper key management",
+        "Includes encryption and decryption methods",
+        "Handles different data types appropriately",
+        "Implements proper error handling",
+        "Includes performance optimization"
+      ]
+    },
+    {
+      "id": "FLUTTER_UPLOAD_001",
+      "title": "Implement complete image upload URL handling",
+      "description": "Complete the image upload functionality with proper URL handling and error management",
+      "category": "flutter_app",
+      "priority": "high",
+      "status": "pending",
+      "estimated_hours": 6,
+      "file_path": "flutter-app/lib/features/report/data/report_repository.dart",
+      "line_number": 157,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Implements direct upload to provided URLs",
+        "Handles different image formats",
+        "Includes upload progress tracking",
+        "Implements retry logic for failed uploads",
+        "Handles large file uploads efficiently",
+        "Includes proper error handling and user feedback"
+      ]
+    },
+    {
+      "id": "FLUTTER_WEBSOCKET_CONFIG_001",
+      "title": "Convert WebSocket URL to environment variable",
+      "description": "Replace hardcoded WebSocket URL with environment-based configuration",
+      "category": "flutter_app",
+      "priority": "medium",
+      "status": "pending",
+      "estimated_hours": 2,
+      "file_path": "flutter-app/lib/features/notification/data/services/notification_service.dart",
+      "line_number": 20,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Creates environment configuration system",
+        "Implements different URLs for dev/staging/prod",
+        "Includes fallback URL configuration",
+        "Updates build configuration",
+        "Includes proper documentation",
+        "Tests configuration in different environments"
+      ]
+    },
+    {
+      "id": "MAIN_JSON_PARSING_001",
+      "title": "Improve IntegratedAiAgentService JSON parsing logic",
+      "description": "Enhance JSON extraction and parsing logic for AI agent responses",
+      "category": "main_api_server",
+      "priority": "high",
+      "status": "pending",
+      "estimated_hours": 4,
+      "file_path": "main-api-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java",
+      "line_number": 170,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Implements robust JSON extraction from AI responses",
+        "Handles malformed JSON gracefully",
+        "Includes proper error handling and logging",
+        "Implements fallback parsing strategies", 
+        "Includes comprehensive testing",
+        "Optimizes parsing performance"
+      ]
+    },
+    {
+      "id": "AI_REPORT_DETAIL_RESPONSE_001",
+      "title": "Fix ReportDetailResponse TODO field",
+      "description": "Replace hardcoded false value with proper implementation",
+      "category": "ai_analysis_server",
+      "priority": "medium",
+      "status": "pending",
+      "estimated_hours": 2,
+      "file_path": "ai-analysis-server/src/main/java/com/jeonbuk/report/dto/report/ReportDetailResponse.java",
+      "line_number": 96,
+      "dependencies": ["AI_REPORT_SERVICE_001"],
+      "acceptance_criteria": [
+        "Identifies the purpose of the boolean field",
+        "Implements proper business logic for the field",
+        "Updates related documentation",
+        "Includes appropriate testing",
+        "Maintains API compatibility"
+      ]
+    },
+    {
+      "id": "ROBOFLOW_API_TODOS",
+      "title": "Complete Roboflow API TODO items",
+      "description": "Implement remaining TODO items in RoboflowDto class",
+      "category": "main_api_server",
+      "priority": "medium",
+      "status": "pending",
+      "estimated_hours": 3,
+      "file_path": "main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/roboflow/RoboflowDto.java",
+      "line_number": 99,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Completes TODO implementation at line 99",
+        "Completes TODO implementation at line 104", 
+        "Includes proper validation and error handling",
+        "Updates related documentation",
+        "Includes comprehensive testing"
+      ]
+    }
+  ],
+  "summary": {
+    "total_tasks": 22,
+    "critical_priority": 14,
+    "high_priority": 6, 
+    "medium_priority": 2,
+    "estimated_total_hours": 118,
+    "categories_breakdown": {
+      "ai_analysis_server": 10,
+      "main_api_server": 6,
+      "flutter_app": 5,
+      "configuration": 1
+    }
+  }
+}

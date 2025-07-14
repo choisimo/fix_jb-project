@@ -28,4 +28,53 @@ public record ReportSearchCondition(
     @Schema(description = "검색 시작일") LocalDateTime startDate,
 
     @Schema(description = "검색 종료일") LocalDateTime endDate) {
+    
+    /**
+     * 검색 조건이 있는지 확인
+     */
+    public boolean hasSearchConditions() {
+        return keyword != null || 
+               (statuses != null && !statuses.isEmpty()) || 
+               (priorities != null && !priorities.isEmpty()) || 
+               (categoryIds != null && !categoryIds.isEmpty()) || 
+               authorId != null || 
+               approverId != null || 
+               startDate != null || 
+               endDate != null;
+    }
+    
+    /**
+     * 단일 카테고리 ID 반환 (첫 번째 카테고리)
+     */
+    public Long categoryId() {
+        return categoryIds != null && !categoryIds.isEmpty() ? categoryIds.get(0) : null;
+    }
+    
+    /**
+     * 단일 상태 반환 (첫 번째 상태)
+     */
+    public Long statusId() {
+        return null; // 상태는 enum이므로 Long ID가 없음
+    }
+    
+    /**
+     * 단일 우선순위 반환 (첫 번째 우선순위)
+     */
+    public Report.Priority priority() {
+        return priorities != null && !priorities.isEmpty() ? priorities.get(0) : null;
+    }
+    
+    /**
+     * 사용자 ID 반환
+     */
+    public Long userId() {
+        return authorId;
+    }
+    
+    /**
+     * 관리자 ID 반환
+     */
+    public Long managerId() {
+        return approverId;
+    }
 }

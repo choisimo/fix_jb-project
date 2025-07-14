@@ -6,6 +6,7 @@ import com.jeonbuk.report.application.service.IntegratedAiAgentService.*;
 import com.jeonbuk.report.application.service.ValidationAiAgentService.ValidationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.time.LocalDateTime;
 
 /**
  * AI 라우팅 서비스 - 통합 AI 분석 워크플로우 오케스트레이션
@@ -34,11 +38,24 @@ public class AiRoutingService {
     private final ValidationAiAgentService validationAiAgent;
     private final RoboflowApiClient roboflowClient;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-
-    // Kafka 토픽 설정
-    private static final String ANALYSIS_TOPIC = "ai_analysis_results";
-    private static final String ERROR_TOPIC = "ai_analysis_errors";
-    private static final String VALIDATION_TOPIC = "ai_validation_results";
+    
+    // Kafka 토픽 설정 (환경 변수로 구성 가능)
+    @Value("${app.kafka.topics.analysis-results:ai_analysis_results}")
+    private String analysisTopic;
+    
+    @Value("${app.kafka.topics.analysis-errors:ai_analysis_errors}")
+    private String errorTopic;
+    
+    @Value("${app.kafka.topics.validation-results:ai_validation_results}")
+    private String validationTopic;
+    
+    // Statistics tracking fields
+    private final AtomicLong totalRequests = new AtomicLong(0);
+    private final AtomicLong successfulRequests = new AtomicLong(0);
+    private final AtomicLong failedRequests = new AtomicLong(0);
+    private final AtomicReference<Double> totalProcessingTime = new AtomicReference<>(0.0);
+    private final Map<String, AtomicLong> modelUsageStats = new HashMap<>();
+    private final AtomicReference<LocalDateTime> lastResetTime = new AtomicReference<>(LocalDateTime.now());
 
     /**
      * 비동기 단일 입력 처리
@@ -46,11 +63,24 @@ public class AiRoutingService {
      */
     public CompletableFuture<AiRoutingResult> processInputAsync(InputData inputData) {
         return CompletableFuture.supplyAsync(() -> {
+            long startTime = System.currentTimeMillis();
+            recordRequestStart();
+            
             try {
                 log.info("Starting AI routing for input: {}", inputData.getId());
-                return processInputWithTransaction(inputData);
+                AiRoutingResult result = processInputWithTransaction(inputData);
+                
+                // 성공 통계 기록
+                long processingTime = System.currentTimeMillis() - startTime;
+                String modelUsed = determineModelUsed(result);
+                recordRequestSuccess(processingTime, modelUsed);
+                
+                return result;
             } catch (Exception e) {
                 log.error("Error in async AI routing: {}", e.getMessage(), e);
+                
+                // 실패 통계 기록
+                recordRequestFailure();
                 
                 // 에러 로깅
                 logError(inputData.getId(), e);
@@ -156,6 +186,9 @@ public class AiRoutingService {
      */
     public CompletableFuture<AiRoutingResult> simpleAnalysisAsync(InputData inputData) {
         return CompletableFuture.supplyAsync(() -> {
+            long startTime = System.currentTimeMillis();
+            recordRequestStart();
+            
             try {
                 log.info("Starting simple AI analysis for input: {}", inputData.getId());
                 
@@ -163,13 +196,14 @@ public class AiRoutingService {
                 AnalysisResult analysisResult = integratedAiAgent.analyzeInputAsync(inputData).join();
                 
                 if (!analysisResult.isSuccess()) {
+                    recordRequestFailure();
                     throw new RuntimeException("Simple analysis failed: " + analysisResult.getErrorMessage());
                 }
 
                 // 성공 로깅
                 logSimpleAnalysis(inputData.getId(), analysisResult);
-
-                return new AiRoutingResult(
+                
+                AiRoutingResult result = new AiRoutingResult(
                         inputData.getId(),
                         true,
                         "Simple AI analysis completed successfully",
@@ -180,8 +214,15 @@ public class AiRoutingService {
                         System.currentTimeMillis()
                 );
 
+                // 성공 통계 기록
+                long processingTime = System.currentTimeMillis() - startTime;
+                recordRequestSuccess(processingTime, "simple-analysis");
+                
+                return result;
+
             } catch (Exception e) {
                 log.error("Error in simple AI analysis: {}", e.getMessage(), e);
+                recordRequestFailure();
                 logError(inputData.getId(), e);
                 
                 return new AiRoutingResult(
@@ -212,7 +253,7 @@ public class AiRoutingService {
             logData.put("roboflowResult", roboflowResult);
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(ANALYSIS_TOPIC, id, logData);
+            kafkaTemplate.send(analysisTopic, id, logData);
             log.debug("Success event logged for {}", id);
         } catch (Exception e) {
             log.error("Failed to log success event for {}: {}", id, e.getMessage());
@@ -230,7 +271,7 @@ public class AiRoutingService {
             logData.put("validationResult", validationResult);
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(VALIDATION_TOPIC, id, logData);
+            kafkaTemplate.send(validationTopic, id, logData);
             log.debug("Validation failure event logged for {}", id);
         } catch (Exception e) {
             log.error("Failed to log validation failure for {}: {}", id, e.getMessage());
@@ -240,24 +281,23 @@ public class AiRoutingService {
     /**
      * 에러 이벤트 로깅
      */
-    private void logError(String id, Exception exception) {
+    private void logError(String id, Exception error) {
         try {
             Map<String, Object> logData = new HashMap<>();
             logData.put("id", id);
             logData.put("eventType", "AI_ROUTING_ERROR");
-            logData.put("errorMessage", exception.getMessage());
-            logData.put("errorClass", exception.getClass().getSimpleName());
+            logData.put("error", error.getMessage());
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(ERROR_TOPIC, id, logData);
+            kafkaTemplate.send(errorTopic, id, logData);
             log.debug("Error event logged for {}", id);
         } catch (Exception e) {
-            log.error("Failed to log error event for {}: {}", id, e.getMessage());
+            log.error("Failed to log error for {}: {}", id, e.getMessage());
         }
     }
 
     /**
-     * 간단한 분석 로깅
+     * 간단한 분석 성공 로깅
      */
     private void logSimpleAnalysis(String id, AnalysisResult analysisResult) {
         try {
@@ -267,7 +307,7 @@ public class AiRoutingService {
             logData.put("analysisResult", analysisResult);
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(ANALYSIS_TOPIC, id, logData);
+            kafkaTemplate.send(analysisTopic, id, logData);
             log.debug("Simple analysis event logged for {}", id);
         } catch (Exception e) {
             log.error("Failed to log simple analysis event for {}: {}", id, e.getMessage());
@@ -332,5 +372,96 @@ public class AiRoutingService {
         public void setError(Exception error) { this.error = error; }
         public long getTimestamp() { return timestamp; }
         public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    }
+    
+    // === 통계 관련 메서드 ===
+    
+    /**
+     * 요청 처리 시작 시 통계 업데이트
+     */
+    private void recordRequestStart() {
+        totalRequests.incrementAndGet();
+    }
+    
+    /**
+     * 성공적인 요청 완료 시 통계 업데이트
+     */
+    private void recordRequestSuccess(long processingTimeMs, String modelUsed) {
+        successfulRequests.incrementAndGet();
+        
+        // 평균 처리 시간 업데이트
+        synchronized (totalProcessingTime) {
+            double currentAvg = totalProcessingTime.get();
+            long successCount = successfulRequests.get();
+            double newAvg = ((currentAvg * (successCount - 1)) + processingTimeMs) / successCount;
+            totalProcessingTime.set(newAvg);
+        }
+        
+        // 모델 사용 통계 업데이트
+        if (modelUsed != null) {
+            modelUsageStats.computeIfAbsent(modelUsed, k -> new AtomicLong(0)).incrementAndGet();
+        }
+    }
+    
+    /**
+     * 실패한 요청 시 통계 업데이트
+     */
+    private void recordRequestFailure() {
+        failedRequests.incrementAndGet();
+    }
+    
+    /**
+     * 현재 통계 정보 조회
+     */
+    public Map<String, Object> getStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        long total = totalRequests.get();
+        long successful = successfulRequests.get();
+        long failed = failedRequests.get();
+        
+        stats.put("totalProcessed", total);
+        stats.put("successfulRequests", successful);
+        stats.put("failedRequests", failed);
+        stats.put("successRate", total > 0 ? (successful * 100.0 / total) : 0.0);
+        stats.put("failureRate", total > 0 ? (failed * 100.0 / total) : 0.0);
+        stats.put("averageProcessingTimeMs", totalProcessingTime.get());
+        
+        // 모델별 사용 통계
+        Map<String, Long> modelStats = new HashMap<>();
+        modelUsageStats.forEach((model, count) -> modelStats.put(model, count.get()));
+        stats.put("modelUsageStats", modelStats);
+        
+        stats.put("statisticsResetTime", lastResetTime.get().toString());
+        stats.put("lastUpdate", LocalDateTime.now().toString());
+        
+        return stats;
+    }
+    
+    /**
+     * 통계 초기화
+     */
+    public void resetStatistics() {
+        totalRequests.set(0);
+        successfulRequests.set(0);
+        failedRequests.set(0);
+        totalProcessingTime.set(0.0);
+        modelUsageStats.clear();
+        lastResetTime.set(LocalDateTime.now());
+        
+        log.info("AI Routing Service statistics have been reset");
+    }
+    
+    /**
+     * 사용된 모델 결정하기
+     */
+    private String determineModelUsed(AiRoutingResult result) {
+        if (result.getRoboflowResult() != null) {
+            return "roboflow-integration";
+        } else if (result.getAnalysisResult() != null) {
+            return "integrated-ai-agent";
+        } else {
+            return "unknown";
+        }
     }
 }

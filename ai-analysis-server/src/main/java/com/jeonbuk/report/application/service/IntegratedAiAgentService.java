@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.Base64;
 
 /**
  * 통합 AI 에이전트 서비스
@@ -210,6 +211,66 @@ public class IntegratedAiAgentService {
 
     // JSON을 찾을 수 없으면 기본 JSON 반환
     return "{\"objectType\":\"general\",\"damageType\":\"unknown\",\"environment\":\"urban\",\"priority\":\"medium\",\"category\":\"기타\",\"keywords\":[\"일반\"],\"confidence\":0.5}";
+  }
+
+  /**
+   * 이미지에서 텍스트 추출 (OCR 전용)
+   * OpenRouter의 qwen2.5-vl-72b-instruct 모델을 사용하여 텍스트만 추출
+   */
+  public String extractTextFromImage(byte[] imageData) {
+    try {
+      log.info("🔤 AI 모델을 사용한 텍스트 추출 시작");
+      
+      // 이미지를 Base64로 인코딩
+      String base64Image = Base64.getEncoder().encodeToString(imageData);
+      
+      // OCR 전용 프롬프트
+      String ocrPrompt = "이 이미지에 있는 모든 텍스트를 정확하게 추출해주세요. " +
+                        "한국어와 영어 텍스트를 모두 인식하고, " +
+                        "줄바꿈과 레이아웃을 최대한 보존하여 반환해주세요. " +
+                        "텍스트만 추출하고 다른 설명은 포함하지 마세요.";
+      
+      List<OpenRouterDto.Message> messages = List.of(
+          new OpenRouterDto.Message("system", 
+              "You are an expert OCR system. Extract all text from images accurately, " +
+              "preserving layout and structure. Support both Korean and English text."),
+          new OpenRouterDto.Message("user", ocrPrompt),
+          new OpenRouterDto.Message("user", "[이미지: data:image/jpeg;base64," + base64Image + "]")
+      );
+      
+      // AI 모델을 통한 텍스트 추출
+      String extractedText = openRouterClient.chatCompletionAsync(messages).get();
+      
+      // 응답에서 불필요한 부분 제거 및 정리
+      String cleanedText = cleanOcrResponse(extractedText);
+      
+      log.info("✅ AI 모델 텍스트 추출 완료 - 길이: {} 문자", cleanedText.length());
+      return cleanedText;
+      
+    } catch (Exception e) {
+      log.error("❌ AI 모델 텍스트 추출 실패: {}", e.getMessage(), e);
+      throw new RuntimeException("AI 모델 OCR 처리 실패", e);
+    }
+  }
+  
+  /**
+   * OCR 응답 정리 (불필요한 설명 제거)
+   */
+  private String cleanOcrResponse(String rawResponse) {
+    if (rawResponse == null) return "";
+    
+    // 일반적인 AI 응답 패턴 제거
+    String cleaned = rawResponse
+        .replaceAll("(?i)^.*?텍스트.*?다음과 같습니다?\\s*:?\\s*", "")
+        .replaceAll("(?i)^.*?extracted.*?text.*?:?\\s*", "")
+        .replaceAll("(?i)^.*?이미지에.*?텍스트.*?:?\\s*", "")
+        .replaceAll("(?i)^.*?다음은.*?텍스트.*?:?\\s*", "")
+        .trim();
+    
+    // 빈 줄 정리
+    cleaned = cleaned.replaceAll("\n\n+", "\n\n");
+    
+    return cleaned;
   }
 
   /**

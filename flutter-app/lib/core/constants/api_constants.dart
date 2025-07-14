@@ -1,8 +1,11 @@
 class ApiConstants {
   // 개발/스테이징/프로덕션 환경별 베이스 URL
-  static const String _devBaseUrl = 'http://localhost:8080';
+  static const String _devBaseUrl = 'http://10.0.2.2:8080';
+  static const String _devAiBaseUrl = 'http://10.0.2.2:8081'; // AI Analysis Server
   static const String _stagingBaseUrl = 'https://staging-api.jbreport.com';
+  static const String _stagingAiBaseUrl = 'https://staging-ai.jbreport.com';
   static const String _prodBaseUrl = 'https://api.jbreport.com';
+  static const String _prodAiBaseUrl = 'https://ai.jbreport.com';
 
   // 현재 환경 설정 (개발 모드에서는 개발 서버 사용)
   static const bool _isDevelopment = true; // 프로덕션 배포시 false로 변경
@@ -15,11 +18,21 @@ class ApiConstants {
     return _prodBaseUrl;
   }
 
+  // AI Analysis Server 베이스 URL 선택
+  static String get aiBaseUrl {
+    if (_isDevelopment) return _devAiBaseUrl;
+    if (_isStaging) return _stagingAiBaseUrl;
+    return _prodAiBaseUrl;
+  }
+
   // API 버전
-  static const String apiVersion = '/api/v1';
+  static const String apiVersion = '/api';
   
   // 전체 API 베이스 URL
   static String get apiBaseUrl => '$baseUrl$apiVersion';
+  
+  // Reports용 특별 베이스 URL (서버가 /reports를 기대하므로)
+  static String get reportsBaseUrl => baseUrl;
 
   // === 인증 관련 엔드포인트 ===
   static const String authBase = '/auth';
@@ -40,7 +53,7 @@ class ApiConstants {
   static const String deleteAccountEndpoint = '$userBase/delete';
 
   // === 리포트 관련 엔드포인트 ===
-  static const String reportBase = '/reports';
+  static const String reportBase = '/../reports'; // /api를 우회하고 직접 /reports로 이동
   static const String createReportEndpoint = reportBase;
   static const String getReportsEndpoint = reportBase;
   static const String getReportByIdEndpoint = '$reportBase/{id}';

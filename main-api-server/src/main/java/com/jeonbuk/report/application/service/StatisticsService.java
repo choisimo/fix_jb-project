@@ -1,5 +1,7 @@
 package com.jeonbuk.report.application.service;
 
+import com.jeonbuk.report.domain.entity.Report;
+import com.jeonbuk.report.domain.entity.User;
 import com.jeonbuk.report.domain.repository.ReportRepository;
 import com.jeonbuk.report.domain.repository.UserRepository;
 import com.jeonbuk.report.presentation.dto.response.StatisticsResponse;
@@ -8,11 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +55,6 @@ public class StatisticsService {
     }
 
     public StatisticsResponse getCategoryStatistics(String categoryName) {
-        // Implementation for category-specific statistics
         Map<String, Long> categoryStats = new HashMap<>();
         categoryStats.put(categoryName, getReportsByCategoryName(categoryName));
         
@@ -71,7 +75,7 @@ public class StatisticsService {
 
     private Long getTotalReports() {
         try {
-            return reportRepository.count();
+            return reportRepository.countActive();
         } catch (Exception e) {
             log.warn("Error getting total reports count, returning 0: {}", e.getMessage());
             return 0L;
@@ -80,9 +84,21 @@ public class StatisticsService {
 
     private Long getCompletedReports() {
         try {
-            // This would need a custom query method in repository
-            // For now, returning a placeholder
-            return Math.round(getTotalReports() * 0.7); // Assume 70% completion rate
+            // Get all status statistics and filter for completed statuses
+            List<Object[]> statusStats = reportRepository.getStatusStatistics();
+            return statusStats.stream()
+                    .filter(stat -> {
+                        String statusName = (String) stat[0];
+                        return statusName != null && (
+                            statusName.toLowerCase().contains("완료") ||
+                            statusName.toLowerCase().contains("해결") ||
+                            statusName.toLowerCase().contains("완료됨") ||
+                            statusName.toLowerCase().contains("completed") ||
+                            statusName.toLowerCase().contains("resolved")
+                        );
+                    })
+                    .mapToLong(stat -> ((Number) stat[1]).longValue())
+                    .sum();
         } catch (Exception e) {
             log.warn("Error getting completed reports count, returning 0: {}", e.getMessage());
             return 0L;
@@ -91,7 +107,20 @@ public class StatisticsService {
 
     private Long getPendingReports() {
         try {
-            return Math.round(getTotalReports() * 0.2); // Assume 20% pending
+            List<Object[]> statusStats = reportRepository.getStatusStatistics();
+            return statusStats.stream()
+                    .filter(stat -> {
+                        String statusName = (String) stat[0];
+                        return statusName != null && (
+                            statusName.toLowerCase().contains("접수") ||
+                            statusName.toLowerCase().contains("대기") ||
+                            statusName.toLowerCase().contains("신규") ||
+                            statusName.toLowerCase().contains("pending") ||
+                            statusName.toLowerCase().contains("new")
+                        );
+                    })
+                    .mapToLong(stat -> ((Number) stat[1]).longValue())
+                    .sum();
         } catch (Exception e) {
             log.warn("Error getting pending reports count, returning 0: {}", e.getMessage());
             return 0L;
@@ -100,7 +129,20 @@ public class StatisticsService {
 
     private Long getInProgressReports() {
         try {
-            return Math.round(getTotalReports() * 0.1); // Assume 10% in progress
+            List<Object[]> statusStats = reportRepository.getStatusStatistics();
+            return statusStats.stream()
+                    .filter(stat -> {
+                        String statusName = (String) stat[0];
+                        return statusName != null && (
+                            statusName.toLowerCase().contains("처리중") ||
+                            statusName.toLowerCase().contains("진행중") ||
+                            statusName.toLowerCase().contains("배정") ||
+                            statusName.toLowerCase().contains("in_progress") ||
+                            statusName.toLowerCase().contains("assigned")
+                        );
+                    })
+                    .mapToLong(stat -> ((Number) stat[1]).longValue())
+                    .sum();
         } catch (Exception e) {
             log.warn("Error getting in-progress reports count, returning 0: {}", e.getMessage());
             return 0L;
@@ -108,39 +150,42 @@ public class StatisticsService {
     }
 
     private Map<String, Long> getReportsByCategory() {
-        Map<String, Long> categoryStats = new HashMap<>();
         try {
-            // Placeholder data - in real implementation, this would use JPQL GROUP BY queries
-            categoryStats.put("도로/교통", Math.round(getTotalReports() * 0.4));
-            categoryStats.put("환경/청소", Math.round(getTotalReports() * 0.3));
-            categoryStats.put("시설물", Math.round(getTotalReports() * 0.2));
-            categoryStats.put("기타", Math.round(getTotalReports() * 0.1));
+            List<Object[]> categoryStats = reportRepository.getCategoryStatistics();
+            return categoryStats.stream()
+                    .collect(Collectors.toMap(
+                        stat -> (String) stat[0],
+                        stat -> ((Number) stat[1]).longValue(),
+                        (existing, replacement) -> existing
+                    ));
         } catch (Exception e) {
             log.warn("Error getting reports by category: {}", e.getMessage());
+            return new HashMap<>();
         }
-        return categoryStats;
     }
 
     private Map<String, Long> getReportsByStatus() {
-        Map<String, Long> statusStats = new HashMap<>();
         try {
-            statusStats.put("접수", getPendingReports());
-            statusStats.put("처리중", getInProgressReports());
-            statusStats.put("완료", getCompletedReports());
+            List<Object[]> statusStats = reportRepository.getStatusStatistics();
+            return statusStats.stream()
+                    .collect(Collectors.toMap(
+                        stat -> (String) stat[0],
+                        stat -> ((Number) stat[1]).longValue(),
+                        (existing, replacement) -> existing
+                    ));
         } catch (Exception e) {
             log.warn("Error getting reports by status: {}", e.getMessage());
+            return new HashMap<>();
         }
-        return statusStats;
     }
 
     private Map<String, Long> getReportsByPriority() {
         Map<String, Long> priorityStats = new HashMap<>();
         try {
-            Long total = getTotalReports();
-            priorityStats.put("긴급", Math.round(total * 0.1));
-            priorityStats.put("높음", Math.round(total * 0.2));
-            priorityStats.put("보통", Math.round(total * 0.5));
-            priorityStats.put("낮음", Math.round(total * 0.2));
+            for (Report.Priority priority : Report.Priority.values()) {
+                long count = reportRepository.countByPriority(priority);
+                priorityStats.put(priority.getDescription(), count);
+            }
         } catch (Exception e) {
             log.warn("Error getting reports by priority: {}", e.getMessage());
         }
@@ -151,14 +196,16 @@ public class StatisticsService {
         Map<LocalDate, Long> timeStats = new HashMap<>();
         try {
             LocalDate now = LocalDate.now();
-            Long totalReports = getTotalReports();
+            LocalDate startDate = now.minusDays(29); // Last 30 days
             
-            // Generate last 30 days of data
-            for (int i = 29; i >= 0; i--) {
-                LocalDate date = now.minusDays(i);
-                // Simulate realistic daily report counts
-                Long dailyReports = Math.round((totalReports / 365.0) * (0.5 + Math.random()));
-                timeStats.put(date, dailyReports);
+            // Get daily counts for the last 30 days
+            for (int i = 0; i < 30; i++) {
+                LocalDate date = startDate.plusDays(i);
+                LocalDateTime dayStart = date.atStartOfDay();
+                LocalDateTime dayEnd = date.atTime(23, 59, 59);
+                
+                List<Report> dailyReports = reportRepository.findByCreatedAtBetween(dayStart, dayEnd);
+                timeStats.put(date, (long) dailyReports.size());
             }
         } catch (Exception e) {
             log.warn("Error getting reports over time: {}", e.getMessage());
@@ -170,12 +217,14 @@ public class StatisticsService {
         Map<LocalDate, Long> timeStats = new HashMap<>();
         try {
             long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
-            Long totalInRange = getReportsInPeriod(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
             
             for (long i = 0; i <= daysBetween; i++) {
                 LocalDate date = startDate.plusDays(i);
-                Long dailyReports = Math.round((totalInRange / (double)(daysBetween + 1)) * (0.5 + Math.random()));
-                timeStats.put(date, dailyReports);
+                LocalDateTime dayStart = date.atStartOfDay();
+                LocalDateTime dayEnd = date.atTime(23, 59, 59);
+                
+                List<Report> dailyReports = reportRepository.findByCreatedAtBetween(dayStart, dayEnd);
+                timeStats.put(date, (long) dailyReports.size());
             }
         } catch (Exception e) {
             log.warn("Error getting reports over time in range: {}", e.getMessage());
@@ -185,8 +234,23 @@ public class StatisticsService {
 
     private Double getAverageProcessingDays() {
         try {
-            // Placeholder calculation - in real implementation, calculate from actual completion dates
-            return 5.5; // Average 5.5 days processing time
+            List<Report> completedReports = reportRepository.findAllActive().stream()
+                    .filter(report -> report.getActualCompletion() != null)
+                    .toList();
+            
+            if (completedReports.isEmpty()) {
+                return 0.0;
+            }
+            
+            double totalDays = completedReports.stream()
+                    .mapToDouble(report -> {
+                        LocalDate createdDate = report.getCreatedAt().toLocalDate();
+                        LocalDate completedDate = report.getActualCompletion();
+                        return ChronoUnit.DAYS.between(createdDate, completedDate);
+                    })
+                    .sum();
+            
+            return totalDays / completedReports.size();
         } catch (Exception e) {
             log.warn("Error calculating average processing days: {}", e.getMessage());
             return 0.0;
@@ -204,8 +268,7 @@ public class StatisticsService {
 
     private Long getActiveUsers() {
         try {
-            // Assume 80% of users are active
-            return Math.round(getTotalUsers() * 0.8);
+            return userRepository.countByIsActiveTrue();
         } catch (Exception e) {
             log.warn("Error getting active users count, returning 0: {}", e.getMessage());
             return 0L;
@@ -214,8 +277,7 @@ public class StatisticsService {
 
     private Long getReportsWithAiAnalysis() {
         try {
-            // Assume 60% of reports have AI analysis
-            return Math.round(getTotalReports() * 0.6);
+            return (long) reportRepository.findWithAiAnalysis().size();
         } catch (Exception e) {
             log.warn("Error getting reports with AI analysis count, returning 0: {}", e.getMessage());
             return 0L;
@@ -224,8 +286,22 @@ public class StatisticsService {
 
     private Double getAverageAiConfidence() {
         try {
-            // Placeholder for average AI confidence score
-            return 0.85; // 85% average confidence
+            List<Report> reportsWithAi = reportRepository.findWithAiAnalysis();
+            
+            if (reportsWithAi.isEmpty()) {
+                return 0.0;
+            }
+            
+            double totalConfidence = reportsWithAi.stream()
+                    .filter(report -> report.getAiConfidenceScore() != null)
+                    .mapToDouble(report -> report.getAiConfidenceScore().doubleValue())
+                    .sum();
+            
+            long countWithConfidence = reportsWithAi.stream()
+                    .filter(report -> report.getAiConfidenceScore() != null)
+                    .count();
+            
+            return countWithConfidence > 0 ? totalConfidence / countWithConfidence : 0.0;
         } catch (Exception e) {
             log.warn("Error calculating average AI confidence: {}", e.getMessage());
             return 0.0;
@@ -245,9 +321,7 @@ public class StatisticsService {
 
     private Long getReportsInPeriod(LocalDateTime start, LocalDateTime end) {
         try {
-            // Placeholder - would need custom repository method
-            long daysBetween = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate());
-            return Math.round((getTotalReports() / 365.0) * daysBetween);
+            return (long) reportRepository.findByCreatedAtBetween(start, end).size();
         } catch (Exception e) {
             log.warn("Error getting reports in period: {}", e.getMessage());
             return 0L;
@@ -256,8 +330,12 @@ public class StatisticsService {
 
     private Long getReportsByCategoryName(String categoryName) {
         try {
-            // Placeholder - would need custom repository method
-            return getReportsByCategory().getOrDefault(categoryName, 0L);
+            List<Object[]> categoryStats = reportRepository.getCategoryStatistics();
+            return categoryStats.stream()
+                    .filter(stat -> categoryName.equals(stat[0]))
+                    .mapToLong(stat -> ((Number) stat[1]).longValue())
+                    .findFirst()
+                    .orElse(0L);
         } catch (Exception e) {
             log.warn("Error getting reports by category name: {}", e.getMessage());
             return 0L;

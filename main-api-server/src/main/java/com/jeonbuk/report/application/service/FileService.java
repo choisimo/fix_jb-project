@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -156,14 +159,112 @@ public class FileService {
     }
 
     private void generateThumbnail(ReportFile reportFile, Path originalPath) {
-        // Placeholder for thumbnail generation
-        // In a real implementation, you'd use libraries like ImageIO or external tools
-        String thumbnailFilename = "thumb_" + originalPath.getFileName().toString();
-        Path thumbnailPath = originalPath.getParent().resolve(thumbnailFilename);
+        try {
+            log.info("Generating thumbnail for: {}", originalPath);
+            
+            // Read the original image
+            BufferedImage originalImage = ImageIO.read(originalPath.toFile());
+            if (originalImage == null) {
+                log.warn("Unable to read image file: {}", originalPath);
+                return;
+            }
+            
+            // Calculate thumbnail dimensions (maintain aspect ratio)
+            int thumbnailWidth = 200; // Configurable thumbnail width
+            int thumbnailHeight = 200; // Configurable thumbnail height
+            
+            Dimension thumbnailSize = calculateThumbnailSize(
+                originalImage.getWidth(), 
+                originalImage.getHeight(), 
+                thumbnailWidth, 
+                thumbnailHeight
+            );
+            
+            // Create thumbnail image with better quality
+            BufferedImage thumbnailImage = new BufferedImage(
+                thumbnailSize.width, 
+                thumbnailSize.height, 
+                BufferedImage.TYPE_INT_RGB
+            );
+            
+            Graphics2D g2d = thumbnailImage.createGraphics();
+            try {
+                // Enable high-quality rendering
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw the scaled image
+                g2d.drawImage(originalImage, 0, 0, thumbnailSize.width, thumbnailSize.height, null);
+            } finally {
+                g2d.dispose();
+            }
+            
+            // Save thumbnail to file
+            String originalFilename = originalPath.getFileName().toString();
+            String baseFilename = getFilenameWithoutExtension(originalFilename);
+            String extension = getFileExtension(originalFilename);
+            String thumbnailFilename = "thumb_" + baseFilename + "." + extension;
+            Path thumbnailPath = originalPath.getParent().resolve(thumbnailFilename);
+            
+            // Determine image format (default to JPEG for thumbnails)
+            String formatName = "JPEG";
+            if ("png".equalsIgnoreCase(extension)) {
+                formatName = "PNG";
+            }
+            
+            boolean success = ImageIO.write(thumbnailImage, formatName, thumbnailPath.toFile());
+            
+            if (success) {
+                reportFile.setThumbnailPath(thumbnailPath.toString());
+                reportFile.setThumbnailUrl("/api/v1/files/thumbnail/" + thumbnailFilename);
+                log.info("Thumbnail generated successfully: {}", thumbnailPath);
+            } else {
+                log.error("Failed to write thumbnail image: {}", thumbnailPath);
+            }
+            
+        } catch (IOException e) {
+            log.error("Error generating thumbnail for {}: {}", originalPath, e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error generating thumbnail for {}: {}", originalPath, e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Calculate optimal thumbnail size maintaining aspect ratio
+     */
+    private Dimension calculateThumbnailSize(int originalWidth, int originalHeight, int maxWidth, int maxHeight) {
+        double widthRatio = (double) maxWidth / originalWidth;
+        double heightRatio = (double) maxHeight / originalHeight;
+        double scaleFactor = Math.min(widthRatio, heightRatio);
         
-        reportFile.setThumbnailPath(thumbnailPath.toString());
-        reportFile.setThumbnailUrl("/api/v1/files/thumbnail/" + thumbnailFilename);
+        int thumbnailWidth = (int) (originalWidth * scaleFactor);
+        int thumbnailHeight = (int) (originalHeight * scaleFactor);
         
-        log.info("Thumbnail generation placeholder for: {}", originalPath);
+        return new Dimension(thumbnailWidth, thumbnailHeight);
+    }
+    
+    /**
+     * Get filename without extension
+     */
+    private String getFilenameWithoutExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return filename;
+        }
+        return filename.substring(0, filename.lastIndexOf("."));
+    }
+    
+    /**
+     * Download thumbnail file
+     */
+    public Resource downloadThumbnail(String filename) throws IOException {
+        Path thumbnailPath = Paths.get(uploadDir).resolve(filename);
+        Resource resource = new UrlResource(thumbnailPath.toUri());
+        
+        if (resource.exists() && resource.isReadable()) {
+            return resource;
+        } else {
+            throw new RuntimeException("Thumbnail not found: " + filename);
+        }
     }
 }

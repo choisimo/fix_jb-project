@@ -19,13 +19,13 @@ class TokenService {
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
-    required int userId,
+    required String userId, // int에서 String으로 변경
     bool rememberMe = false,
   }) async {
     if (rememberMe) {
       await _secureStorage.write(key: _accessTokenKey, value: accessToken);
       await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
-      await _secureStorage.write(key: _userIdKey, value: userId.toString());
+      await _secureStorage.write(key: _userIdKey, value: userId); // toString() 제거
     }
     
     final prefs = await SharedPreferences.getInstance();
@@ -74,18 +74,26 @@ class TokenService {
     return prefs.getBool(_biometricEnabledKey) ?? false;
   }
 
+  // 로그인 상태 확인
+  Future<bool> isLoggedIn() async {
+    final accessToken = await getAccessToken();
+    return accessToken != null && accessToken.isNotEmpty;
+  }
+
+  // 유효한 토큰이 있는지 확인 
+  Future<bool> hasValidTokens() async {
+    final accessToken = await getAccessToken();
+    final refreshToken = await getRefreshToken();
+    return accessToken != null && accessToken.isNotEmpty &&
+           refreshToken != null && refreshToken.isNotEmpty;
+  }
+
   Future<void> setDeviceId(String deviceId) async {
     await _secureStorage.write(key: _deviceIdKey, value: deviceId);
   }
 
   Future<String?> getDeviceId() async {
     return await _secureStorage.read(key: _deviceIdKey);
-  }
-
-  Future<bool> hasValidTokens() async {
-    final accessToken = await getAccessToken();
-    final refreshToken = await getRefreshToken();
-    return accessToken != null && refreshToken != null;
   }
 
   Future<void> clearAllData() async {

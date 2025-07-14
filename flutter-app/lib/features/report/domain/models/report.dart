@@ -8,14 +8,12 @@ enum ReportStatus {
   draft,
   @JsonValue('SUBMITTED')
   submitted,
-  @JsonValue('IN_REVIEW')
-  inReview,
-  @JsonValue('APPROVED')
-  approved,
-  @JsonValue('REJECTED')
-  rejected,
+  @JsonValue('IN_PROGRESS')
+  inProgress,
   @JsonValue('RESOLVED')
   resolved,
+  @JsonValue('REJECTED')
+  rejected,
   @JsonValue('CLOSED')
   closed,
 }
@@ -75,6 +73,7 @@ class ReportImage with _$ReportImage {
     String? mimeType,
     @Default(0) int order,
     DateTime? uploadedAt,
+    @Default(false) bool isPrimary,
   }) = _ReportImage;
 
   factory ReportImage.fromJson(Map<String, dynamic> json) =>
@@ -82,20 +81,120 @@ class ReportImage with _$ReportImage {
 }
 
 @freezed
-class AIAnalysisResult with _$AIAnalysisResult {
-  const factory AIAnalysisResult({
+class ReportComment with _$ReportComment {
+  const factory ReportComment({
     required String id,
-    required ReportType detectedType,
-    required double confidence,
-    String? description,
-    Map<String, dynamic>? metadata,
-    List<String>? tags,
-    @Default(Priority.medium) Priority suggestedPriority,
-    DateTime? analyzedAt,
-  }) = _AIAnalysisResult;
+    required String reportId,
+    required String authorId,
+    required String authorName,
+    String? authorProfileImage,
+    required String content,
+    required DateTime createdAt,
+    DateTime? updatedAt,
+    String? parentCommentId,
+    @Default(0) int likesCount,
+    @Default(false) bool isLiked,
+    @Default(false) bool canEdit,
+    @Default(false) bool canDelete,
+    @Default(false) bool isEdited,
+  }) = _ReportComment;
 
-  factory AIAnalysisResult.fromJson(Map<String, dynamic> json) =>
-      _$AIAnalysisResultFromJson(json);
+  factory ReportComment.fromJson(Map<String, dynamic> json) =>
+      _$ReportCommentFromJson(json);
+}
+
+@freezed
+class DetectedObject with _$DetectedObject {
+  const factory DetectedObject({
+    required String type,
+    required double confidence,
+    String? severity,
+    String? condition,
+    String? amount,
+  }) = _DetectedObject;
+
+  factory DetectedObject.fromJson(Map<String, dynamic> json) =>
+      _$DetectedObjectFromJson(json);
+}
+
+@freezed
+class OCRAnalysisResult with _$OCRAnalysisResult {
+  const factory OCRAnalysisResult({
+    required bool hasText,
+    required int textCount,
+    required List<String> texts,
+  }) = _OCRAnalysisResult;
+
+  factory OCRAnalysisResult.fromJson(Map<String, dynamic> json) =>
+      _$OCRAnalysisResultFromJson(json);
+}
+
+@freezed
+class AIAgentAnalysisResult with _$AIAgentAnalysisResult {
+  const factory AIAgentAnalysisResult({
+    required String sceneDescription,
+    required String priorityRecommendation,
+    required int processingTime,
+    required double confidenceScore,
+    required int analysisTimestamp,
+    required List<DetectedObject> detectedObjects,
+    required Map<String, dynamic> contextAnalysis,
+    String? estimatedRepairCost,
+  }) = _AIAgentAnalysisResult;
+
+  factory AIAgentAnalysisResult.fromJson(Map<String, dynamic> json) =>
+      _$AIAgentAnalysisResultFromJson(json);
+}
+
+@freezed
+class IntegratedAnalysisResult with _$IntegratedAnalysisResult {
+  const factory IntegratedAnalysisResult({
+    required List<String> integratedRecommendations,
+    required String sceneUnderstanding,
+    required int textElementsFound,
+    required Map<String, dynamic> extractedInformation,
+    required List<DetectedObject> visualAnalysis,
+    required double analysisConfidence,
+  }) = _IntegratedAnalysisResult;
+
+  factory IntegratedAnalysisResult.fromJson(Map<String, dynamic> json) =>
+      _$IntegratedAnalysisResultFromJson(json);
+}
+
+@freezed
+class ComprehensiveAIAnalysisResult with _$ComprehensiveAIAnalysisResult {
+  const factory ComprehensiveAIAnalysisResult({
+    required bool success,
+    required String filename,
+    required int processingTime,
+    required DateTime timestamp,
+    required double overallConfidence,
+    required List<String> recommendations,
+    
+    // Roboflow 결과
+    Map<String, dynamic>? roboflow,
+    
+    // OCR 결과  
+    OCRAnalysisResult? ocr,
+    
+    // AI Agent 결과
+    AIAgentAnalysisResult? aiAgent,
+    
+    // 통합 분석 결과
+    IntegratedAnalysisResult? integratedAnalysis,
+    
+    // 전체 감지 개수
+    @Default(0) int detectionCount,
+    
+    // AI가 제안하는 필드들
+    String? suggestedTitle,
+    String? suggestedDescription,
+    ReportType? suggestedType,
+    Priority? suggestedPriority,
+  }) = _ComprehensiveAIAnalysisResult;
+
+  factory ComprehensiveAIAnalysisResult.fromJson(Map<String, dynamic> json) =>
+      _$ComprehensiveAIAnalysisResultFromJson(json);
 }
 
 @freezed
@@ -106,12 +205,14 @@ class Report with _$Report {
     required String description,
     required ReportType type,
     required ReportStatus status,
-    required ReportLocation location,
-    required List<ReportImage> images,
-    required int userId,
-    String? userFullName,
+    required String authorId,
+    required String authorName,
+    String? authorProfileImage,
+    ReportLocation? location,
+    @Default([]) List<ReportImage> images,
+    @Default([]) List<ReportComment> comments,
     @Default(Priority.medium) Priority priority,
-    AIAnalysisResult? aiAnalysis,
+    ComprehensiveAIAnalysisResult? comprehensiveAiAnalysis,
     DateTime? submittedAt,
     DateTime? reviewedAt,
     DateTime? resolvedAt,
@@ -119,33 +220,17 @@ class Report with _$Report {
     DateTime? updatedAt,
     String? reviewComment,
     String? resolutionComment,
-    int? assignedToUserId,
+    String? assignedToUserId,
     String? assignedToUserName,
     Map<String, dynamic>? metadata,
     @Default(0) int viewCount,
     @Default(0) int likeCount,
+    @Default(0) int commentsCount,
     @Default(false) bool isLiked,
     @Default(false) bool isBookmarked,
+    @Default(false) bool canEdit,
+    @Default(false) bool canDelete,
   }) = _Report;
 
   factory Report.fromJson(Map<String, dynamic> json) => _$ReportFromJson(json);
-}
-
-@freezed
-class ReportComment with _$ReportComment {
-  const factory ReportComment({
-    required String id,
-    required String reportId,
-    required int userId,
-    required String userFullName,
-    String? userProfileImage,
-    required String content,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    @Default(false) bool isEdited,
-    @Default(false) bool isDeleted,
-  }) = _ReportComment;
-
-  factory ReportComment.fromJson(Map<String, dynamic> json) =>
-      _$ReportCommentFromJson(json);
 }

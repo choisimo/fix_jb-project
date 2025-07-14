@@ -8,6 +8,10 @@ import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/report/presentation/create_report_screen.dart';
+import '../../features/report/presentation/report_list_screen.dart';
+import '../../features/report/presentation/report_detail_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -48,8 +52,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportListScreen(),
+      ),
+      GoRoute(
+        path: '/report/:id',
+        builder: (context, state) {
+          final reportId = state.pathParameters['id']!;
+          return ReportDetailScreen(reportId: reportId);
+        },
+      ),
+      GoRoute(
+        path: '/create-report',
+        builder: (context, state) => const CreateReportScreen(),
+      ),
+      // Legacy route for backwards compatibility
+      GoRoute(
         path: '/reports/create',
         builder: (context, state) => const CreateReportScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
   );

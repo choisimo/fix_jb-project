@@ -1,0 +1,154 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # Main API Server Routes
+        - id: main-api-v1
+          uri: lb://MAIN-API-SERVER
+          predicates:
+            - Path=/api/v1/main/**
+          filters:
+            - RewritePath=/api/v1/main/(?<segment>.*), /api/v1/${segment}
+            - name: CircuitBreaker
+              args:
+                name: mainApiCircuitBreaker
+                fallbackUri: forward:/fallback/main
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY
+                methods: GET,POST
+                backoff:
+                  firstBackoff: 10ms
+                  maxBackoff: 50ms
+                  factor: 2
+                  basedOnPreviousValue: false
+        
+        # AI Analysis Server Routes
+        - id: ai-analysis-v1
+          uri: lb://AI-ANALYSIS-SERVER
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - RewritePath=/api/v1/ai/(?<segment>.*), /api/v1/${segment}
+            - name: CircuitBreaker
+              args:
+                name: aiApiCircuitBreaker
+                fallbackUri: forward:/fallback/ai
+        
+        # Legacy Routes (for backward compatibility)
+        - id: main-api-legacy
+          uri: lb://MAIN-API-SERVER
+          predicates:
+            - Path=/reports/**,/users/**,/auth/**
+          filters:
+            - name: AddRequestHeader
+              args:
+                name: X-API-Version
+                value: legacy
+        
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - AddResponseHeader=X-Response-Time, %{REQUEST_TIME}
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 100
+              burstCapacity: 200
+              requestedTokens: 1
+            key-resolver: "#{@userKeyResolver}"
+      
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:8080"
+              - "${ALLOWED_ORIGINS}"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWT_JWK_URI:http://localhost:8080/auth/realms/jb-platform/protocol/openid-connect/certs}
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    preferIpAddress: true
+    metadata-map:
+      metrics.path: /actuator/prometheus
+      health.path: /actuator/health
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      mainApiCircuitBreaker:
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: TIME_BASED
+        minimumNumberOfCalls: 20
+        waitDurationInOpenState: 50s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      aiApiCircuitBreaker:
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: TIME_BASED
+        minimumNumberOfCalls: 20
+        waitDurationInOpenState: 50s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/api-gateway/gateway.log
+
+server:
+  port: ${SERVER_PORT:8080}

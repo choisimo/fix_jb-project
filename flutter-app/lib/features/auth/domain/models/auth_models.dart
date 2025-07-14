@@ -60,8 +60,10 @@ class AuthResponse with _$AuthResponse {
     required String accessToken,
     required String refreshToken,
     required User user,
-    required int expiresIn,
+    required int expiresIn, // long을 int로 받음 (Dart에서는 자동 변환됨)
     String? tokenType,
+    @Default(false) bool requiresAdditionalInfo,
+    String? tempToken,
   }) = _AuthResponse;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>

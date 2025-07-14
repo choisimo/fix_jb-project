@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -164,12 +166,69 @@ class ErrorHandler {
 
   /// Crashlytics에 에러 전송 (프로덕션용)
   static void _sendErrorToCrashlytics(AppError error, StackTrace? stackTrace) {
-    // TODO: Firebase Crashlytics 연동
-    // FirebaseCrashlytics.instance.recordError(
-    //   error.originalError ?? error.message,
-    //   stackTrace,
-    //   fatal: error.type == ErrorType.critical,
-    // );
+    try {
+      // Firebase Crashlytics가 초기화되어 있는지 확인
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseCrashlytics.instance.recordError(
+          error.originalError ?? error.message,
+          stackTrace,
+          fatal: error.type == ErrorType.critical,
+          information: [
+            DiagnosticsProperty('errorCode', error.code),
+            DiagnosticsProperty('errorType', error.type.name),
+            DiagnosticsProperty('timestamp', DateTime.now().toIso8601String()),
+            if (error.context != null) 
+              DiagnosticsProperty('context', error.context.toString()),
+          ],
+        );
+        
+        // 사용자 정보 설정 (있는 경우)
+        _setCrashlyticsUserInfo();
+      } else {
+        // Firebase가 초기화되지 않은 경우 로컬 로깅만 수행
+        debugPrint('Firebase not initialized. Error logged locally: ${error.message}');
+      }
+    } catch (e) {
+      // Crashlytics 전송 실패 시 로컬 로깅
+      debugPrint('Failed to send error to Crashlytics: $e');
+      debugPrint('Original error: ${error.message}');
+    }
+  }
+  
+  /// Crashlytics에 사용자 정보 설정
+  static void _setCrashlyticsUserInfo() {
+    try {
+      // 현재 사용자 정보 가져오기 (실제로는 UserService에서 가져와야 함)
+      // 여기서는 예시로 더미 데이터 사용
+      FirebaseCrashlytics.instance.setUserIdentifier('user_id');
+      FirebaseCrashlytics.instance.setCustomKey('app_version', '1.0.0');
+      FirebaseCrashlytics.instance.setCustomKey('platform', 'Flutter');
+      FirebaseCrashlytics.instance.setCustomKey('build_mode', kDebugMode ? 'debug' : 'release');
+    } catch (e) {
+      debugPrint('Failed to set Crashlytics user info: $e');
+    }
+  }
+  
+  /// 커스텀 로그를 Crashlytics에 기록
+  static void logToCrashlytics(String message) {
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseCrashlytics.instance.log(message);
+      }
+    } catch (e) {
+      debugPrint('Failed to log to Crashlytics: $e');
+    }
+  }
+  
+  /// 비크래시 이벤트를 Crashlytics에 기록
+  static void recordFlutterError(FlutterErrorDetails details) {
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      }
+    } catch (e) {
+      debugPrint('Failed to record Flutter error to Crashlytics: $e');
+    }
   }
 
   /// 사용자에게 에러 메시지 표시

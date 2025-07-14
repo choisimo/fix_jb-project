@@ -24,19 +24,29 @@ enum AuthProvider {
 @freezed
 class User with _$User {
   const factory User({
-    required int id,
+    required String id, // UUID를 String으로 받음
     required String email,
-    required String username,
-    String? fullName,
-    String? profileImageUrl,
+    required String name, // 서버에서는 name을 사용
+    String? phone,
+    String? department,
     @Default(UserRole.user) UserRole role,
-    @Default(AuthProvider.local) AuthProvider authProvider,
-    required DateTime createdAt,
-    DateTime? updatedAt,
+    String? roleDescription,
+    String? oauthProvider,
+    @Default(false) bool isOAuthUser,
     @Default(true) bool isActive,
     @Default(false) bool emailVerified,
-    String? phoneNumber,
-    DateTime? lastLoginAt,
+    DateTime? lastLogin,
+    required DateTime createdAt,
+    DateTime? updatedAt,
+    int? reportCount,
+    int? commentCount,
+    // 이전 필드들 (호환성을 위해 유지하되 선택적으로)
+    String? username, // name에서 매핑
+    String? fullName,
+    String? profileImageUrl,
+    @Default(AuthProvider.local) AuthProvider authProvider,
+    String? phoneNumber, // phone에서 매핑
+    DateTime? lastLoginAt, // lastLogin에서 매핑
     Map<String, dynamic>? preferences,
   }) = _User;
 

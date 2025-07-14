@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pointycastle/export.dart';
 import '../domain/models/secure_data.dart';
 
 class DataEncryptionService {
@@ -251,21 +252,112 @@ class DataEncryptionService {
   }
   
   String _encryptChaCha20Poly1305(String data, Uint8List key, Uint8List iv) {
-    // Note: encrypt package doesn't support ChaCha20Poly1305 directly
-    // This is a placeholder implementation
-    // In production, you'd need a library that supports ChaCha20Poly1305
-    final encrypter = Encrypter(AES(Key(key), mode: AESMode.gcm));
-    final encrypted = encrypter.encrypt(data, iv: IV(iv));
-    return encrypted.base64;
+    try {
+      // ChaCha20Poly1305 암호화 구현
+      final cipher = ChaCha20Poly1305();
+      
+      // 키와 IV 설정
+      final keyParams = KeyParameter(key);
+      final ivParams = ParametersWithIV(keyParams, iv);
+      
+      // 암호화 초기화
+      cipher.init(true, AEADParameters(keyParams, 128, iv, Uint8List(0)));
+      
+      // 데이터를 바이트로 변환
+      final plainBytes = utf8.encode(data);
+      
+      // 암호화 수행
+      final encryptedData = Uint8List(plainBytes.length + 16); // 16바이트 태그 공간
+      final encryptedLength = cipher.processBytes(
+        plainBytes, 0, plainBytes.length,
+        encryptedData, 0
+      );
+      
+      // 인증 태그 추가
+      final tag = Uint8List(16);
+      cipher.doFinal(tag, 0);
+      
+      // 암호화된 데이터와 태그 합치기
+      final result = Uint8List(encryptedLength + 16);
+      result.setRange(0, encryptedLength, encryptedData);
+      result.setRange(encryptedLength, encryptedLength + 16, tag);
+      
+      return base64Encode(result);
+    } catch (e) {
+      debugPrint('ChaCha20Poly1305 encryption failed: $e');
+      // 폴백으로 AES-GCM 사용
+      final encrypter = Encrypter(AES(Key(key), mode: AESMode.gcm));
+      final encrypted = encrypter.encrypt(data, iv: IV(iv));
+      return encrypted.base64;
+    }
   }
   
   String _decryptChaCha20Poly1305(String encryptedData, Uint8List key, Uint8List iv) {
-    // Note: encrypt package doesn't support ChaCha20Poly1305 directly
-    // This is a placeholder implementation
-    // In production, you'd need a library that supports ChaCha20Poly1305
-    final encrypter = Encrypter(AES(Key(key), mode: AESMode.gcm));
-    final encrypted = Encrypted.fromBase64(encryptedData);
-    return encrypter.decrypt(encrypted, iv: IV(iv));
+    try {
+      // Base64 디코딩
+      final encryptedBytes = base64Decode(encryptedData);
+      
+      if (encryptedBytes.length < 16) {
+        throw ArgumentError('Encrypted data too short for ChaCha20Poly1305');
+      }
+      
+      // 암호화된 데이터와 태그 분리
+      final ciphertext = encryptedBytes.sublist(0, encryptedBytes.length - 16);
+      final tag = encryptedBytes.sublist(encryptedBytes.length - 16);
+      
+      // ChaCha20Poly1305 복호화
+      final cipher = ChaCha20Poly1305();
+      
+      // 키와 IV 설정
+      final keyParams = KeyParameter(key);
+      
+      // 복호화 초기화
+      cipher.init(false, AEADParameters(keyParams, 128, iv, Uint8List(0)));
+      
+      // 복호화된 데이터를 위한 버퍼
+      final decryptedData = Uint8List(ciphertext.length);
+      
+      // 복호화 수행
+      final decryptedLength = cipher.processBytes(
+        ciphertext, 0, ciphertext.length,
+        decryptedData, 0
+      );
+      
+      // 인증 태그 검증
+      final computedTag = Uint8List(16);
+      cipher.doFinal(computedTag, 0);
+      
+      // 태그 비교
+      if (!_constantTimeEquals(tag, computedTag)) {
+        throw ArgumentError('Authentication tag verification failed');
+      }
+      
+      // 복호화된 데이터를 문자열로 변환
+      final result = decryptedData.sublist(0, decryptedLength);
+      return utf8.decode(result);
+    } catch (e) {
+      debugPrint('ChaCha20Poly1305 decryption failed: $e');
+      // 폴백으로 AES-GCM 사용
+      try {
+        final encrypter = Encrypter(AES(Key(key), mode: AESMode.gcm));
+        final encrypted = Encrypted.fromBase64(encryptedData);
+        return encrypter.decrypt(encrypted, iv: IV(iv));
+      } catch (fallbackError) {
+        debugPrint('Fallback AES-GCM decryption also failed: $fallbackError');
+        throw Exception('Both ChaCha20Poly1305 and AES-GCM decryption failed');
+      }
+    }
+  }
+  
+  /// 상수 시간 비교 함수 (타이밍 공격 방지)
+  bool _constantTimeEquals(Uint8List a, Uint8List b) {
+    if (a.length != b.length) return false;
+    
+    int result = 0;
+    for (int i = 0; i < a.length; i++) {
+      result |= a[i] ^ b[i];
+    }
+    return result == 0;
   }
 }
 

@@ -3,6 +3,7 @@ package com.jeonbuk.report.presentation.controller;
 import com.jeonbuk.report.application.service.OAuth2Service;
 import com.jeonbuk.report.application.service.TokenService;
 import com.jeonbuk.report.application.service.UserService;
+import com.jeonbuk.report.application.service.VerificationService;
 import com.jeonbuk.report.domain.entity.User;
 import com.jeonbuk.report.infrastructure.security.jwt.JwtTokenProvider;
 import com.jeonbuk.report.presentation.dto.request.*;
@@ -52,6 +53,7 @@ public class AuthController {
     private final OAuth2Service oauth2Service;
     private final TokenService tokenService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final VerificationService verificationService;
 
     @Operation(summary = "일반 로그인", description = "이메일/패스워드로 로그인합니다.")
     @PostMapping("/login")
@@ -88,6 +90,17 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         try {
+            // SMS/Email 인증 확인 (필수)
+            if (!verificationService.isPhoneVerified(request.getPhone())) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("휴대폰 인증을 완료해주세요."));
+            }
+            
+            if (!verificationService.isEmailVerified(request.getEmail())) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("이메일 인증을 완료해주세요."));
+            }
+
             User user = userService.registerUser(
                 request.getEmail(),
                 request.getPassword(),

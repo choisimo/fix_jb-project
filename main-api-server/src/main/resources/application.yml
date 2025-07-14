@@ -54,6 +54,21 @@ spring:
       properties:
         auto.offset.reset: earliest
   
+  # Email Configuration (SMTP)
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connection-timeout: 10000
+          timeout: 10000
+  
   # File Upload Configuration
   servlet:
     multipart:
@@ -107,11 +122,61 @@ app:
       base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
       model: ${OPENROUTER_MODEL:qwen/qwen2.5-vl-72b-instruct:free}
   
+  # 인증 관련 설정
+  verification:
+    sms:
+      api-key: ${SMS_API_KEY:}
+      sender: ${SMS_SENDER:010-0000-0000}
+      provider: ${SMS_PROVIDER:aligo} # aligo, aws-sns, twilio
+    email:
+      from: ${EMAIL_FROM:noreply@jeonbuk-report.kr}
+      provider: ${EMAIL_PROVIDER:smtp} # smtp, aws-ses, sendgrid
+    code:
+      length: 6
+      expiry: 300 # 5분
+  
+  # NICE 실명인증 설정
+  nice:
+    client-id: ${NICE_CLIENT_ID:}
+    client-secret: ${NICE_CLIENT_SECRET:}
+    return-url: ${NICE_RETURN_URL:http://localhost:8080/api/auth/nice/callback}
+    api-url: ${NICE_API_URL:https://nice.checkplus.co.kr}
+  
+  # KCB 실명인증 설정 (선택적)
+  kcb:
+    site-code: ${KCB_SITE_CODE:}
+    site-password: ${KCB_SITE_PASSWORD:}
+    return-url: ${KCB_RETURN_URL:http://localhost:8080/api/auth/kcb/callback}
+    api-url: ${KCB_API_URL:https://www.kcbcard.co.kr}
+  
+  # Pass 인증 설정 (선택적)
+  pass:
+    app-key: ${PASS_APP_KEY:}
+    secret-key: ${PASS_SECRET_KEY:}
+    return-url: ${PASS_RETURN_URL:http://localhost:8080/api/auth/pass/callback}
+    api-url: ${PASS_API_URL:https://developers.sktelecom.com}
+  
   kafka:
     topics:
       image-requests: image_requests
       analysis-results: analysis_results
       notifications: notifications
+
+  # CORS Configuration
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:*,http://10.0.2.2:*,http://192.168.*:*,http://127.0.0.1:*}
+    allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}
+    allowed-headers: ${CORS_ALLOWED_HEADERS:Authorization,Content-Type,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers}
+    exposed-headers: ${CORS_EXPOSED_HEADERS:Authorization,X-Total-Count}
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+    max-age: ${CORS_MAX_AGE:3600}
+    
+  # Development Configuration
+  dev:
+    kafka:
+      enabled: ${DEV_KAFKA_ENABLED:true}
+    redis:
+      enabled: ${DEV_REDIS_ENABLED:true}
 
 # Server Configuration
 server:
