@@ -151,6 +151,89 @@ dev-debug.log
 # tasks.json
 # tasks/ 
 # ===== SECURITY ADDITIONS =====
+
+# SSL certificates and keys (민감정보)
+ssl/
+**/ssl/
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+**/private.key
+**/private.pem
+**/id_rsa*
+
+# 로그 파일 및 폴더 (개인/운영환경)
+logs/
+log/
+*.log
+*.log.*
+*.out
+*.err
+*.trace
+*.audit
+*.gz
+*.zip
+
+# 개인/로컬 환경 및 툴 설정
+.windsurf/
+.mcp.json
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.history/
+.cache/
+.pytest_cache/
+.tox/
+.coverage
+.nyc_output
+.gradle/
+.dart_tool/
+.fvm/
+.envrc
+.envrc.*
+
+# 임시/백업/캐시/빌드 산출물
+backup/
+tmp/
+temp/
+*.bak
+*.swp
+*~
+*.tmp
+*.temp
+*.old
+*.backup
+*.sublime-*
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+out/
+dist/
+build/
+target/
+node_modules/
+venv/
+.venv/
+env/
+.env/
+pyvenv.cfg
+
+test/
+test-*/
+test_*/
+test.*
+test-*.log
+test-*.out
+test-*.err
+
 # Local credential scripts
 /create_demo_users.sh
 /test_user_api.sh
