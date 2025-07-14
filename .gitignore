@@ -166,6 +166,14 @@ flutter-app/lib/core/ai/roboflow_config.dart
 .env
 .env.*
 *.env
+**/.env
+**/.env.*
+.envrc
+.envrc.*
+.docker.env
+.docker.env.*
+config.json
+state.json
 docker-compose.override.yml
 
 # API Keys and secrets
@@ -175,6 +183,20 @@ docker-compose.override.yml
 **/config.ini
 *.key
 *.secret
+*.token
+*.tokens
+*.p12
+*.pfx
+*.pem
+*.crt
+*.jks
+*.keystore
+**/secrets.json
+**/credentials.json
+**/config.ini
+**/private.key
+**/private.pem
+**/id_rsa*
 
 # Python virtual environments (expanded coverage)
 venv/
@@ -187,19 +209,54 @@ pyvenv.cfg
 android/local.properties
 ios/Flutter/flutter_export_environment.sh
 
-# Secret management files
-**/secrets.json
-**/credentials.*
-**/config.ini
-
 # SSL certificates and keys
-*.key
-*.crt
-*.pem
-*.p12
-*.pfx
 ssl/
 **/ssl/
+
+# 기타 민감정보 및 임시/백업 파일
+*.bak
+*.swp
+*~
+*.tmp
+*.temp
+*.old
+*.backup
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 빌드/배포 산출물 및 캐시
+build/
+dist/
+out/
+target/
+.cache/
+.docker/
+node_modules/
+.dart_tool/
+.gradle/
+.fvm/
+flutter-app/.dart_tool/
+flutter-app/build/
+flutter-app/.packages
+flutter-app/generated/
+
+# Test/Report/Backup
+/test/report/
+/test/images/
+/test/backup/
+
+# 기타
+*.sublime-*
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # ===== BUILD FILES & CACHES =====
 # Java/Gradle build files
