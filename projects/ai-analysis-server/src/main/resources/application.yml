@@ -30,6 +30,9 @@ spring:
           auto: none
         globally_quoted_identifiers: false
         globally_quoted_identifiers_skip_column_definitions: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+    open-in-view: false
   
   # Redis Configuration
   data:
@@ -137,9 +140,10 @@ async:
 
 # Server Configuration
 server:
-  port: 8084
-  servlet:
-    context-path: /api/v1
+  port: 8086
+  # 컨텍스트 패스 제거 - 테스트 보고서에서 발견된 문제 해결
+  #servlet:
+  #  context-path: /api/v1
   
 # Logging Configuration
 logging:

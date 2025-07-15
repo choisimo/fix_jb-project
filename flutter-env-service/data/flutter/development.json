@@ -1,0 +1,19 @@
+{
+  "baseUrl": "http://10.0.2.2:9000",
+  "apiUrl": "http://10.0.2.2:9000",
+  "fileServerUrl": "http://10.0.2.2:12020",
+  "aiServerUrl": "http://10.0.2.2:9000/ai",
+  "apiPath": "/api/v1",
+  "aiPath": "/api/v1",
+  "environment": "development",
+  "mapApiKey": "YOUR_MAP_API_KEY",
+  "naverMapClientId": "YOUR_NAVER_CLIENT_ID",
+  "enableDebugLogs": true,
+  "enableNetworkLogs": true,
+  "enableCrashlytics": false,
+  "mapDefaultLocation": {
+    "latitude": 35.8242238,
+    "longitude": 127.1479532,
+    "zoom": 15.0
+  }
+}

@@ -25,7 +25,7 @@ RUN chmod +x /usr/local/bin/docker-healthcheck.sh
 USER spring:spring
 
 # JVM options for container environment
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication -Djdk.management.jfr.allowedToDoAnything=true"
 
 EXPOSE 8081
 

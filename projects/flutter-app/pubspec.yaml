@@ -28,6 +28,7 @@ dependencies:
   retrofit: ^4.0.3
   dio_cookie_manager: ^3.1.1
   cookie_jar: ^4.0.8
+  pretty_dio_logger: ^1.4.0
   
   # Local Storage
   shared_preferences: ^2.2.2
@@ -49,7 +50,10 @@ dependencies:
   # Maps
   geolocator: ^10.1.0
   geocoding: ^2.1.1
-  flutter_naver_map: ^1.2.2       # ← 신규
+  flutter_naver_map: ^1.2.2
+  
+  # URL & Browser
+  url_launcher: ^6.2.4
   
   # Charts & Visualization
   fl_chart: ^0.68.0
@@ -60,20 +64,17 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^17.0.1
   
-  # Firebase (선택사항 - 설정 완료 후 추가)
-  # firebase_core: ^2.27.0
-  # firebase_analytics: ^10.8.9
-  # firebase_crashlytics: ^3.4.18
-  # firebase_messaging: ^14.7.19
+  # Firebase
+  firebase_core: ^3.4.0
+  firebase_crashlytics: ^4.1.0
   
   # Authentication
   local_auth: ^2.1.8
-  google_sign_in: ^6.2.0          # ← 신규
+  google_sign_in: ^6.2.0
   
   # Utilities
   intl: ^0.20.2
   timeago: ^3.6.1
-  url_launcher: ^6.2.4
   share_plus: ^7.2.2
   connectivity_plus: ^5.0.2
   uuid: ^4.3.3
@@ -93,16 +94,13 @@ dependencies:
   # Security
   crypto: ^3.0.3
   kakao_flutter_sdk_user: ^1.9.5
-  pretty_dio_logger: ^1.4.0
   jwt_decoder: ^2.0.1
-  firebase_core: ^3.4.0
-  firebase_crashlytics: ^4.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
-  analyzer: ^6.4.1                # SDK 3.x 호환
+  analyzer: ^6.4.1
   
   # Code Generation
   build_runner: ^2.4.7
@@ -111,19 +109,57 @@ dev_dependencies:
   retrofit_generator: ^8.1.0
   riverpod_generator: ^2.3.11
   
+  # Flavor
+  flutter_flavorizr: ^2.2.1
+  
   # Testing
   mockito: ^5.4.4
   integration_test:
     sdk: flutter
 
+# Flutter configuration
 flutter:
   uses-material-design: true
   
+  # Asset directories - these directories have been created with placeholder files
   assets:
     - assets/images/
     - assets/icons/
     - assets/animations/
+
+# Flavorizr configuration
+flavorizr:
+  app:
+    android:
+      flavorDimensions: "flavor-type"
+    ios: {}
+
+  flavors:
+    development:
+      app:
+        name: "JB Platform Dev"
+      android:
+        applicationId: "com.jeonbuk.report.dev"
+      ios:
+        bundleId: "com.jeonbuk.report.dev"
+
+    staging:
+      app:
+        name: "JB Platform Staging"
+      android:
+        applicationId: "com.jeonbuk.report.staging"
+      ios:
+        bundleId: "com.jeonbuk.report.staging"
+
+    production:
+      app:
+        name: "JB Platform"
+      android:
+        applicationId: "com.jeonbuk.report"
+      ios:
+        bundleId: "com.jeonbuk.report"
     
+  # Fonts configuration
   fonts:
     - family: Pretendard
       fonts:

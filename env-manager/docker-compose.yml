@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  env-manager:
+    build: .
+    container_name: jb-env-manager
+    ports:
+      - "8888:8888"
+    volumes:
+      # 메인 환경변수 파일들
+      - ../.env:/app/data/.env:rw
+      
+      # Main API Server 환경변수 파일들
+      - ../projects/main-api-server/.env:/app/data/main-api-server/.env:rw
+      - ../projects/main-api-server/src/main/resources/application.yml:/app/data/main-api-server/application.yml:rw
+      
+      # AI Analysis Server 환경변수 파일들
+      - ../projects/ai-analysis-server/.env:/app/data/ai-analysis-server/.env:rw
+      - ../projects/ai-analysis-server/src/main/resources/application.yml:/app/data/ai-analysis-server/application.yml:rw
+      
+      # Flutter 앱 환경변수 파일들
+      - ../projects/flutter-app/env:/app/data/flutter-app:rw
+      
+      # 도메인 통합 관리 설정
+      - ../domain-config.json:/app/data/domain-config.json:rw
+      
+      # Docker 소켓 마운트 (컨테이너 관리를 위해)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Seoul
+    restart: unless-stopped
+    labels:
+      - "com.jb-project.service=env-manager"
+      - "com.jb-project.description=Environment Variables Management Dashboard"
+    networks:
+      - jb-network
+
+networks:
+  jb-network:
+    driver: bridge
+    external: true

@@ -22,13 +22,17 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.jb_report_app"
+        applicationId = "com.jeonbuk.report"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // 환경변수에서 API 키 읽기
+        manifestPlaceholders["NAVER_MAP_CLIENT_ID"] = 
+            project.findProperty("NAVER_MAP_CLIENT_ID") ?: "YOUR_NAVER_CLIENT_ID"
     }
 
     buildTypes {

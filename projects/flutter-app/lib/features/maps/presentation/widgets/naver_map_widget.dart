@@ -3,6 +3,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import '../providers/map_provider.dart';
+import '../../../../core/config/env_config.dart';
 
 class NaverMapWidget extends ConsumerStatefulWidget {
   final NCameraPosition? initialCameraPosition;
@@ -26,6 +27,7 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
   late NaverMapController _controller;
   NLatLng? _selectedLocation;
   final Set<NMarker> _markers = {};
+  bool _isMapInitialized = false;
   
   @override
   void initState() {
@@ -34,25 +36,80 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
   }
   
   Future<void> _initializeMap() async {
-    await NaverMapSdk.instance.initialize(
-      clientId: 'YOUR_NAVER_CLIENT_ID', // Replace with actual client ID
-      onAuthFailed: (error) {
-        debugPrint('Naver Map Auth Failed: $error');
-      },
-    );
+    try {
+      final clientId = EnvConfig.instance.naverMapClientId;
+      
+      if (clientId.isEmpty || clientId == 'YOUR_NAVER_MAP_CLIENT_ID') {
+        throw Exception('네이버 맵 클라이언트 ID가 설정되지 않았습니다.\nenv-manager에서 naverMapClientId를 설정해주세요.');
+      }
+      
+      await NaverMapSdk.instance.initialize(
+        clientId: clientId,
+        onAuthFailed: (error) {
+          debugPrint('Naver Map Auth Failed: $error');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('네이버 맵 인증 실패: $error\nAPI 키를 확인해주세요.'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        },
+      );
+      
+      setState(() {
+        _isMapInitialized = true;
+      });
+      
+      debugPrint('네이버 맵 SDK 초기화 완료: $clientId');
+    } catch (e) {
+      debugPrint('네이버 맵 초기화 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('네이버 맵 초기화 실패: $e'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'env-manager 열기',
+              onPressed: () {
+                // env-manager 웹페이지 열기 로직
+              },
+            ),
+          ),
+        );
+      }
+    }
   }
   
   @override
   Widget build(BuildContext context) {
     final mapState = ref.watch(mapProvider);
     
+    if (!_isMapInitialized) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('네이버 맵을 초기화하고 있습니다...'),
+          ],
+        ),
+      );
+    }
+    
     return Stack(
       children: [
         NaverMap(
           options: NaverMapViewOptions(
-            initialCameraPosition: widget.initialCameraPosition ?? const NCameraPosition(
-              target: NLatLng(37.5666805, 126.9784147),
-              zoom: 15,
+            initialCameraPosition: widget.initialCameraPosition ?? NCameraPosition(
+              target: NLatLng(
+                EnvConfig.instance.mapDefaultLocation['latitude']!,
+                EnvConfig.instance.mapDefaultLocation['longitude']!,
+              ),
+              zoom: EnvConfig.instance.mapDefaultLocation['zoom']!,
             ),
             mapType: NMapType.basic,
             activeLayerGroups: [
@@ -61,9 +118,14 @@ class _NaverMapWidgetState extends ConsumerState<NaverMapWidget> {
             ],
             locationButtonEnable: widget.showCurrentLocation,
             consumeSymbolTapEvents: false,
+            rotationGesturesEnable: true,
+            scrollGesturesEnable: true,
+            tiltGesturesEnable: true,
+            zoomGesturesEnable: true,
           ),
           onMapReady: (controller) async {
             _controller = controller;
+            debugPrint('네이버 맵 준비 완료');
             await _setupMap();
           },
           onMapTapped: _onMapTapped,

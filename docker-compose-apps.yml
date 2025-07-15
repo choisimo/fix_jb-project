@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # Flutter Environment Variables Service
+  flutter-env-service:
+    build:
+      context: ./flutter-env-service
+    image: flutter-env-service
+    container_name: jb-flutter-env-service
+    ports:
+      - "8889:8889"
+    volumes:
+      - ./flutter-env-service/data:/app/data
+    environment:
+      PORT: 8889
+    networks:
+      - jb-network
+    restart: unless-stopped
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./projects/api-gateway
+    container_name: api-gateway
+    ports:
+      - "9000:9000"
+    environment:
+      # Gateway 설정
+      SERVER_PORT: 9000
+      # 서비스 라우팅 설정
+      FILE_SERVER_URL: http://file-server:12020
+      MAIN_API_URL: http://main-api-server:8080
+      AI_ANALYSIS_URL: http://ai-analysis-server:8086
+    depends_on:
+      - main-api-server
+      - file-server
+      - ai-analysis-server
+    networks:
+      - jb-network
+
+  # Main API Server
+  main-api-server:
+    build:
+      context: ./projects/main-api-server
+    image: jb-main-api
+    container_name: main-api-server
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./projects/main-api-server/.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # JVM 옵션 추가 - EnableJVMCI 오류 해결
+      JAVA_OPTS: "-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI"
+      # 외부 서비스 연결
+      DB_HOST: postgres-main
+      DB_PORT: 5432
+      DB_NAME: jb_main
+      DB_USER: jb_user
+      DB_PASSWORD: ${DB_PASSWORD:-jb_password}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      FILE_SERVER_URL: http://file-server:12020
+      AI_SERVER_URL: http://ai-analysis-server:8086
+    networks:
+      - jb-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # AI Analysis Server
+  ai-analysis-server:
+    build:
+      context: ./projects/ai-analysis-server
+    image: jb-ai-analysis
+    container_name: ai-analysis-server
+    ports:
+      - "8086:8086"
+    env_file:
+      - ./projects/ai-analysis-server/.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8086
+      # 데이터베이스 연결
+      DB_HOST: postgres-ai
+      DB_PORT: 5432
+      DB_NAME: jb_ai
+      DB_USER: jb_user
+      DB_PASSWORD: ${DB_PASSWORD:-jb_password}
+      # 외부 서비스 연결
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      FILE_SERVER_URL: http://file-server:12020
+    networks:
+      - jb-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # File Server (FastAPI)
+  file-server:
+    build:
+      context: ./projects/file-server
+    image: jb-file-server
+    container_name: file-server
+    ports:
+      - "12020:12020"
+    environment:
+      # 서버 설정
+      PORT: 12020
+      HOST: 0.0.0.0
+      # 보안 설정
+      ENABLE_AUTH: ${FILE_SERVER_ENABLE_AUTH:-true}
+      API_KEY: ${FILE_SERVER_API_KEY:-file_server_secret}
+      # 스토리지 설정
+      UPLOAD_DIR: /app/uploads
+      THUMBNAIL_DIR: /app/thumbnails
+      # 외부 서비스 연결
+      AI_SERVER_URL: http://ai-analysis-server:8086
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://main-api-server:8080/api/v1/files/webhook}
+    volumes:
+      - file-uploads:/app/uploads
+      - file-thumbnails:/app/thumbnails
+    networks:
+      - jb-network
+
+networks:
+  jb-network:
+    external:
+      name: fix_jb-project_jb-network
+
+volumes:
+  file-uploads:
+  file-thumbnails:

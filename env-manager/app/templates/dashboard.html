@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JB Project - 환경변수 관리 대시보드</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .env-card {
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .env-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .env-section h6 {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .form-control:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        .btn-save {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+        }
+        .btn-restart {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            border: none;
+        }
+        .btn-backup {
+            background: linear-gradient(45deg, #6f42c1, #e83e8c);
+            border: none;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-active { background-color: #28a745; }
+        .status-inactive { background-color: #dc3545; }
+        .service-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        .alert-custom {
+            border-radius: 8px;
+            border: none;
+        }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+        .variable-group {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .variable-group.required {
+            border-left: 4px solid #dc3545;
+            background: #fff5f5;
+        }
+        .variable-group.dummy-value {
+            border-left: 4px solid #ffc107;
+            background: #fffdf0;
+        }
+        .variable-group.global-key {
+            border-left: 4px solid #17a2b8;
+            background: #f0f8ff;
+        }
+        .variable-name {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #495057;
+            position: relative;
+        }
+        .required-badge {
+            background: #dc3545;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        .global-badge {
+            background: #17a2b8;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        .dummy-badge {
+            background: #ffc107;
+            color: #212529;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        .field-description {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .dummy-hint {
+            position: absolute;
+            top: -8px;
+            right: 10px;
+            background: #ffc107;
+            color: #212529;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .required-hint {
+            position: absolute;
+            top: -8px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .global-hint {
+            position: absolute;
+            top: -8px;
+            right: 10px;
+            background: #17a2b8;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .global-services {
+            font-size: 11px;
+            margin-top: 3px;
+            color: #17a2b8;
+        }
+        .search-box {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 100;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .test-button {
+            background: linear-gradient(45deg, #17a2b8, #20c997);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        .test-button:hover {
+            background: linear-gradient(45deg, #138496, #1e7e34);
+            color: white;
+        }
+        .test-result {
+            font-size: 11px;
+            margin-top: 5px;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .test-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .connection-status {
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-testing { 
+            background-color: #ffc107; 
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* 테스트 결과 팝업 모달 스타일 */
+        .test-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        
+        .test-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            max-height: 80%;
+            overflow: hidden;
+            min-width: 400px;
+        }
+        
+        .test-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+        }
+        
+        .test-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .test-modal-close:hover {
+            opacity: 1;
+        }
+        
+        .test-modal-body {
+            padding: 25px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .test-result-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        
+        .test-result-item.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .test-result-item.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .test-result-item.info {
+            border-left-color: #17a2b8;
+            background: #d1ecf1;
+        }
+        
+        .test-result-item.testing {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+            animation: testingPulse 1.5s infinite;
+        }
+        
+        @keyframes testingPulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.02); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .test-field-name {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .test-status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        
+        .test-status-badge.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .test-status-badge.error {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .test-status-badge.testing {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .test-message {
+            margin-top: 8px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .test-modal-footer {
+            padding: 20px;
+            border-top: 1px solid #dee2e6;
+            background: #f8f9fa;
+            text-align: right;
+        }
+        
+        .bulk-test-progress {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .bulk-test-progress-bar {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="search-box">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="mb-0">
+                            <i class="fas fa-cogs text-primary"></i>
+                            JB Project 환경변수 관리
+                        </h1>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchInput" class="form-control" placeholder="환경변수 검색..." style="width: 300px;">
+                            <button class="btn btn-backup text-white" onclick="backupAll()">
+                                <i class="fas fa-download"></i> 전체 백업
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <!-- 로딩 인디케이터 -->
+                <div class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- 알림 영역 -->
+                <div id="alertContainer"></div>
+
+                <!-- 테스트 결과 팝업 모달 -->
+                <div id="testModal" class="test-modal">
+                    <div class="test-modal-content">
+                        <div class="test-modal-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-network-wired"></i>
+                                <span id="testModalTitle">연결 테스트 결과</span>
+                            </h5>
+                            <button type="button" class="test-modal-close" onclick="closeTestModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="test-modal-body" id="testModalBody">
+                            <!-- 테스트 결과가 여기에 표시됩니다 -->
+                        </div>
+                        <div class="test-modal-footer" id="testModalFooter">
+                            <button type="button" class="btn btn-secondary" onclick="closeTestModal()">
+                                <i class="fas fa-times"></i> 닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 필수 필드 및 더미값 가이드 -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle"></i>
+                            필수 필드 및 더미값 가이드
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-circle text-danger"></i> 필수 필드</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li><span class="required-badge">필수</span> 표시된 필드는 반드시 입력해야 합니다.</li>
+                                    <li>빨간색 테두리와 배경으로 표시됩니다.</li>
+                                    <li>필수 필드가 비어있으면 저장할 수 없습니다.</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> 더미값</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li><span class="dummy-badge">더미값</span> 표시된 필드는 실제 값으로 변경해주세요.</li>
+                                    <li>노란색 테두리와 배경으로 표시됩니다.</li>
+                                    <li>placeholder에 예시 값이 제공됩니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-warning mb-0">
+                                    <strong>주요 더미값들:</strong>
+                                    <code>your_*</code>, <code>localhost</code>, <code>example.com</code>, <code>yourcompany.com</code> 등은 실제 값으로 교체해야 합니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 서비스별 환경변수 카드 -->
+                {% for service_id, service_data in services.items() %}
+                <div class="card env-card service-card" data-service="{{ service_id }}">
+                    <div class="card-header service-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="status-indicator {% if service_data.exists %}status-active{% else %}status-inactive{% endif %}"></span>
+                                {{ service_data.display_name }}
+                                <small class="opacity-75">({{ service_data.format|upper }})</small>
+                            </h5>
+                            <div class="btn-group">
+                                <button class="btn btn-save text-white btn-sm" onclick="saveService('{{ service_id }}')">
+                                    <i class="fas fa-save"></i> 저장
+                                </button>
+                                <button class="btn btn-restart text-white btn-sm ms-1" onclick="restartService('{{ service_id }}')">
+                                    <i class="fas fa-redo"></i> 재시작
+                                </button>
+                                {% if service_id in ['main-api-server', 'ai-analysis-server', 'flutter-app-dev', 'flutter-app-staging', 'flutter-app-prod', 'domain-config'] %}
+                                <button class="btn btn-info text-white btn-sm ms-1" onclick="testAllConnections('{{ service_id }}')" title="모든 필수값 연결 테스트">
+                                    <i class="fas fa-network-wired"></i> 연결 테스트
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if service_data.exists and service_data.data %}
+                            {% if service_id == 'domain-config' %}
+                                <!-- 도메인 통합 관리 UI -->
+                                <form id="{{ service_id }}-form">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>도메인 통합 관리:</strong> 여기서 도메인을 설정하면 모든 Flutter 환경의 API URL이 자동으로 업데이트됩니다.
+                                    </div>
+                                    
+                                    {% for key, value in service_data.data.items() %}
+                                        {% if key == 'domains' %}
+                                            {% for env_name, env_config in value.items() %}
+                                            <div class="env-section">
+                                                <h6>
+                                                    <i class="fas fa-server text-primary"></i>
+                                                    {{ env_config.display_name if env_config.display_name else env_name|title }}
+                                                </h6>
+                                                
+                                                {% for config_key, config_value in env_config.items() %}
+                                                    {% if config_key != 'display_name' %}
+                                                    {% set field_path = 'domains.' + env_name + '.' + config_key %}
+                                                    {% set is_required = is_required_field(service_id, field_path) %}
+                                                    {% set is_dummy = is_dummy_value(config_value) %}
+                                                    {% set dummy_val = get_dummy_value(service_id, field_path) %}
+                                                    {% set field_desc = get_field_description(service_id, field_path) %}
+                                                    
+                                                    <div class="variable-group searchable{% if is_required %} required{% endif %}{% if is_dummy %} dummy-value{% endif %}" data-key="{{ env_name }}.{{ config_key }}" data-value="{{ config_value }}">
+                                                        {% if is_required %}
+                                                        <div class="required-hint">필수</div>
+                                                        {% elif is_dummy %}
+                                                        <div class="dummy-hint">더미값</div>
+                                                        {% endif %}
+                                                        
+                                                        <div class="row align-items-center mb-2">
+                                                            <div class="col-md-3">
+                                                                <label class="variable-name">
+                                                                    {{ config_key }}
+                                                                    {% if is_required %}
+                                                                    <span class="required-badge">필수</span>
+                                                                    {% endif %}
+                                                                </label>
+                                                                {% if field_desc %}
+                                                                <div class="field-description">{{ field_desc }}</div>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input type="text" 
+                                                                           class="form-control{% if is_required %} border-danger{% endif %}" 
+                                                                           name="{{ service_id }}_domains.{{ env_name }}.{{ config_key }}" 
+                                                                           value="{{ config_value }}"
+                                                                           placeholder="{% if dummy_val %}예: {{ dummy_val }}{% else %}Enter {{ config_key }}{% endif %}"
+                                                                           {% if is_required %}required{% endif %}>
+                                                                    {% if is_required %}
+                                                                    <button type="button" class="btn test-button" 
+                                                                            onclick="testConnection('{{ service_id }}', 'domains.{{ env_name }}.{{ config_key }}', this.previousElementSibling)"
+                                                                            title="연결 테스트">
+                                                                        <i class="fas fa-plug"></i>
+                                                                    </button>
+                                                                    {% endif %}
+                                                                </div>
+                                                                <span class="connection-status"></span>
+                                                                {% if is_dummy %}
+                                                                <small class="text-warning">
+                                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                                    현재 더미값이 설정되어 있습니다. 실제 값으로 변경해주세요.
+                                                                </small>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <!-- 기타 글로벌 설정 -->
+                                            <div class="env-section">
+                                                <h6>
+                                                    <i class="fas fa-cog text-primary"></i>
+                                                    {{ key|title }} Settings
+                                                </h6>
+                                                {% if value is mapping %}
+                                                    {% for sub_key, sub_value in value.items() %}
+                                                    <div class="variable-group searchable" data-key="{{ key }}.{{ sub_key }}" data-value="{{ sub_value }}">
+                                                        <div class="row align-items-center mb-2">
+                                                            <div class="col-md-4">
+                                                                <label class="variable-name">{{ sub_key }}</label>
+                                                            </div>
+                                                            <div class="col-md-8">
+                                                                <input type="text" 
+                                                                       class="form-control" 
+                                                                       name="{{ service_id }}_{{ key }}.{{ sub_key }}" 
+                                                                       value="{{ sub_value }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="alert alert-warning mt-3">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>주의:</strong> 도메인 설정을 변경하면 모든 Flutter 앱 환경(Development, Staging, Production)의 API URL이 자동으로 갱신됩니다.
+                                    </div>
+                                </form>
+                            {% else %}
+                                <!-- 기존 환경변수 관리 UI -->
+                                <form id="{{ service_id }}-form">
+                                {% if service_data.format == 'dotenv' %}
+                                    <!-- .env 파일 형식 -->
+                                    {% for section_name, variables in service_data.data.items() %}
+                                        {% if variables and variables|length > 0 %}
+                                        <div class="env-section">
+                                            <h6>
+                                                <i class="fas fa-folder text-primary"></i>
+                                                {{ section_name }}
+                                            </h6>
+                                            {% for key, value in variables.items() %}
+                                                {% if key != 'error' %}
+                                                {% set is_required = is_required_field(service_id, key) %}
+                                                {% set is_dummy = is_dummy_value(value) %}
+                                                {% set dummy_val = get_dummy_value(service_id, key) %}
+                                                {% set field_desc = get_field_description(service_id, key) %}
+                                                {% set is_global = is_global_env_key(key) %}
+                                                {% set global_info = get_global_env_info(key) if is_global else {} %}
+                                                
+                                                <div class="variable-group searchable{% if is_required %} required{% endif %}{% if is_dummy %} dummy-value{% endif %}{% if is_global %} global-key{% endif %}" data-key="{{ key }}" data-value="{{ value }}">
+                                                    {% if is_global %}
+                                                    <div class="global-hint">🌐 통합관리</div>
+                                                    {% elif is_required %}
+                                                    <div class="required-hint">필수</div>
+                                                    {% elif is_dummy %}
+                                                    <div class="dummy-hint">더미값</div>
+                                                    {% endif %}
+                                                    
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-4">
+                                                            <label class="variable-name">
+                                                                {{ key }}
+                                                                {% if is_global %}
+                                                                <span class="global-badge">🌐 통합</span>
+                                                                {% endif %}
+                                                                {% if is_required %}
+                                                                <span class="required-badge">필수</span>
+                                                                {% endif %}
+                                                            </label>
+                                                            {% if field_desc %}
+                                                            <div class="field-description">{{ field_desc }}</div>
+                                                            {% endif %}
+                                                            {% if is_global %}
+                                                            <div class="global-services">
+                                                                <small class="text-muted">
+                                                                    동기화 대상: {{ global_info.used_by|join(', ') }}
+                                                                </small>
+                                                            </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-md-8">
+                                                            {% if 'password' in key.lower() or 'secret' in key.lower() or 'key' in key.lower() %}
+                                                                <div class="input-group">
+                                                                    <input type="password" 
+                                                                           class="form-control{% if is_required %} border-danger{% endif %}" 
+                                                                           name="{{ service_id }}_{{ key }}" 
+                                                                           value="{{ value }}"
+                                                                           placeholder="{% if dummy_val %}예: {{ dummy_val }}{% else %}{{ key }} 입력{% endif %}"
+                                                                           {% if is_required %}required{% endif %}
+                                                                           id="{{ service_id }}_{{ key }}">
+                                                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('{{ service_id }}_{{ key }}')">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
+                                                                    {% if is_required %}
+                                                                    <button type="button" class="btn test-button" 
+                                                                            onclick="testConnection('{{ service_id }}', '{{ key }}', document.getElementById('{{ service_id }}_{{ key }}'))"
+                                                                            title="연결 테스트">
+                                                                        <i class="fas fa-plug"></i>
+                                                                    </button>
+                                                                    {% endif %}
+                                                                </div>
+                                                                <span class="connection-status"></span>
+                                                            {% else %}
+                                                                <div class="input-group">
+                                                                    <input type="text" 
+                                                                           class="form-control{% if is_required %} border-danger{% endif %}" 
+                                                                           name="{{ service_id }}_{{ key }}" 
+                                                                           value="{{ value }}"
+                                                                           placeholder="{% if dummy_val %}예: {{ dummy_val }}{% else %}{{ key }} 입력{% endif %}"
+                                                                           {% if is_required %}required{% endif %}>
+                                                                    {% if is_required %}
+                                                                    <button type="button" class="btn test-button" 
+                                                                            onclick="testConnection('{{ service_id }}', '{{ key }}', this.previousElementSibling)"
+                                                                            title="연결 테스트">
+                                                                        <i class="fas fa-plug"></i>
+                                                                    </button>
+                                                                    {% endif %}
+                                                                </div>
+                                                                <span class="connection-status"></span>
+                                                            {% endif %}
+                                                            {% if is_dummy %}
+                                                            <small class="text-warning">
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                                현재 더미값이 설정되어 있습니다. 실제 값으로 변경해주세요.
+                                                            </small>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- YAML/JSON 파일 형식 -->
+                                    {% for key, value in service_data.data.items() %}
+                                        {% if key != 'error' %}
+                                        {% set is_required = is_required_field(service_id, key) %}
+                                        {% set is_dummy = is_dummy_value(value) %}
+                                        {% set dummy_val = get_dummy_value(service_id, key) %}
+                                        {% set field_desc = get_field_description(service_id, key) %}
+                                        {% set is_global = is_global_env_key(key) %}
+                                        {% set global_info = get_global_env_info(key) if is_global else {} %}
+                                        
+                                        <div class="variable-group searchable{% if is_required %} required{% endif %}{% if is_dummy %} dummy-value{% endif %}{% if is_global %} global-key{% endif %}" data-key="{{ key }}" data-value="{{ value }}">
+                                            {% if is_global %}
+                                            <div class="global-hint">🌐 통합관리</div>
+                                            {% elif is_required %}
+                                            <div class="required-hint">필수</div>
+                                            {% elif is_dummy %}
+                                            <div class="dummy-hint">더미값</div>
+                                            {% endif %}
+                                            
+                                            <div class="row align-items-center">
+                                                <div class="col-md-4">
+                                                    <label class="variable-name">
+                                                        {{ key }}
+                                                        {% if is_global %}
+                                                        <span class="global-badge">🌐 통합</span>
+                                                        {% endif %}
+                                                        {% if is_required %}
+                                                        <span class="required-badge">필수</span>
+                                                        {% endif %}
+                                                    </label>
+                                                    {% if field_desc %}
+                                                    <div class="field-description">{{ field_desc }}</div>
+                                                    {% endif %}
+                                                    {% if is_global %}
+                                                    <div class="global-services">
+                                                        <small class="text-muted">
+                                                            동기화 대상: {{ global_info.used_by|join(', ') }}
+                                                        </small>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {% if 'password' in key.lower() or 'secret' in key.lower() or 'key' in key.lower() %}
+                                                        <div class="input-group">
+                                                            <input type="password" 
+                                                                   class="form-control{% if is_required %} border-danger{% endif %}" 
+                                                                   name="{{ service_id }}_{{ key|replace('.', '__') }}" 
+                                                                   value="{{ value }}"
+                                                                   placeholder="{% if dummy_val %}예: {{ dummy_val }}{% else %}{{ key }} 입력{% endif %}"
+                                                                   {% if is_required %}required{% endif %}
+                                                                   id="{{ service_id }}_{{ key|replace('.', '__') }}">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('{{ service_id }}_{{ key|replace('.', '__') }}')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                    {% else %}
+                                                        <input type="text" 
+                                                               class="form-control{% if is_required %} border-danger{% endif %}" 
+                                                               name="{{ service_id }}_{{ key|replace('.', '__') }}" 
+                                                               value="{{ value }}"
+                                                               placeholder="{% if dummy_val %}예: {{ dummy_val }}{% else %}{{ key }} 입력{% endif %}"
+                                                               {% if is_required %}required{% endif %}>
+                                                    {% endif %}
+                                                    {% if is_dummy %}
+                                                    <small class="text-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        현재 더미값이 설정되어 있습니다. 실제 값으로 변경해주세요.
+                                                    </small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-warning alert-custom">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {% if 'error' in service_data.data %}
+                                    오류: {{ service_data.data.error }}
+                                {% else %}
+                                    설정 파일을 찾을 수 없습니다.
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 검색 기능
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const variables = document.querySelectorAll('.searchable');
+            
+            variables.forEach(variable => {
+                const key = variable.getAttribute('data-key').toLowerCase();
+                const value = variable.getAttribute('data-value').toLowerCase();
+                
+                if (key.includes(searchTerm) || value.includes(searchTerm)) {
+                    variable.style.display = 'block';
+                    variable.closest('.service-card').style.display = 'block';
+                } else {
+                    variable.style.display = 'none';
+                }
+            });
+            
+            // 서비스 카드 표시/숨김 처리
+            document.querySelectorAll('.service-card').forEach(card => {
+                const visibleVariables = card.querySelectorAll('.searchable[style*="block"], .searchable:not([style*="none"])');
+                if (visibleVariables.length === 0 && searchTerm !== '') {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
+                }
+            });
+        });
+
+        // 비밀번호 토글
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // 로딩 표시
+        function showLoading() {
+            document.querySelector('.loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        // 알림 표시
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-custom`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.appendChild(alertDiv);
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // 서비스 저장
+        function saveService(serviceId) {
+            // 필수 필드 유효성 검사
+            const form = document.getElementById(`${serviceId}-form`);
+            const requiredInputs = form.querySelectorAll('input[required]');
+            let hasErrors = false;
+            let errorMessages = [];
+            
+            // 필수 필드 검사
+            requiredInputs.forEach(input => {
+                const value = input.value.trim();
+                const fieldName = input.name.replace(`${serviceId}_`, '');
+                
+                if (!value) {
+                    hasErrors = true;
+                    input.classList.add('is-invalid');
+                    errorMessages.push(`필수 필드 "${fieldName}"이(가) 비어있습니다.`);
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+            
+            // 더미값 검사
+            const dummyInputs = form.querySelectorAll('.dummy-value input');
+            let dummyWarnings = [];
+            
+            dummyInputs.forEach(input => {
+                const value = input.value.trim();
+                const fieldName = input.name.replace(`${serviceId}_`, '');
+                
+                if (value.includes('your_') || value.includes('YOUR_') || 
+                    value.includes('your-') || value.includes('localhost') ||
+                    value.includes('example.com') || value.includes('yourcompany.com')) {
+                    dummyWarnings.push(`"${fieldName}" 필드에 더미값이 설정되어 있습니다.`);
+                }
+            });
+            
+            // 오류가 있으면 저장 중단
+            if (hasErrors) {
+                showAlert(`저장할 수 없습니다:<br>• ${errorMessages.join('<br>• ')}`, 'danger');
+                return;
+            }
+            
+            // 더미값 경고 표시
+            if (dummyWarnings.length > 0) {
+                const proceed = confirm(`다음 필드들에 더미값이 설정되어 있습니다:\n• ${dummyWarnings.join('\n• ')}\n\n계속 저장하시겠습니까?`);
+                if (!proceed) {
+                    return;
+                }
+            }
+            
+            showLoading();
+            const formData = new FormData(form);
+            formData.append('service', serviceId);
+            
+            fetch('/save', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.status === 'success') {
+                    if (serviceId === 'domain-config') {
+                        showAlert('도메인 설정이 저장되었고, 모든 Flutter 환경의 URL이 자동으로 업데이트되었습니다! 🌐', 'success');
+                        // 페이지 새로고침으로 업데이트된 값들을 표시
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showAlert(`${serviceId} 환경변수가 성공적으로 저장되었습니다.`, 'success');
+                    }
+                } else {
+                    showAlert(`저장 실패: ${data.message}`, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showAlert(`저장 중 오류가 발생했습니다: ${error.message}`, 'danger');
+            });
+        }
+
+        // 서비스 재시작
+        function restartService(serviceId) {
+            if (!confirm('정말 서비스를 재시작하시겠습니까?')) {
+                return;
+            }
+            
+            showLoading();
+            const formData = new FormData();
+            formData.append('service', serviceId);
+            
+            fetch('/restart', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.status === 'success') {
+                    showAlert(`${serviceId} 서비스가 재시작되었습니다.`, 'success');
+                } else {
+                    showAlert(`재시작 실패: ${data.message}`, 'warning');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showAlert(`재시작 중 오류가 발생했습니다: ${error.message}`, 'danger');
+            });
+        }
+
+        // 전체 백업
+        function backupAll() {
+            showLoading();
+            
+            fetch('/backup', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.status === 'success') {
+                    // JSON 파일로 다운로드
+                    const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `env_backup_${new Date().toISOString().slice(0, 19)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showAlert('환경변수 백업이 완료되었습니다.', 'success');
+                } else {
+                    showAlert(`백업 실패: ${data.message}`, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showAlert(`백업 중 오류가 발생했습니다: ${error.message}`, 'danger');
+            });
+        }
+
+        // 연결 테스트 함수
+        function testConnection(serviceId, fieldName, inputElement) {
+            const fieldValue = inputElement.value.trim();
+            
+            if (!fieldValue) {
+                showTestModal('단일 연결 테스트', [
+                    {
+                        field: fieldName,
+                        status: 'error',
+                        message: '테스트할 값을 입력해주세요.'
+                    }
+                ]);
+                return;
+            }
+            
+            // 테스트 모달 표시
+            showTestModal('단일 연결 테스트', [
+                {
+                    field: fieldName,
+                    status: 'testing',
+                    message: '연결을 테스트하고 있습니다...'
+                }
+            ]);
+            
+            // 테스트 상태 표시 (기존 방식 유지 - 필드 옆 상태 표시)
+            const statusElement = inputElement.parentElement.querySelector('.connection-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-dot status-testing"></span>테스트 중...';
+            }
+            
+            fetch('/api/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    service_id: serviceId,
+                    field_name: fieldName,
+                    field_value: fieldValue
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 팝업에 결과 업데이트
+                updateTestModalResult(fieldName, data.status, data.message);
+                
+                // 상태 업데이트 (기존 방식 유지)
+                if (statusElement) {
+                    const statusClass = data.status === 'success' ? 'status-success' : 'status-error';
+                    const statusText = data.status === 'success' ? '연결됨' : '연결 실패';
+                    statusElement.innerHTML = `<span class="status-dot ${statusClass}"></span>${statusText}`;
+                }
+            })
+            .catch(error => {
+                console.error('연결 테스트 오류:', error);
+                
+                // 팝업에 오류 결과 업데이트
+                updateTestModalResult(fieldName, 'error', `테스트 중 오류가 발생했습니다: ${error.message}`);
+                
+                // 상태 업데이트 (기존 방식 유지)
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="status-dot status-error"></span>오류';
+                }
+            });
+        }
+        
+        // 모든 필수값 테스트
+        function testAllConnections(serviceId) {
+            const requiredFields = document.querySelectorAll(`#${serviceId}-form .required input`);
+            let testFields = [];
+            
+            // 테스트할 필드들 수집
+            requiredFields.forEach(input => {
+                if (input.value.trim()) {
+                    const fieldName = input.name.replace(`${serviceId}_`, '');
+                    testFields.push({
+                        field: fieldName,
+                        status: 'testing',
+                        message: '테스트 대기 중...',
+                        inputElement: input
+                    });
+                }
+            });
+            
+            if (testFields.length === 0) {
+                showTestModal('모든 연결 테스트', [
+                    {
+                        field: '알림',
+                        status: 'info',
+                        message: '테스트할 필수값이 없습니다. 필수 필드에 값을 입력해주세요.'
+                    }
+                ]);
+                return;
+            }
+            
+            // 테스트 모달 표시
+            showTestModal(`모든 연결 테스트 (${testFields.length}개 필드)`, testFields, true);
+            
+            // 순차적으로 테스트 실행
+            let testIndex = 0;
+            const runNextTest = () => {
+                if (testIndex >= testFields.length) {
+                    updateBulkTestProgress(100);
+                    return;
+                }
+                
+                const currentField = testFields[testIndex];
+                const fieldName = currentField.field;
+                const inputElement = currentField.inputElement;
+                const fieldValue = inputElement.value.trim();
+                
+                // 진행률 업데이트
+                const progress = ((testIndex + 1) / testFields.length) * 100;
+                updateBulkTestProgress(progress);
+                
+                // 현재 테스트 중 상태 업데이트
+                updateTestModalResult(fieldName, 'testing', '연결을 테스트하고 있습니다...');
+                
+                fetch('/api/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        service_id: serviceId,
+                        field_name: fieldName,
+                        field_value: fieldValue
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 결과 업데이트
+                    updateTestModalResult(fieldName, data.status, data.message);
+                    
+                    // 다음 테스트 실행 (1초 후)
+                    testIndex++;
+                    setTimeout(runNextTest, 1000);
+                })
+                .catch(error => {
+                    console.error('연결 테스트 오류:', error);
+                    updateTestModalResult(fieldName, 'error', `테스트 중 오류가 발생했습니다: ${error.message}`);
+                    
+                    // 다음 테스트 실행 (1초 후)
+                    testIndex++;
+                    setTimeout(runNextTest, 1000);
+                });
+            };
+            
+            // 첫 번째 테스트 시작
+            runNextTest();
+        }
+        
+        // 테스트 모달 표시
+        function showTestModal(title, testResults, isBulkTest = false) {
+            const modal = document.getElementById('testModal');
+            const modalTitle = document.getElementById('testModalTitle');
+            const modalBody = document.getElementById('testModalBody');
+            
+            modalTitle.textContent = title;
+            
+            let modalContent = '';
+            
+            if (isBulkTest) {
+                modalContent += `
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        모든 필수 필드를 순차적으로 테스트합니다. 각 테스트는 1초 간격으로 실행됩니다.
+                    </div>
+                    <div class="bulk-test-progress">
+                        <div class="bulk-test-progress-bar" id="bulkTestProgressBar"></div>
+                    </div>
+                `;
+            }
+            
+            testResults.forEach(result => {
+                modalContent += `
+                    <div class="test-result-item ${result.status}" id="testResult_${result.field.replace(/[^a-zA-Z0-9]/g, '_')}">
+                        <div class="test-field-name">
+                            ${result.field}
+                            <span class="test-status-badge ${result.status}">
+                                ${result.status === 'success' ? '연결됨' : 
+                                  result.status === 'error' ? '실패' : 
+                                  result.status === 'testing' ? '테스트 중' : '정보'}
+                            </span>
+                        </div>
+                        <div class="test-message">${result.message}</div>
+                    </div>
+                `;
+            });
+            
+            modalBody.innerHTML = modalContent;
+            modal.style.display = 'block';
+            
+            // ESC 키로 닫기
+            document.addEventListener('keydown', closeTestModalOnEsc);
+        }
+        
+        // 테스트 모달에서 특정 결과 업데이트
+        function updateTestModalResult(fieldName, status, message) {
+            const resultId = `testResult_${fieldName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            const resultElement = document.getElementById(resultId);
+            
+            if (resultElement) {
+                resultElement.className = `test-result-item ${status}`;
+                
+                const statusBadge = resultElement.querySelector('.test-status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `test-status-badge ${status}`;
+                    statusBadge.textContent = status === 'success' ? '연결됨' : 
+                                             status === 'error' ? '실패' : 
+                                             status === 'testing' ? '테스트 중' : '정보';
+                }
+                
+                const messageElement = resultElement.querySelector('.test-message');
+                if (messageElement) {
+                    messageElement.textContent = message;
+                }
+            }
+        }
+        
+        // 벌크 테스트 진행률 업데이트
+        function updateBulkTestProgress(percentage) {
+            const progressBar = document.getElementById('bulkTestProgressBar');
+            if (progressBar) {
+                progressBar.style.width = `${percentage}%`;
+            }
+        }
+        
+        // 테스트 모달 닫기
+        function closeTestModal() {
+            const modal = document.getElementById('testModal');
+            modal.style.display = 'none';
+            document.removeEventListener('keydown', closeTestModalOnEsc);
+        }
+        
+        // ESC 키로 모달 닫기
+        function closeTestModalOnEsc(event) {
+            if (event.key === 'Escape') {
+                closeTestModal();
+            }
+        }
+        
+        // 모달 외부 클릭시 닫기
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('testModal');
+            if (event.target === modal) {
+                closeTestModal();
+            }
+        });
+
+        // 페이지 로드 완료시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            showAlert('환경변수 관리 시스템이 준비되었습니다.', 'info');
+        });
+    </script>
+</body>
+</html>

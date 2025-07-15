@@ -2,7 +2,11 @@ spring:
   application:
     name: jeonbuk-report-platform
   autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+    exclude: 
+      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusMetricsExportAutoConfiguration
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   
@@ -203,7 +207,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info
   endpoint:
     health:
       show-details: always
@@ -211,9 +215,16 @@ management:
     env:
       enabled: true
   metrics:
-    binders:
-      processor:
+    enabled: false
+    export:
+      prometheus:
         enabled: false
+    distribution:
+      percentiles-histogram:
+        all: false
+    web:
+      server:
+        auto-time-requests: false
 
 # SpringDoc (Swagger) Configuration
 springdoc:

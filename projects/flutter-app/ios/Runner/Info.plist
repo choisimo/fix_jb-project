@@ -6,7 +6,7 @@
     
     <!-- Naver Map -->
     <key>NMFClientId</key>
-    <string>YOUR_NAVER_CLIENT_ID</string>
+    <string>${NAVER_MAP_CLIENT_ID}</string>
     
     <!-- Permissions -->
     <key>NSLocationWhenInUseUsageDescription</key>

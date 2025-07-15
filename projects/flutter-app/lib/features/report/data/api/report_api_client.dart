@@ -1,13 +1,16 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
+import '../../../../core/config/app_config.dart';
 import '../models/report_dto.dart';
 
 part 'report_api_client.g.dart';
 
-@RestApi(baseUrl: '/api/v1')
+@RestApi()
 abstract class ReportApiClient {
-  factory ReportApiClient(Dio dio, {String baseUrl}) = _ReportApiClient;
+  factory ReportApiClient(Dio dio, {String? baseUrl}) = _ReportApiClient;
+
+  static String get defaultBaseUrl => AppConfig.apiBaseUrl;
 
   @GET('/reports')
   Future<List<ReportDto>> getReports({
@@ -45,4 +48,22 @@ abstract class ReportApiClient {
     @Part(name: 'files') List<File> files, // MultipartFile 대신 File 사용
     @Part(name: 'metadata') String metadata,
   );
+  
+  // 파일 서버와의 통합을 위한 메서드
+  @POST('/reports/{id}/attach-file')
+  Future<ReportDto> attachFileToReport(
+    @Path('id') String id,
+    @Field('fileId') String fileId,
+    @Field('fileUrl') String fileUrl,
+    @Field('thumbnailUrl') String? thumbnailUrl,
+  );
+  
+  @DELETE('/reports/{id}/detach-file/{fileId}')
+  Future<ReportDto> detachFileFromReport(
+    @Path('id') String id,
+    @Path('fileId') String fileId,
+  );
+  
+  @GET('/reports/{id}/files')
+  Future<List<String>> getReportFileIds(@Path('id') String id);
 }

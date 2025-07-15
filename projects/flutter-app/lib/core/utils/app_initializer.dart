@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'dart:ui';
 import '../../firebase_options.dart';
+import '../config/env_config.dart';
 
 class AppInitializer {
   static bool _isInitialized = false;
@@ -18,8 +19,10 @@ class AppInitializer {
       // Flutter 바인딩 초기화
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Firebase 초기화 (임시 비활성화)
-      // await _initializeFirebase();
+      // Firebase 초기화 (프로덕션 및 스테이징 환경에서만)
+      if (EnvConfig.instance.isProduction || EnvConfig.instance.isStaging) {
+        await _initializeFirebase();
+      }
 
       // 시스템 UI 설정
       await _setupSystemUI();
@@ -69,25 +72,45 @@ class AppInitializer {
   /// Firebase Crashlytics 설정
   static Future<void> _setupCrashlytics() async {
     try {
+      // 환경에 따라 Crashlytics 활성화
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+        EnvConfig.instance.enableCrashlytics
+      );
+      
       // Flutter 프레임워크 오류를 Crashlytics에 전송
       FlutterError.onError = (errorDetails) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+        if (EnvConfig.instance.enableCrashlytics) {
+          FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+        } else {
+          // 로그만 출력
+          debugPrint('Flutter Error: ${errorDetails.exception}');
+          debugPrint('Stack trace: ${errorDetails.stack}');
+        }
       };
       
       // PlatformDispatcher 오류를 Crashlytics에 전송
       PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        if (EnvConfig.instance.enableCrashlytics) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        } else {
+          // 로그만 출력
+          debugPrint('Platform Error: $error');
+          debugPrint('Stack trace: $stack');
+        }
         return true;
       };
       
-      // 사용자 정보 설정 (개인정보 제외)
-      await FirebaseCrashlytics.instance.setUserIdentifier('anonymous');
-      await FirebaseCrashlytics.instance.setCustomKey('app_version', '1.0.0');
-      await FirebaseCrashlytics.instance.setCustomKey('platform', 'flutter');
+      if (EnvConfig.instance.enableCrashlytics) {
+        // 사용자 정보 설정 (개인정보 제외)
+        await FirebaseCrashlytics.instance.setUserIdentifier('anonymous');
+        await FirebaseCrashlytics.instance.setCustomKey('app_version', '1.0.0');
+        await FirebaseCrashlytics.instance.setCustomKey('platform', 'flutter');
+        await FirebaseCrashlytics.instance.setCustomKey('environment', EnvConfig.instance.environment.name);
+      }
       
-      debugPrint('✅ Firebase Crashlytics setup completed');
+      debugPrint('\u2705 Firebase Crashlytics setup completed (${EnvConfig.instance.enableCrashlytics ? 'enabled' : 'disabled'})');
     } catch (e) {
-      debugPrint('❌ Firebase Crashlytics setup failed: $e');
+      debugPrint('\u274c Firebase Crashlytics setup failed: $e');
     }
   }
 

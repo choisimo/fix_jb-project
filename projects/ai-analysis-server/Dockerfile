@@ -1,3 +1,13 @@
+# Build stage
+FROM gradle:8.5-jdk17 AS builder
+WORKDIR /app
+COPY build.gradle settings.gradle ./
+COPY gradle gradle
+RUN gradle dependencies --no-daemon
+COPY src src
+RUN gradle build --no-daemon -x test
+
+# Runtime stage
 FROM eclipse-temurin:21-jre-alpine AS runtime
 
 # Install necessary packages
@@ -10,8 +20,8 @@ RUN addgroup -g 1000 -S appgroup && \
 # Create app directory
 WORKDIR /app
 
-# Copy jar file
-COPY build/libs/demo-1.0.0.jar app.jar
+# Copy jar file from build stage
+COPY --from=builder /app/build/libs/*.jar app.jar
 
 # Create directories for logs
 RUN mkdir -p /app/logs && \

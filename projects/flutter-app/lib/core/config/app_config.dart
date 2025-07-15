@@ -1,29 +1,20 @@
 import 'package:flutter/foundation.dart';
+import 'env_config.dart';
 
 class AppConfig {
   static const String appName = 'JB Platform';
   static const String appVersion = '1.0.0';
   
-  // API Configuration
-  static String get apiBaseUrl {
-    if (kDebugMode) {
-      return 'http://10.0.2.2:8085/api/v1';
-    }
-    return const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://api.jbplatform.com/api/v1',
-    );
-  }
+  // API Configuration - 환경별 설정 사용
+  static String get apiBaseUrl => EnvConfig.instance.mainApiBaseUrl;
   
-  static String get legacyApiBaseUrl {
-    if (kDebugMode) {
-      return 'http://10.0.2.2:8085';
-    }
-    return const String.fromEnvironment(
-      'LEGACY_API_BASE_URL',
-      defaultValue: 'https://api.jbplatform.com',
-    );
-  }
+  static String get legacyApiBaseUrl => EnvConfig.instance.legacyApiBaseUrl;
+  
+  // File Server Configuration - 환경별 설정 사용
+  static String get fileServerUrl => EnvConfig.instance.fileServerUrl;
+  
+  // AI Analysis Server Configuration - 환경별 설정 사용
+  static String get aiServerUrl => EnvConfig.instance.aiServerUrl;
   
   // Feature Flags
   static const bool useNewApiVersion = bool.fromEnvironment(
@@ -54,7 +45,7 @@ class AppConfig {
   static const Duration cacheValidDuration = Duration(hours: 1);
   static const int maxCacheSize = 50 * 1024 * 1024; // 50MB
   
-  // Logging
-  static const bool enableLogging = !kReleaseMode;
-  static const bool enableNetworkLogging = !kReleaseMode;
+  // Logging - 환경별 설정 사용
+  static bool get enableLogging => !EnvConfig.instance.isProduction;
+  static bool get enableNetworkLogging => EnvConfig.instance.enableNetworkLogs;
 }

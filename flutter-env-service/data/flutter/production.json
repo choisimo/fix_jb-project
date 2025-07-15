@@ -1,0 +1,19 @@
+{
+  "baseUrl": "https://api.yourcompany.com",
+  "apiUrl": "https://api.yourcompany.com",
+  "fileServerUrl": "https://file.yourcompany.com",
+  "aiServerUrl": "https://ai.yourcompany.com",
+  "apiPath": "/api/v1",
+  "aiPath": "/api/v1",
+  "environment": "production",
+  "mapApiKey": "YOUR_MAP_API_KEY",
+  "naverMapClientId": "YOUR_NAVER_CLIENT_ID",
+  "enableDebugLogs": false,
+  "enableNetworkLogs": false,
+  "enableCrashlytics": true,
+  "mapDefaultLocation": {
+    "latitude": 35.8242238,
+    "longitude": 127.1479532,
+    "zoom": 15.0
+  }
+}

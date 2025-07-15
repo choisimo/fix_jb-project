@@ -198,6 +198,27 @@ Thumbs.db
 .envrc.*
 
 # 임시/백업/캐시/빌드 산출물
+
+# 민감한 API 키와 환경 설정 파일
+google-vision.json
+*-credentials.json
+*-key.json
+service-account*.json
+
+# 환경 설정 파일
+domain-config.json
+flutter-*.json
+firebase-*.json
+
+# 로컬 개발 환경 설정
+.env.*
+.env.local
+.env.development
+.env.staging
+.env.production
+
+# Flutter env service 데이터
+flutter-env-service/data/*.json
 backup/
 tmp/
 temp/
@@ -420,4 +441,5 @@ htmlcov/
 *~
 *.backup
 *.bak
-*.old
+*.old# Google Vision API 자격 증명 파일
+google-vision.json

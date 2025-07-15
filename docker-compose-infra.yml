@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # Database Services
+  postgres-main:
+    image: postgres:14-alpine
+    container_name: postgres-main
+    environment:
+      POSTGRES_DB: jb_main
+      POSTGRES_USER: jb_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jb_password}
+    volumes:
+      - postgres-main-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jb_user -d jb_main"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jb-network
+
+  postgres-ai:
+    image: postgres:14-alpine
+    container_name: postgres-ai
+    environment:
+      POSTGRES_DB: jb_ai
+      POSTGRES_USER: jb_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jb_password}
+    volumes:
+      - postgres-ai-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jb_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jb-network
+
+  # Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jb-network
+
+  # Auth Service
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-main:5432/jb_main
+      KC_DB_USERNAME: jb_user
+      KC_DB_PASSWORD: ${DB_PASSWORD:-jb_password}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-keycloak_admin}
+      KC_HEALTH_ENABLED: 'true'
+    command: start-dev
+    ports:
+      - "8085:8080"
+    depends_on:
+      postgres-main:
+        condition: service_healthy
+    networks:
+      - jb-network
+
+  # Environment Variable Manager
+  env-manager:
+    build: ./env-manager
+    container_name: jb-env-manager
+    ports:
+      - "8888:8888"
+    volumes:
+      # 환경변수 파일들
+      - ./.env:/app/data/.env:rw
+      - ./projects/main-api-server/.env:/app/data/main-api-server/.env:rw
+      - ./projects/main-api-server/src/main/resources/application.yml:/app/data/main-api-server/application.yml:rw
+      - ./projects/ai-analysis-server/.env:/app/data/ai-analysis-server/.env:rw
+      - ./projects/ai-analysis-server/src/main/resources/application.yml:/app/data/ai-analysis-server/application.yml:rw
+      # Docker 소켓 마운트
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Seoul
+    restart: unless-stopped
+    networks:
+      - jb-network
+
+networks:
+  jb-network:
+    external:
+      name: fix_jb-project_jb-network
+
+volumes:
+  postgres-main-data:
+  postgres-ai-data:
+  redis-data:

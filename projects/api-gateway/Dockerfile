@@ -13,11 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the content of the local src directory to the working directory
 COPY . .
 
-# Make port 8000 available to the world outside this container
-EXPOSE 8000
+# Make port 9000 available to the world outside this container
+EXPOSE 9000
 
 # Define environment variable
 ENV NAME World
 
 # Run app.py when the container launches
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:9000", "app:app"]

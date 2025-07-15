@@ -5,8 +5,9 @@ from flask import Flask, request, Response
 app = Flask(__name__)
 
 # Get target URLs from environment variables with defaults
-AI_ANALYSIS_SERVER = os.environ.get('AI_ANALYSIS_SERVER', 'http://localhost:8084')
-MAIN_API_SERVER = os.environ.get('MAIN_API_SERVER', 'http://localhost:8080')
+AI_ANALYSIS_SERVER = os.environ.get('AI_ANALYSIS_URL', 'http://ai-analysis-server:8086')
+MAIN_API_SERVER = os.environ.get('MAIN_API_URL', 'http://main-api-server:8080')
+FILE_SERVER = os.environ.get('FILE_SERVER_URL', 'http://file-server:12020')
 
 @app.route('/health')
 def health_check():
@@ -20,7 +21,14 @@ def proxy(path):
 
     # Route to AI server
     if path.startswith('ai/'):
-        target_url = f"{AI_ANALYSIS_SERVER}/api/v1/{path}"
+        # Remove 'ai/' prefix and route to AI analysis server
+        path_without_prefix = path.replace('ai/', '', 1)
+        # For actuator endpoints, do not add api/v1 prefix
+        if path_without_prefix.startswith('actuator/'):
+            target_url = f"{AI_ANALYSIS_SERVER}/{path_without_prefix}"
+        else:
+            # For regular API endpoints, add api/v1 prefix
+            target_url = f"{AI_ANALYSIS_SERVER}/api/v1/{path_without_prefix}"
     # Route to main API server for all other requests
     else:
         target_url = f"{MAIN_API_SERVER}/{path}"
@@ -52,4 +60,5 @@ def proxy(path):
         return Response(f'Proxy Error: {e}', status=502)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8085)
+    port = int(os.environ.get('SERVER_PORT', 9000))
+    app.run(host='0.0.0.0', port=port)
