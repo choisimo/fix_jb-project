@@ -443,3 +443,44 @@ htmlcov/
 *.bak
 *.old# Google Vision API 자격 증명 파일
 google-vision.json
+
+# ===== ADDITIONAL MISSING FILES =====
+
+# === 추가 민감정보/환경설정 파일 ===
+config/api-keys.env
+projects/ai-analysis-server/config/google-vision.json
+projects/flutter-app/lib/core/config/*.dart
+
+# Spring Boot 추가 빌드 파일들
+bootrun.log
+gradle-app.setting
+
+# 프로젝트별 로그 파일들
+docs/logs/
+projects/*/logs/
+projects/*/*.log
+real-analysis.log
+real-image-server.log
+ai-server.log
+flask.log
+build-test-*.log
+
+# IntelliJ IDEA 파일들 (프로젝트별)
+jb_report_app.iml
+*_android.iml
+fix_jeonbuk_android.iml
+
+# Flutter 메타데이터 파일들
+flutter_debug.log
+
+# 환경 설정 템플릿 파일들
+.env.template
+domain-config.json
+
+# 추가 환경 디렉토리
+env-manager/
+projects/flutter-app/env/
+
+# 데이터 디렉토리들
+flutter-env-service/data/
+projects/file-server/data/logs/
