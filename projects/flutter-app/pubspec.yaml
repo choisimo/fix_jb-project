@@ -85,7 +85,7 @@ dependencies:
   
   # PDF & Printing
   pdf: ^3.10.8
-  printing: ^5.12.0
+  # printing: ^5.12.0  # 임시로 주석 처리
   
   # Device Info
   device_info_plus: ^10.1.0

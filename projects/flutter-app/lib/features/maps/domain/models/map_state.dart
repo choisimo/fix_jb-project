@@ -10,6 +10,9 @@ class MapState with _$MapState {
     @Default(126.9784147) double centerLongitude,
     @Default(15.0) double zoomLevel,
     @Default([]) List<SearchResult> searchResults,
+    @Default('defaultLocation') String locationSource,
+    String? lastLocationError,
+    @Default(false) bool isLocationLoading,
   }) = _MapState;
   
   factory MapState.fromJson(Map<String, dynamic> json) =>

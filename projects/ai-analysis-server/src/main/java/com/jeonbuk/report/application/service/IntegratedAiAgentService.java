@@ -1,10 +1,12 @@
 package com.jeonbuk.report.application.service;
 
+import com.jeonbuk.report.infrastructure.external.gemini.GeminiApiClient;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterApiClient;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterDto;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class IntegratedAiAgentService {
 
+  private final GeminiApiClient geminiClient;
   private final OpenRouterApiClient openRouterClient;
   private final ObjectMapper objectMapper;
 
@@ -39,6 +42,269 @@ public class IntegratedAiAgentService {
       "infrastructure", "infrastructure-monitoring",
       "general", "general-object-detection");
 
+    /**
+     * 비동기 입력 분석
+     */
+    public CompletableFuture<AnalysisResult> analyzeInputAsync(InputData inputData) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                log.info("🔍 Starting comprehensive analysis for input: {}", inputData.getId());
+                
+                // 실제 AI 분석 수행
+                AnalyzedData analyzedData = performActualAiAnalysis(inputData);
+                
+                String selectedModel = determineModel(analyzedData);
+                
+                return new AnalysisResult(
+                    inputData.getId(),
+                    analyzedData,
+                    selectedModel,
+                    true,
+                    null,
+                    System.currentTimeMillis()
+                );
+                
+            } catch (Exception e) {
+                log.error("❌ Analysis failed for input {}: {}", inputData.getId(), e.getMessage());
+                return new AnalysisResult(
+                    inputData.getId(),
+                    null,
+                    null,
+                    false,
+                    e.getMessage(),
+                    System.currentTimeMillis()
+                );
+            }
+        });
+    }
+
+    /**
+     * 실제 AI 분석 수행
+     */
+    private AnalyzedData performActualAiAnalysis(InputData inputData) {
+        try {
+            log.info("🤖 Performing actual AI analysis for: {}", inputData.getId());
+            
+            // 텍스트 및 이미지 분석을 위한 프롬프트 구성
+            StringBuilder analysisPrompt = new StringBuilder();
+            analysisPrompt.append("다음 신고 내용을 분석하여 JSON 형태로 응답해주세요:\n\n");
+            
+            if (inputData.getTitle() != null) {
+                analysisPrompt.append("제목: ").append(inputData.getTitle()).append("\n");
+            }
+            if (inputData.getDescription() != null) {
+                analysisPrompt.append("설명: ").append(inputData.getDescription()).append("\n");
+            }
+            if (inputData.getLocation() != null) {
+                analysisPrompt.append("위치: ").append(inputData.getLocation()).append("\n");
+            }
+            
+            analysisPrompt.append("\n분석 결과를 다음 JSON 형식으로 반환해주세요:\n");
+            analysisPrompt.append("{\n");
+            analysisPrompt.append("  \"objectType\": \"도로 시설물의 유형 (road, traffic_light, sign, building 등)\",\n");
+            analysisPrompt.append("  \"damageType\": \"손상 유형 (pothole, crack, broken, missing, normal 등)\",\n");
+            analysisPrompt.append("  \"environment\": \"환경 (urban, rural, highway, residential 등)\",\n");
+            analysisPrompt.append("  \"priority\": \"우선순위 (high, medium, low)\",\n");
+            analysisPrompt.append("  \"category\": \"신고 카테고리 (pothole, traffic_sign, streetlight, litter 등)\",\n");
+            analysisPrompt.append("  \"keywords\": [\"관련\", \"키워드\", \"목록\"],\n");
+            analysisPrompt.append("  \"confidence\": 0.85\n");
+            analysisPrompt.append("}\n");
+
+            String analysisResult;
+            
+            // 이미지가 있는 경우 비전 모델 사용
+            if (inputData.getImageUrls() != null && !inputData.getImageUrls().isEmpty()) {
+                String firstImageUrl = inputData.getImageUrls().get(0);
+                log.info("🖼️ Analyzing with image: {}", firstImageUrl);
+                
+                analysisResult = openRouterClient.analyzeImageWithUrlAsync(
+                    firstImageUrl, 
+                    analysisPrompt.toString()
+                ).join();
+            } else {
+                // 텍스트만 분석
+                log.info("📝 Analyzing text only");
+                analysisResult = openRouterClient.chatCompletionAsync(
+                    "당신은 도시 인프라 및 시설물 분석 전문가입니다.",
+                    analysisPrompt.toString()
+                ).join();
+            }
+
+            // JSON 파싱 및 AnalyzedData 객체 생성
+            return parseAiAnalysisResult(analysisResult, inputData);
+            
+        } catch (Exception e) {
+            log.error("❌ AI analysis failed: {}", e.getMessage());
+            // Fallback으로 기본 분석 수행
+            return createFallbackAnalysis(inputData);
+        }
+    }
+
+    /**
+     * AI 분석 결과 파싱
+     */
+    private AnalyzedData parseAiAnalysisResult(String analysisResult, InputData inputData) {
+        try {
+            // JSON 파싱
+            Map<String, Object> resultMap = objectMapper.readValue(analysisResult, Map.class);
+            
+            return new AnalyzedData(
+                inputData.getId(),
+                (String) resultMap.getOrDefault("objectType", "unknown"),
+                (String) resultMap.getOrDefault("damageType", "unknown"),
+                (String) resultMap.getOrDefault("environment", "urban"),
+                (String) resultMap.getOrDefault("priority", "medium"),
+                (String) resultMap.getOrDefault("category", "general"),
+                (List<String>) resultMap.getOrDefault("keywords", Arrays.asList("분석", "결과")),
+                ((Number) resultMap.getOrDefault("confidence", 0.7)).doubleValue(),
+                inputData
+            );
+            
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to parse AI analysis result, using fallback: {}", e.getMessage());
+            return createFallbackAnalysis(inputData);
+        }
+    }
+
+    /**
+     * Fallback 분석 (AI 분석 실패시)
+     */
+    private AnalyzedData createFallbackAnalysis(InputData inputData) {
+        log.info("🔄 Creating fallback analysis for: {}", inputData.getId());
+        
+        String category = "general";
+        String damageType = "unknown";
+        String priority = "medium";
+        List<String> keywords = new ArrayList<>();
+        
+        // 제목과 설명에서 키워드 추출
+        String content = "";
+        if (inputData.getTitle() != null) {
+            content += inputData.getTitle() + " ";
+        }
+        if (inputData.getDescription() != null) {
+            content += inputData.getDescription();
+        }
+        
+        content = content.toLowerCase();
+        
+        // 카테고리 및 손상 유형 결정
+        if (content.contains("포트홀") || content.contains("구멍") || content.contains("도로")) {
+            category = "pothole";
+            damageType = "pothole";
+            keywords.addAll(Arrays.asList("도로", "포트홀", "구멍"));
+            priority = "high";
+        } else if (content.contains("표지판") || content.contains("신호등")) {
+            category = "traffic_sign";
+            damageType = "broken";
+            keywords.addAll(Arrays.asList("표지판", "신호등", "교통"));
+            priority = "medium";
+        } else if (content.contains("가로등") || content.contains("조명")) {
+            category = "streetlight";
+            damageType = "broken";
+            keywords.addAll(Arrays.asList("가로등", "조명", "불빛"));
+            priority = "medium";
+        } else if (content.contains("쓰레기") || content.contains("폐기물")) {
+            category = "litter";
+            damageType = "litter";
+            keywords.addAll(Arrays.asList("쓰레기", "폐기물", "환경"));
+            priority = "low";
+        }
+        
+        return new AnalyzedData(
+            inputData.getId(),
+            "infrastructure",
+            damageType,
+            "urban",
+            priority,
+            category,
+            keywords,
+            0.6, // Lower confidence for fallback
+            inputData
+        );
+    }
+    
+    /**
+     * 분석된 데이터를 기반으로 적절한 Roboflow 모델 결정
+     */
+    private String determineModel(AnalyzedData analyzedData) {
+        log.info("🎯 Determining model for category: {}", analyzedData.getCategory());
+        
+        String category = analyzedData.getCategory();
+        String model = modelRoutingRules.getOrDefault(category, modelRoutingRules.get("general"));
+        
+        log.info("✅ Selected model: {} for category: {}", model, category);
+        return model;
+    }
+
+    /**
+     * 입력 데이터 기반 모델 결정 (Fallback 용도)
+     */
+    private String determineModel(InputData inputData) {
+        if (inputData.getContent() != null) {
+            String content = inputData.getContent().toLowerCase();
+            if (content.contains("포트홀") || content.contains("도로") || content.contains("구멍")) {
+                return modelRoutingRules.get("pothole");
+            } else if (content.contains("표지판") || content.contains("신호등")) {
+                return modelRoutingRules.get("traffic_sign");
+            }
+        }
+        return modelRoutingRules.get("general");
+    }
+
+    /**
+     * 이미지 URL에서 텍스트 추출 (OCR)
+     */
+    public String extractTextFromImageUrl(String imageUrl) {
+        try {
+            log.info("🔍 Extracting text from image URL: {}", imageUrl);
+            
+            String ocrPrompt = """
+                이 이미지에서 모든 텍스트를 정확하게 추출해주세요.
+                한국어와 영어를 모두 인식하고, 추출된 텍스트만 반환해주세요.
+                추가 설명이나 코멘트는 포함하지 마세요.
+                """;
+            
+            // OpenRouter 비전 모델로 OCR 수행
+            return openRouterClient.analyzeImageWithUrlAsync(imageUrl, ocrPrompt).join();
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to extract text from image URL {}: {}", imageUrl, e.getMessage());
+            return ""; // 빈 문자열 반환
+        }
+    }
+
+    /**
+     * 이미지에서 텍스트 추출 (OCR) - 바이트 배열 (기존 호환성)
+     */
+    public String extractTextFromImage(byte[] imageData) {
+        try {
+            log.info("🔍 Extracting text from image data");
+            
+            // Base64로 인코딩
+            String base64Image = Base64.getEncoder().encodeToString(imageData);
+            
+            // OCR용 프롬프트
+            List<OpenRouterDto.Message> messages = List.of(
+                OpenRouterDto.Message.system(
+                    "당신은 전문 OCR 도우미입니다. 이미지에서 모든 텍스트를 정확하게 추출하세요. " +
+                    "추출된 텍스트만 반환하고, 추가 코멘트는 포함하지 마세요."
+                ),
+                OpenRouterDto.Message.userWithImage(
+                    "이 이미지에서 모든 텍스트를 추출해주세요:",
+                    "data:image/jpeg;base64," + base64Image
+                )
+            );
+            
+            // OpenRouter API 호출
+            return openRouterClient.chatCompletionAsync(messages).join();
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to extract text from image: {}", e.getMessage());
+            return ""; // 빈 문자열 반환
+        }
+    }
+
     @Getter
     public static class AnalysisResult {
         private final String id;
@@ -48,295 +314,44 @@ public class IntegratedAiAgentService {
         private final String errorMessage;
         private final long timestamp;
 
-        public AnalysisResult(boolean success, String errorMessage, AnalyzedData analyzedData, String selectedModel) {
-            this.id = UUID.randomUUID().toString();
-            this.success = success;
-            this.errorMessage = errorMessage;
+        public AnalysisResult(String id, AnalyzedData analyzedData, String selectedModel, 
+                             boolean success, String errorMessage, long timestamp) {
+            this.id = id;
             this.analyzedData = analyzedData;
             this.selectedModel = selectedModel;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-
-        public AnalyzedData getAnalyzedData() {
-            return analyzedData;
-        }
-
-        public String getSelectedModel() {
-            return selectedModel;
+            this.success = success;
+            this.errorMessage = errorMessage;
+            this.timestamp = timestamp;
         }
     }
 
-/**
-   * 비동기 입력 데이터 분석
-   * UI 스레드를 블로킹하지 않습니다.
-   */
-  public CompletableFuture<AnalysisResult> analyzeInputAsync(InputData inputData) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        log.info("Starting integrated AI analysis for input: {}", inputData.getId());
-
-        // 1. 입력 데이터 파싱 및 분석
-        AnalyzedData analyzedData = parseAndAnalyzeData(inputData);
-
-        // 2. Roboflow 모델 라우팅 결정
-        String selectedModel = determineRoboflowModel(analyzedData);
-
-        // 3. 결과 반환
-        return new AnalysisResult(true, null, analyzedData, selectedModel);
-
-      } catch (Exception e) {
-        log.error("Error in integrated AI analysis: {}", e.getMessage(), e);
-        return new AnalysisResult(false, e.getMessage(), null, null);
-      }
-    });
-  }
-
-  /**
-   * 배치 분석 (여러 입력 데이터 동시 처리)
-   */
-  public CompletableFuture<List<AnalysisResult>> analyzeBatchAsync(List<InputData> inputDataList) {
-    List<CompletableFuture<AnalysisResult>> futures = inputDataList.stream()
-        .map(this::analyzeInputAsync)
-        .toList();
-
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-        .thenApply(v -> futures.stream()
-            .map(CompletableFuture::join)
-            .toList());
-  }
-
-  /**
-   * 입력 데이터 파싱 및 분석
-   */
-  private AnalyzedData parseAndAnalyzeData(InputData inputData) {
-    try {
-      // OpenRouter AI를 이용한 데이터 분석 프롬프트 구성
-      String analysisPrompt = buildAnalysisPrompt(inputData);
-
-      List<OpenRouterDto.Message> messages = List.of(
-          new OpenRouterDto.Message("system",
-              "You are an expert AI assistant for analyzing report data and images. " +
-                  "Analyze the provided data and extract key information in JSON format."),
-          new OpenRouterDto.Message("user", analysisPrompt));
-
-      // AI 분석 실행 (비동기 메서드 사용)
-      String responseText = openRouterClient.chatCompletionAsync(messages).get();
-
-      // AI 응답 파싱
-      return parseAiResponse(responseText, inputData);
-
-    } catch (Exception e) {
-      log.error("Error parsing and analyzing data: {}", e.getMessage(), e);
-      throw new RuntimeException("Data analysis failed", e);
-    }
-  }
-
-  /**
-   * 분석 프롬프트 구성
-   */
-  private String buildAnalysisPrompt(InputData inputData) {
-    StringBuilder prompt = new StringBuilder();
-    prompt.append("Analyze the following report data and extract key information:\n\n");
-
-    if (inputData.getTitle() != null) {
-      prompt.append("Title: ").append(inputData.getTitle()).append("\n");
-    }
-
-    if (inputData.getDescription() != null) {
-      prompt.append("Description: ").append(inputData.getDescription()).append("\n");
-    }
-
-    if (inputData.getLocation() != null) {
-      prompt.append("Location: ").append(inputData.getLocation()).append("\n");
-    }
-
-    if (inputData.getImageUrls() != null && !inputData.getImageUrls().isEmpty()) {
-      prompt.append("Number of images: ").append(inputData.getImageUrls().size()).append("\n");
-    }
-
-    prompt.append("\nPlease extract and return the following information in JSON format:\n");
-    prompt.append("{\n");
-    prompt.append(
-        "  \"objectType\": \"detected object type (pothole, traffic_sign, road_damage, infrastructure, general)\",\n");
-    prompt.append("  \"damageType\": \"severity or type of damage (minor, moderate, severe, critical)\",\n");
-    prompt.append("  \"environment\": \"environment context (urban, rural, highway, residential)\",\n");
-    prompt.append("  \"priority\": \"priority level (low, medium, high, critical)\",\n");
-    prompt.append("  \"category\": \"report category\",\n");
-    prompt.append("  \"keywords\": [\"list\", \"of\", \"relevant\", \"keywords\"],\n");
-    prompt.append("  \"confidence\": 0.85\n");
-    prompt.append("}\n");
-
-    return prompt.toString();
-  }
-
-  /**
-   * AI 응답 파싱
-   */
-  private AnalyzedData parseAiResponse(String responseText, InputData inputData) {
-    try {
-      // JSON 부분 추출 (TODO: 더 정교한 JSON 파싱 로직 구현)
-      String jsonContent = extractJsonFromContent(responseText);
-
-      @SuppressWarnings("unchecked")
-      Map<String, Object> analysisData = objectMapper.readValue(jsonContent, Map.class);
-
-      @SuppressWarnings("unchecked")
-      List<String> keywords = (List<String>) analysisData.get("keywords");
-
-      return new AnalyzedData(
-          inputData.getId(),
-          (String) analysisData.get("objectType"),
-          (String) analysisData.get("damageType"),
-          (String) analysisData.get("environment"),
-          (String) analysisData.get("priority"),
-          (String) analysisData.get("category"),
-          keywords,
-          ((Number) analysisData.getOrDefault("confidence", 0.0)).doubleValue(),
-          inputData);
-
-    } catch (Exception e) {
-      log.error("Error parsing AI response: {}", e.getMessage(), e);
-
-      // 기본값 반환
-      return new AnalyzedData(
-          inputData.getId(),
-          "general",
-          "unknown",
-          "urban",
-          "medium",
-          "기타",
-          List.of("일반"),
-          0.5,
-          inputData);
-    }
-  }
-
-  /**
-   * 텍스트에서 JSON 부분 추출
-   */
-  private String extractJsonFromContent(String content) {
-    // 간단한 JSON 추출 로직 (TODO: 더 정교하게 구현)
-    int startIndex = content.indexOf("{");
-    int endIndex = content.lastIndexOf("}");
-
-    if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-      return content.substring(startIndex, endIndex + 1);
-    }
-
-    // JSON을 찾을 수 없으면 기본 JSON 반환
-    return "{\"objectType\":\"general\",\"damageType\":\"unknown\",\"environment\":\"urban\",\"priority\":\"medium\",\"category\":\"기타\",\"keywords\":[\"일반\"],\"confidence\":0.5}";
-  }
-
-  /**
-   * 이미지에서 텍스트 추출 (OCR 전용)
-   * OpenRouter의 qwen2.5-vl-72b-instruct 모델을 사용하여 텍스트만 추출
-   */
-  public String extractTextFromImage(byte[] imageData) {
-    try {
-      log.info("🔤 AI 모델을 사용한 텍스트 추출 시작");
-      
-      // 이미지를 Base64로 인코딩
-      String base64Image = Base64.getEncoder().encodeToString(imageData);
-      
-      // OCR 전용 프롬프트
-      String ocrPrompt = "이 이미지에 있는 모든 텍스트를 정확하게 추출해주세요. " +
-                        "한국어와 영어 텍스트를 모두 인식하고, " +
-                        "줄바꿈과 레이아웃을 최대한 보존하여 반환해주세요. " +
-                        "텍스트만 추출하고 다른 설명은 포함하지 마세요.";
-      
-      List<OpenRouterDto.Message> messages = List.of(
-          new OpenRouterDto.Message("system", 
-              "You are an expert OCR system. Extract all text from images accurately, " +
-              "preserving layout and structure. Support both Korean and English text."),
-          new OpenRouterDto.Message("user", ocrPrompt),
-          new OpenRouterDto.Message("user", "[이미지: data:image/jpeg;base64," + base64Image + "]")
-      );
-      
-      // AI 모델을 통한 텍스트 추출
-      String extractedText = openRouterClient.chatCompletionAsync(messages).get();
-      
-      // 응답에서 불필요한 부분 제거 및 정리
-      String cleanedText = cleanOcrResponse(extractedText);
-      
-      log.info("✅ AI 모델 텍스트 추출 완료 - 길이: {} 문자", cleanedText.length());
-      return cleanedText;
-      
-    } catch (Exception e) {
-      log.error("❌ AI 모델 텍스트 추출 실패: {}", e.getMessage(), e);
-      throw new RuntimeException("AI 모델 OCR 처리 실패", e);
-    }
-  }
-  
-  /**
-   * OCR 응답 정리 (불필요한 설명 제거)
-   */
-  private String cleanOcrResponse(String rawResponse) {
-    if (rawResponse == null) return "";
-    
-    // 일반적인 AI 응답 패턴 제거
-    String cleaned = rawResponse
-        .replaceAll("(?i)^.*?텍스트.*?다음과 같습니다?\\s*:?\\s*", "")
-        .replaceAll("(?i)^.*?extracted.*?text.*?:?\\s*", "")
-        .replaceAll("(?i)^.*?이미지에.*?텍스트.*?:?\\s*", "")
-        .replaceAll("(?i)^.*?다음은.*?텍스트.*?:?\\s*", "")
-        .trim();
-    
-    // 빈 줄 정리
-    cleaned = cleaned.replaceAll("\n\n+", "\n\n");
-    
-    return cleaned;
-  }
-
-  /**
-   * Roboflow 모델 라우팅 결정
-   */
-  public String determineRoboflowModel(AnalyzedData analyzedData) {
-    String objectType = analyzedData.getObjectType();
-    String selectedModel = modelRoutingRules.getOrDefault(objectType, "general-object-detection");
-
-    log.debug("Selected Roboflow model: {} for object type: {}", selectedModel, objectType);
-    return selectedModel;
-  }
-
-  /**
-   * 라우팅 규칙 추가 (확장성을 위한 메서드)
-   */
-  public void addRoutingRule(String objectType, String modelId) {
-    modelRoutingRules.put(objectType, modelId);
-    log.info("Added new routing rule: {} -> {}", objectType, modelId);
-  }
-
-  /**
-   * 입력 데이터 DTO
-   */
-  public static class InputData {
-    private String id;
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class InputData {    private String id;
     private String title;
     private String description;
     private String location;
     private List<String> imageUrls;
     private Map<String, Object> metadata;
+    private String type;
+    private String content;
+    private String timestamp;
 
     // 생성자, getter, setter
     public InputData() {
     }
 
     public InputData(String id, String title, String description, String location,
-        List<String> imageUrls, Map<String, Object> metadata) {
+        List<String> imageUrls, Map<String, Object> metadata, String type, String content, String timestamp) {
       this.id = id;
       this.title = title;
       this.description = description;
       this.location = location;
       this.imageUrls = imageUrls;
       this.metadata = metadata;
+      this.type = type;
+      this.content = content;
+      this.timestamp = timestamp;
     }
 
     // getters and setters
@@ -386,6 +401,30 @@ public class IntegratedAiAgentService {
 
     public void setMetadata(Map<String, Object> metadata) {
       this.metadata = metadata;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public void setType(String type) {
+      this.type = type;
+    }
+
+    public String getContent() {
+      return content;
+    }
+
+    public void setContent(String content) {
+      this.content = content;
+    }
+
+    public String getTimestamp() {
+      return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+      this.timestamp = timestamp;
     }
   }
 

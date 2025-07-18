@@ -1,6 +1,7 @@
 package com.jeonbuk.report.infrastructure.external.roboflow;
 
 import com.jeonbuk.report.infrastructure.external.roboflow.RoboflowDto.*;
+import com.jeonbuk.report.config.ApiKeyManager;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,20 +40,18 @@ public class RoboflowApiClient {
     private final Executor executor = Executors.newFixedThreadPool(4);
     
     private final RestTemplate restTemplate;
-
-    private final String apiKey;
+    private final ApiKeyManager apiKeyManager;
     private final String workspaceUrl;
 
     public RoboflowApiClient(
             RestTemplate restTemplate,
-            @Value("${app.roboflow.api-key:#{null}}") String apiKey,
+            ApiKeyManager apiKeyManager,
             @Value("${app.roboflow.workspace-url:#{null}}") String workspaceUrl) {
         this.restTemplate = restTemplate;
-
-        this.apiKey = apiKey;
+        this.apiKeyManager = apiKeyManager;
         this.workspaceUrl = workspaceUrl;
         
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.ROBOFLOW)) {
             log.warn("Roboflow API key is not configured. Some features may not work.");
         }
         
@@ -163,8 +162,8 @@ public class RoboflowApiClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("User-Agent", "JeonbukReportPlatform/1.0");
         
-        if (apiKey != null && !apiKey.trim().isEmpty()) {
-            headers.set("Authorization", "Bearer " + apiKey);
+        if (apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.ROBOFLOW)) {
+            headers.set("Authorization", "Bearer " + apiKeyManager.getApiKey(ApiKeyManager.ApiKeyType.ROBOFLOW));
         }
         
         return headers;
@@ -174,6 +173,7 @@ public class RoboflowApiClient {
      * 엔드포인트 URL 구성
      */
     private String buildEndpoint(String modelId) {
+        String apiKey = apiKeyManager.getApiKey(ApiKeyManager.ApiKeyType.ROBOFLOW);
         if (workspaceUrl != null && !workspaceUrl.trim().isEmpty()) {
             return workspaceUrl + "/" + modelId + "?api_key=" + apiKey;
         }
@@ -184,7 +184,7 @@ public class RoboflowApiClient {
      * API 키 검증
      */
     private void validateApiKey() {
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.ROBOFLOW)) {
             throw new RoboflowException("Roboflow API key is not configured", "MISSING_API_KEY", 401);
         }
     }

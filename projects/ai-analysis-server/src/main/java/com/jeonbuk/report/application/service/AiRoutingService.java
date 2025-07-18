@@ -2,12 +2,12 @@ package com.jeonbuk.report.application.service;
 
 import com.jeonbuk.report.infrastructure.external.roboflow.RoboflowApiClient;
 import com.jeonbuk.report.infrastructure.external.roboflow.RoboflowDto;
-import com.jeonbuk.report.application.service.IntegratedAiAgentService.*;
+import com.jeonbuk.report.application.service.IntegratedAiAgentService.AnalysisResult;
+import com.jeonbuk.report.application.service.IntegratedAiAgentService.InputData;
 import com.jeonbuk.report.application.service.ValidationAiAgentService.ValidationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,9 +37,8 @@ public class AiRoutingService {
     private final IntegratedAiAgentService integratedAiAgent;
     private final ValidationAiAgentService validationAiAgent;
     private final RoboflowApiClient roboflowClient;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
     
-    // Kafka 토픽 설정 (환경 변수로 구성 가능)
+    // Kafka 토픽 설정 (환경 변수로 구성 가능) - 로깅용으로만 사용
     @Value("${app.kafka.topics.analysis-results:ai_analysis_results}")
     private String analysisTopic;
     
@@ -253,8 +252,8 @@ public class AiRoutingService {
             logData.put("roboflowResult", roboflowResult);
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(analysisTopic, id, logData);
-            log.debug("Success event logged for {}", id);
+            // Kafka 대신 로그로 출력
+            log.info("Success event logged for {}: {}", id, logData);
         } catch (Exception e) {
             log.error("Failed to log success event for {}: {}", id, e.getMessage());
         }
@@ -271,8 +270,8 @@ public class AiRoutingService {
             logData.put("validationResult", validationResult);
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(validationTopic, id, logData);
-            log.debug("Validation failure event logged for {}", id);
+            // Kafka 대신 로그로 출력
+            log.warn("Validation failure event logged for {}: {}", id, logData);
         } catch (Exception e) {
             log.error("Failed to log validation failure for {}: {}", id, e.getMessage());
         }
@@ -289,8 +288,8 @@ public class AiRoutingService {
             logData.put("error", error.getMessage());
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(errorTopic, id, logData);
-            log.debug("Error event logged for {}", id);
+            // Kafka 대신 로그로 출력
+            log.error("Error event logged for {}: {}", id, logData);
         } catch (Exception e) {
             log.error("Failed to log error for {}: {}", id, e.getMessage());
         }
@@ -307,8 +306,8 @@ public class AiRoutingService {
             logData.put("analysisResult", analysisResult);
             logData.put("timestamp", System.currentTimeMillis());
             
-            kafkaTemplate.send(analysisTopic, id, logData);
-            log.debug("Simple analysis event logged for {}", id);
+            // Kafka 대신 로그로 출력
+            log.info("Simple analysis event logged for {}: {}", id, logData);
         } catch (Exception e) {
             log.error("Failed to log simple analysis event for {}: {}", id, e.getMessage());
         }

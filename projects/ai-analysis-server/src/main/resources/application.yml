@@ -95,7 +95,7 @@ app:
   
   openrouter:
     api:
-      key: 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
+      key: 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
       base-url: https://openrouter.ai/api/v1
       model: openai/gpt-4o
   
@@ -111,23 +111,63 @@ app:
 # Google Cloud Configuration
 google:
   cloud:
-    project-id: 
+    project-id: ${GOOGLE_CLOUD_PROJECT_ID:}
     vision:
       enabled: false
-      credentials-path:
+      credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:}
+    automl:
+      enabled: ${GOOGLE_AUTOML_ENABLED:false}
+      project-id: ${GOOGLE_AUTOML_PROJECT_ID:}
+      location: ${GOOGLE_AUTOML_LOCATION:us-central1}
+      classification-model-id: ${GOOGLE_AUTOML_CLASSIFICATION_MODEL_ID:}
+      object-detection-model-id: ${GOOGLE_AUTOML_OBJECT_DETECTION_MODEL_ID:}
+      confidence-threshold: ${GOOGLE_AUTOML_CONFIDENCE_THRESHOLD:0.7}
 
-# AI Agent Configuration  
+# AI Analysis Configuration  
 ai:
+  analysis:
+    enable-automl: ${AI_ENABLE_AUTOML:true}
+    enable-rag: ${AI_ENABLE_RAG:true}
+    enable-fallback: ${AI_ENABLE_FALLBACK:true}
+    confidence-threshold: ${AI_CONFIDENCE_THRESHOLD:0.7}
+    parallel-processing: ${AI_PARALLEL_PROCESSING:true}
   agent:
     enabled: true
     api:
       url: https://openrouter.ai/api/v1
-      key: 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
+      key: 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
       timeout: 30000
     features:
       scene-analysis: true
       object-detection: true
       context-integration: true
+
+# RAG System Configuration
+rag:
+  context:
+    max-chunks: ${RAG_MAX_CONTEXT_CHUNKS:5}
+    max-tokens: ${RAG_MAX_CONTEXT_TOKENS:2000}
+    chunk-separator: ${RAG_CHUNK_SEPARATOR:---}
+    include-metadata: ${RAG_INCLUDE_METADATA:true}
+  search:
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.7}
+    max-results: ${RAG_MAX_SEARCH_RESULTS:10}
+    rerank-enabled: ${RAG_RERANK_ENABLED:true}
+  chunking:
+    max-tokens: ${RAG_CHUNKING_MAX_TOKENS:512}
+    overlap-tokens: ${RAG_CHUNKING_OVERLAP_TOKENS:50}
+  indexing:
+    batch-size: ${RAG_INDEXING_BATCH_SIZE:10}
+  analysis:
+    include-sources: ${RAG_INCLUDE_SOURCES:true}
+
+# OpenAI Configuration (for embeddings)
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-ada-002}
+    timeout: ${OPENAI_TIMEOUT:30000}
 
 # Async Processing Configuration
 async:

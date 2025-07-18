@@ -14,7 +14,7 @@ import aiofiles
 import logging
 from pathlib import Path
 
-from .config import settings
+from .config import settings, api_key_manager
 from .models import FileMetadata, FileResponse as FileResponseModel, TaskStatus
 from .utils import get_file_hash, create_thumbnail, process_image, extract_metadata, validate_file_extension
 from .ai_client import request_ai_analysis
@@ -78,7 +78,7 @@ async def upload_file(
     - `create_thumb`: Whether to create a thumbnail (for images)
     """
     # Validate auth token if security is enabled
-    if settings.ENABLE_AUTH and not x_auth_token == settings.API_KEY:
+    if settings.ENABLE_AUTH and not x_auth_token == api_key_manager.get_api_key_safe('file_server'):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
         
     # Validate file extension
@@ -120,7 +120,7 @@ async def upload_file(
             background_tasks.add_task(
                 create_thumbnail, file_path, thumbnail_path, width=300, height=300
             )
-            thumbnail_url = f"{settings.SERVER_URL}/thumbnails/thumb_{unique_filename}"
+            thumbnail_url = settings.get_public_thumbnail_url(f"thumb_{unique_filename}")
         
         # Schedule AI analysis if requested
         analysis_task_id = None
@@ -148,7 +148,7 @@ async def upload_file(
             file_size=file_size,
             file_hash=file_hash,
             upload_time=datetime.now().isoformat(),
-            file_url=f"{settings.SERVER_URL}/files/{unique_filename}",
+            file_url=settings.get_public_file_url(unique_filename),
             thumbnail_url=thumbnail_url,
             metadata=metadata,
             analysis_task_id=analysis_task_id
@@ -158,7 +158,7 @@ async def upload_file(
         return FileResponseModel(
             success=True,
             file_id=file_id,
-            file_url=f"{settings.SERVER_URL}/files/{unique_filename}",
+            file_url=settings.get_public_file_url(unique_filename),
             thumbnail_url=thumbnail_url,
             filename=file.filename,
             size=file_size,
@@ -193,7 +193,7 @@ async def get_file(file_id: str):
 async def delete_file(file_id: str, x_auth_token: Optional[str] = Header(None)):
     """Delete a file by ID"""
     # Validate auth token if security is enabled
-    if settings.ENABLE_AUTH and not x_auth_token == settings.API_KEY:
+    if settings.ENABLE_AUTH and not x_auth_token == api_key_manager.get_api_key_safe('file_server'):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
     
     deleted = False
@@ -287,7 +287,7 @@ async def batch_upload(
 ):
     """Upload multiple files at once"""
     # Validate auth token if security is enabled
-    if settings.ENABLE_AUTH and not x_auth_token == settings.API_KEY:
+    if settings.ENABLE_AUTH and not x_auth_token == api_key_manager.get_api_key_safe('file_server'):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
     
     results = []
@@ -369,7 +369,7 @@ async def search_files_by_tag(
     - `tag`: Tag to search for
     """
     # Validate auth token if security is enabled
-    if settings.ENABLE_AUTH and not x_auth_token == settings.API_KEY:
+    if settings.ENABLE_AUTH and not x_auth_token == api_key_manager.get_api_key_safe('file_server'):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
     
     # Validate that at least one of tag or tags is provided

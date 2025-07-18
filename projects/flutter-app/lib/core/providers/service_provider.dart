@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/api_constants.dart';
 import '../services/webhook_service.dart';
+import '../../features/report/domain/services/report_service.dart';
 import 'dart:developer' as developer;
 
 final dioProvider = Provider<Dio>((ref) {
@@ -106,10 +107,16 @@ final webhookServiceProvider = Provider<WebhookService>((ref) {
     webhookDio,
     webhookUrls: [
       // 이미지 분석 웹훅 URL
-      'https://n8n.nodove.com/webhook/379e0d1c-db91-488b-b7e3-596c22a3306e',
+      'https://n8n-test.nodove.com/webhook/379e0d1c-db91-488b-b7e3-596c22a3306e',
     ],
     enableWebhooks: true,
   );
   
   return service;
+});
+
+// 리포트 서비스 Provider
+final reportServiceProvider = Provider<ReportService>((ref) {
+  final dio = ref.watch(dioProvider);
+  return ReportService(dio);
 });

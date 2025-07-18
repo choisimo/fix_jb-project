@@ -1,7 +1,7 @@
 class ApiConstants {
   // 개발/스테이징/프로덕션 환경별 베이스 URL
-  static const String _devBaseUrl = 'http://localhost:8085'; // API Gateway (adb reverse 포트 포워딩 사용)
-  static const String _devAiBaseUrl = 'http://localhost:8085'; // API Gateway를 통해 AI 서버 접근
+  static const String _devBaseUrl = 'http://10.0.2.2:8080'; // Main API Server (에뮬레이터용)
+  static const String _devAiBaseUrl = 'http://10.0.2.2:8083'; // AI Analysis Server
   static const String _stagingBaseUrl = 'https://staging-api.jbreport.com';
   static const String _stagingAiBaseUrl = 'https://staging-ai.jbreport.com';
   static const String _prodBaseUrl = 'https://api.jbreport.com';

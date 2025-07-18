@@ -19,6 +19,8 @@ configurations {
 
 repositories {
 	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
 }
 
 ext {
@@ -69,6 +71,18 @@ dependencies {
 	// Google Cloud Vision API for OCR
 	implementation 'com.google.cloud:google-cloud-vision:3.7.0'
 	implementation 'com.google.auth:google-auth-library-oauth2-http:1.19.0'
+	
+	// Google Cloud AutoML Vision API
+	implementation 'com.google.cloud:google-cloud-automl:2.5.0'
+	implementation 'com.google.cloud:google-cloud-storage:2.26.1'
+	
+	// RAG System Dependencies
+	implementation 'dev.langchain4j:langchain4j:0.25.0'
+	implementation 'dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.25.0'
+	implementation 'org.springframework.ai:spring-ai-openai:0.8.1'
+	
+	// PostgreSQL Vector Extension Support
+	implementation 'com.pgvector:pgvector:0.1.4'
 	
 	// Utilities
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'

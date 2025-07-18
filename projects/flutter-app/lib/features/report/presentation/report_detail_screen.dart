@@ -4,70 +4,22 @@ import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../domain/models/report.dart';
+import '../data/providers/report_providers.dart';
+import '../domain/services/report_service.dart';
+import 'dart:developer' as developer;
 
-// 임시 Provider - 실제로는 별도 controller 필요
+// 신고서 상세 정보를 가져오는 Provider
 final reportDetailProvider = FutureProvider.family<Report, String>((ref, reportId) async {
-  // 시뮬레이션: 임시 데이터
-  await Future.delayed(const Duration(milliseconds: 500));
-  
-  return Report(
-    id: reportId,
-    title: 'Pothole on Main Street',
-    description: 'Large pothole causing damage to vehicles. This has been ongoing for several weeks and multiple residents have complained about vehicle damage. The hole is approximately 2 feet wide and 6 inches deep, making it dangerous for both cars and motorcycles.',
-    type: ReportType.pothole,
-    status: ReportStatus.submitted,
-    authorId: 'user1',
-    authorName: 'John Doe',
-    authorProfileImage: null,
-    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    priority: Priority.high,
-    viewCount: 25,
-    likeCount: 8,
-    commentsCount: 5,
-    isLiked: false,
-    isBookmarked: true,
-    location: const ReportLocation(
-      latitude: 37.7749,
-      longitude: -122.4194,
-      address: '123 Main Street, San Francisco, CA',
-      city: 'San Francisco',
-    ),
-    images: [
-      const ReportImage(
-        id: 'img1',
-        url: 'https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=Pothole+Image+1',
-        thumbnailUrl: 'https://via.placeholder.com/150x150/FF6B6B/FFFFFF?text=Thumb+1',
-        filename: 'pothole_1.jpg',
-        isPrimary: true,
-      ),
-      const ReportImage(
-        id: 'img2', 
-        url: 'https://via.placeholder.com/400x300/4ECDC4/FFFFFF?text=Pothole+Image+2',
-        thumbnailUrl: 'https://via.placeholder.com/150x150/4ECDC4/FFFFFF?text=Thumb+2',
-        filename: 'pothole_2.jpg',
-      ),
-    ],
-    comments: [
-      ReportComment(
-        id: 'c1',
-        reportId: reportId,
-        authorId: 'user2',
-        authorName: 'Jane Smith',
-        content: 'I also experienced this issue yesterday. My car tire was damaged.',
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        likesCount: 2,
-      ),
-      ReportComment(
-        id: 'c2',
-        reportId: reportId,
-        authorId: 'user3',
-        authorName: 'Mike Johnson',
-        content: 'This has been a problem for weeks. The city needs to fix this urgently.',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        likesCount: 5,
-      ),
-    ],
-  );
+  try {
+    developer.log('Fetching report details for ID: $reportId', name: 'REPORT_DETAIL');
+    final reportService = ref.read(reportServiceProvider);
+    final report = await reportService.getReportById(reportId);
+    developer.log('Report details fetched successfully', name: 'REPORT_DETAIL');
+    return report;
+  } catch (e) {
+    developer.log('Error fetching report details: $e', name: 'REPORT_DETAIL', error: true);
+    throw Exception('신고서를 불러오는 중 오류가 발생했습니다: $e');
+  }
 });
 
 class ReportDetailScreen extends ConsumerStatefulWidget {
@@ -84,14 +36,25 @@ class ReportDetailScreen extends ConsumerStatefulWidget {
 
 class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
   final _commentController = TextEditingController();
-  final _scrollController = ScrollController();
+  bool _isLiking = false;
+  bool _isBookmarking = false;
   bool _isSubmittingComment = false;
+  bool _isLoadingImages = false;
 
   @override
   void dispose() {
     _commentController.dispose();
-    _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 라우터 파라미터가 변경되면 데이터 새로고침
+    final reportId = widget.reportId;
+    if (reportId.isNotEmpty) {
+      ref.invalidate(reportDetailProvider(reportId));
+    }
   }
 
   @override
@@ -106,7 +69,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
           body: Center(child: CircularProgressIndicator()),
         ),
         error: (error, stack) => Scaffold(
-          appBar: AppBar(title: const Text('Error')),
+          appBar: AppBar(title: const Text('오류')),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -114,13 +77,24 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                 const Icon(Icons.error_outline, size: 64, color: Colors.red),
                 const SizedBox(height: 16),
                 Text(
-                  'Failed to load report',
+                  '신고서를 불러오는데 실패했습니다',
                   style: TextStyle(fontSize: 18, color: Colors.red.shade700),
                 ),
                 const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  style: TextStyle(fontSize: 14, color: Colors.red.shade500),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => ref.invalidate(reportDetailProvider(widget.reportId)),
-                  child: const Text('Retry'),
+                  child: const Text('다시 시도'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('뒤로 가기'),
                 ),
               ],
             ),
@@ -132,7 +106,6 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
 
   Widget _buildReportDetail(Report report) {
     return CustomScrollView(
-      controller: _scrollController,
       slivers: [
         // App Bar
         SliverAppBar(
@@ -198,11 +171,15 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
           ),
           actions: [
             IconButton(
-              icon: Icon(
-                report.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                color: Colors.white,
-              ),
-              onPressed: () => _toggleBookmark(report),
+              icon: _isBookmarking
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(
+                      report.isBookmarked
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      color: report.isBookmarked ? Colors.blue : null,
+                    ),
+              onPressed: _isBookmarking ? null : () => _toggleBookmark(report),
             ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -212,7 +189,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   value: 'share',
                   child: ListTile(
                     leading: Icon(Icons.share),
-                    title: Text('Share'),
+                    title: Text('공유하기'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -220,7 +197,15 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   value: 'report',
                   child: ListTile(
                     leading: Icon(Icons.flag),
-                    title: Text('Report'),
+                    title: Text('신고하기'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(Icons.edit),
+                    title: Text('수정하기'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -306,7 +291,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                       Icon(Icons.location_on, color: Colors.blue.shade600),
                       const SizedBox(width: 8),
                       const Text(
-                        'Location',
+                        '위치 정보',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -348,7 +333,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                 // Images Gallery
                 if (report.images.length > 1) ...[
                   const Text(
-                    'Images',
+                    '이미지',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -395,14 +380,16 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                     _buildStatItem(Icons.visibility, report.viewCount.toString()),
                     const SizedBox(width: 16),
                     GestureDetector(
-                      onTap: () => _toggleLike(report),
+                      onTap: _isLiking ? null : () => _toggleLike(report),
                       child: Row(
                         children: [
-                          Icon(
-                            report.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                            size: 16,
-                            color: report.isLiked ? Colors.blue : Colors.grey.shade600,
-                          ),
+                          _isLiking
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              : Icon(
+                                  report.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                                  size: 16,
+                                  color: report.isLiked ? Colors.blue : Colors.grey.shade600,
+                                ),
                           const SizedBox(width: 4),
                           Text(
                             report.likeCount.toString(),
@@ -428,7 +415,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                     const Icon(Icons.comment),
                     const SizedBox(width: 8),
                     Text(
-                      'Comments (${report.comments.length})',
+                      '댓글 (${report.comments.length})',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -442,39 +429,31 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        decoration: InputDecoration(
-                          hintText: 'Add a comment...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
+                      child: SizedBox(
+                        height: 48,
+                        child: TextField(
+                          controller: _commentController,
+                          decoration: InputDecoration(
+                            hintText: '댓글 작성...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
+                          onSubmitted: _isSubmittingComment ? null : (_) => _submitComment(report),
+                          enabled: !_isSubmittingComment,
                         ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _submitComment(report),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      child: _isSubmittingComment
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.send, color: Colors.white),
-                              onPressed: () => _submitComment(report),
-                            ),
+                    IconButton(
+                      icon: _isSubmittingComment
+                          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.send),
+                      onPressed: _isSubmittingComment ? null : () => _submitComment(report),
+                      color: Colors.blue,
                     ),
                   ],
                 ),
@@ -545,16 +524,20 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            comment.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                            comment.isLiked ?? false
+                                ? Icons.thumb_up
+                                : Icons.thumb_up_outlined,
                             size: 14,
-                            color: comment.isLiked ? Colors.blue : Colors.grey.shade600,
+                            color: comment.isLiked ?? false
+                                ? Colors.blue
+                                : Colors.grey,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 2),
                           Text(
-                            comment.likesCount.toString(),
+                            '${comment.likesCount}',
                             style: TextStyle(
-                              color: comment.isLiked ? Colors.blue : Colors.grey.shade600,
                               fontSize: 12,
+                              color: comment.isLiked ?? false ? Colors.blue : Colors.grey,
                             ),
                           ),
                         ],
@@ -645,91 +628,182 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
   }
 
   void _toggleLike(Report report) {
-    // TODO: Implement like toggle
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(report.isLiked ? 'Removed like' : 'Liked report'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    setState(() {
+      _isLiking = true;
+    });
+    
+    // TODO: API 연동 - 현재는 시뮬레이션
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _isLiking = false;
+        });
+        
+        final message = report.isLiked ? '신고서 좋아요가 취소되었습니다' : '신고서에 좋아요를 표시했습니다';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
   }
 
   void _toggleBookmark(Report report) {
-    // TODO: Implement bookmark toggle
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(report.isBookmarked ? 'Removed bookmark' : 'Bookmarked'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    // TODO: API 연동 - 현재는 시뮬레이션
+    setState(() {
+      _isBookmarking = true;
+    });
+    
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _isBookmarking = false;
+        });
+        
+        final message = report.isBookmarked ? '신고서 북마크가 취소되었습니다' : '신고서에 북마크를 표시했습니다';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
   }
 
   void _toggleCommentLike(ReportComment comment) {
-    // TODO: Implement comment like toggle
+    // TODO: API 연동 - 댓글 좋아요 토글 구현
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('댓글 좋아요 기능은 아직 구현되지 않았습니다'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
-  void _submitComment(Report report) async {
-    if (_commentController.text.trim().isEmpty) return;
-
+  void _submitComment(Report report) {
+    final comment = _commentController.text.trim();
+    if (comment.isEmpty) return;
+    
     setState(() {
       _isSubmittingComment = true;
     });
-
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _isSubmittingComment = false;
-    });
-
-    _commentController.clear();
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Comment added successfully'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    // TODO: API 연동
+    // 실제 구현시 ReportService를 통해 신고서 댓글 저장 API 호출
+    // final reportService = ref.read(reportServiceProvider);
+    // try {
+    //   await reportService.createComment(report.id!, comment);
+    // }
+    
+    // 임시 구현
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _isSubmittingComment = false;
+          _commentController.clear();
+        });
+        
+        // 성공 시 UI 업데이트를 위해 provider 새로고침
+        ref.invalidate(reportDetailProvider(report.id!));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('댓글이 성공적으로 등록되었습니다'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    });
   }
 
   void _showImageGallery(List<ReportImage> images, int initialIndex) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: PageView.builder(
-            controller: PageController(initialPage: initialIndex),
-            itemCount: images.length,
-            itemBuilder: (context, index) {
-              final image = images[index];
-              return InteractiveViewer(
-                child: Image.network(
-                  image.url,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.image_not_supported, color: Colors.white),
-                  ),
-                ),
-              );
-            },
+    setState(() {
+      _isLoadingImages = true;
+    });
+    
+    try {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.black,
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: PageView.builder(
+              controller: PageController(initialPage: initialIndex),
+              itemCount: images.length,
+              itemBuilder: (context, index) {
+                final image = images[index];
+                return Stack(
+                  children: [
+                    Center(
+                      child: InteractiveViewer(
+                        child: Image.network(
+                          image.url,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / 
+                                      loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => 
+                              Center(child: Text('이미지 로딩 실패: ${error.toString()}', 
+                                  style: const TextStyle(color: Colors.white))),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 10,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Text(
+                          '${index + 1} / ${images.length}',
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print('Error showing image gallery: $e');
+    } finally {
+      setState(() {
+        _isLoadingImages = false;
+      });
+    }
   }
 
   void _handleMenuAction(String action, Report report) {
     switch (action) {
       case 'share':
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Share functionality not implemented')),
+          const SnackBar(content: Text('공유 기능이 구현되지 않았습니다')),
         );
         break;
       case 'report':
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report functionality not implemented')),
+          const SnackBar(content: Text('신고 기능이 구현되지 않았습니다')),
+        );
+        break;
+      case 'edit':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('수정 기능이 구현되지 않았습니다')),
         );
         break;
     }
@@ -807,49 +881,49 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
   String _getTypeDisplayName(ReportType type) {
     switch (type) {
       case ReportType.pothole:
-        return 'Pothole';
+        return '포트홀';
       case ReportType.streetLight:
-        return 'Street Light';
+        return '가로등';
       case ReportType.trash:
-        return 'Trash';
+        return '쓰레기';
       case ReportType.graffiti:
-        return 'Graffiti';
+        return '낭서';
       case ReportType.roadDamage:
-        return 'Road Damage';
+        return '도로 파손';
       case ReportType.construction:
-        return 'Construction';
+        return '공사 지역';
       case ReportType.other:
-        return 'Other';
+        return '기타';
     }
   }
 
   String _getStatusDisplayName(ReportStatus status) {
     switch (status) {
       case ReportStatus.draft:
-        return 'Draft';
+        return '임시저장';
       case ReportStatus.submitted:
-        return 'Submitted';
+        return '접수됨';
       case ReportStatus.inProgress:
-        return 'In Progress';
+        return '처리중';
       case ReportStatus.resolved:
-        return 'Resolved';
+        return '해결됨';
       case ReportStatus.rejected:
-        return 'Rejected';
+        return '거부됨';
       case ReportStatus.closed:
-        return 'Closed';
+        return '종료됨';
     }
   }
 
   String _getPriorityDisplayName(Priority priority) {
     switch (priority) {
       case Priority.low:
-        return 'Low';
+        return '낮음';
       case Priority.medium:
-        return 'Medium';
+        return '중간';
       case Priority.high:
-        return 'High';
+        return '높음';
       case Priority.urgent:
-        return 'Urgent';
+        return '긴급';
     }
   }
 }

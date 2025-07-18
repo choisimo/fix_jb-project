@@ -19,7 +19,7 @@ public class OpenRouterDto {
     @Data
     public static class Message {
         private String role; // "system", "user", "assistant"
-        private String content;
+        private Object content; // String for text, List<MessageContent> for multimodal
 
         public Message() {
         }
@@ -27,6 +27,26 @@ public class OpenRouterDto {
         public Message(String role, String content) {
             this.role = role;
             this.content = content;
+        }
+
+        public Message(String role, java.util.List<MessageContent> content) {
+            this.role = role;
+            this.content = content;
+        }
+
+        public String getContent() {
+            if (content instanceof String) {
+                return (String) content;
+            } else if (content instanceof java.util.List) {
+                // Extract text content from multimodal message
+                java.util.List<MessageContent> contentList = (java.util.List<MessageContent>) content;
+                return contentList.stream()
+                        .filter(c -> "text".equals(c.getType()))
+                        .map(MessageContent::getText)
+                        .findFirst()
+                        .orElse("");
+            }
+            return null;
         }
 
         public static Message system(String content) {
@@ -37,8 +57,54 @@ public class OpenRouterDto {
             return new Message("user", content);
         }
 
+        public static Message userWithImage(String text, String imageUrl) {
+            java.util.List<MessageContent> content = java.util.Arrays.asList(
+                    new MessageContent("text", text),
+                    new MessageContent("image_url", new ImageUrl(imageUrl))
+            );
+            return new Message("user", content);
+        }
+
         public static Message assistant(String content) {
             return new Message("assistant", content);
+        }
+    }
+
+    @Data
+    public static class MessageContent {
+        private String type; // "text" or "image_url"
+        private String text; // for text type
+        private ImageUrl imageUrl; // for image_url type
+
+        public MessageContent() {
+        }
+
+        public MessageContent(String type, String text) {
+            this.type = type;
+            this.text = text;
+        }
+
+        public MessageContent(String type, ImageUrl imageUrl) {
+            this.type = type;
+            this.imageUrl = imageUrl;
+        }
+    }
+
+    @Data
+    public static class ImageUrl {
+        private String url;
+        private String detail = "auto"; // "low", "high", "auto"
+
+        public ImageUrl() {
+        }
+
+        public ImageUrl(String url) {
+            this.url = url;
+        }
+
+        public ImageUrl(String url, String detail) {
+            this.url = url;
+            this.detail = detail;
         }
     }
 

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../data/models/report_dto.dart';
 
 part 'report.freezed.dart';
 part 'report.g.dart';
@@ -233,4 +234,18 @@ class Report with _$Report {
   }) = _Report;
 
   factory Report.fromJson(Map<String, dynamic> json) => _$ReportFromJson(json);
+  
+  factory Report.fromDto(ReportDto dto) {
+    return Report(
+      id: dto.id ?? '',
+      title: dto.title,
+      description: dto.description ?? '',
+      type: ReportType.other, // 기본값
+      status: ReportStatus.draft, // 기본값
+      authorId: dto.createdBy ?? '',
+      authorName: '',
+      createdAt: dto.createdAt ?? DateTime.now(),
+      updatedAt: dto.updatedAt,
+    );
+  }
 }

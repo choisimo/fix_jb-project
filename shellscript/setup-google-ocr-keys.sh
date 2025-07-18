@@ -77,16 +77,19 @@ if [ -f "$YAML_FILE" ]; then
     echo -e "${GREEN}✅ 기존 설정 백업: $(basename "$YAML_BACKUP")${NC}"
 fi
 
-# Google Vision 설정 추가
+# Google Vision OCR 설정 추가
 cat >> "$YAML_FILE" << EOF
 
-# Google ML OCR 설정 (자동 추가됨)
+# Google Vision OCR 설정 (자동 추가됨)
 google:
+  vision:
+    api:
+      key: \${GOOGLE_VISION_API_KEY:}
   cloud:
     vision:
       enabled: true
       project-id: ${PROJECT_ID}
-      credentials-path: /credentials/${KEY_FILENAME}
+      credentials-path: classpath:credentials/${KEY_FILENAME}
 
 # OCR 기본 설정
 ocr:
@@ -98,9 +101,9 @@ ocr:
       - ko
       - en
   engine-weights:
-    google-vision: 0.6
-    ai-model: 0.4
-    ml-kit: 0.3
+    google-vision: 0.8
+    gemini-vision: 0.9
+    ai-model: 0.7
 EOF
 
 echo -e "${GREEN}✅ application.yml 설정 추가 완료${NC}"
@@ -123,15 +126,20 @@ fi
 ENV_SCRIPT="${PROJECT_ROOT}/set-google-ocr-env.sh"
 cat > "$ENV_SCRIPT" << EOF
 #!/bin/bash
-# Google ML OCR 환경변수 설정 스크립트
+# Google Vision OCR 환경변수 설정 스크립트
 # 사용법: source ./set-google-ocr-env.sh
 
 export GOOGLE_CLOUD_PROJECT="${PROJECT_ID}"
 export GOOGLE_APPLICATION_CREDENTIALS="${DEST_KEY_PATH}"
+export GOOGLE_VISION_API_KEY="\${GOOGLE_VISION_API_KEY:-}"
 
-echo "✅ Google ML OCR 환경변수 설정 완료"
+echo "✅ Google Vision OCR 환경변수 설정 완료"
 echo "   GOOGLE_CLOUD_PROJECT=\$GOOGLE_CLOUD_PROJECT"
 echo "   GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_APPLICATION_CREDENTIALS"
+echo "   GOOGLE_VISION_API_KEY=\${GOOGLE_VISION_API_KEY:-(설정되지 않음)}"
+echo ""
+echo "💡 Google Vision API Key 설정을 원한다면:"
+echo "   export GOOGLE_VISION_API_KEY=your_api_key_here"
 EOF
 
 chmod +x "$ENV_SCRIPT"

@@ -13,25 +13,47 @@ class MapService {
     bool serviceEnabled;
     LocationPermission permission;
 
+    // 위치 서비스 활성화 확인
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
+      throw Exception('위치 서비스가 비활성화되어 있습니다. 설정에서 위치 서비스를 활성화해주세요.');
     }
 
+    // 위치 권한 확인 및 요청
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
+        throw Exception('위치 권한이 거부되었습니다. 설정에서 권한을 허용해주세요.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
+      throw Exception('위치 권한이 영구적으로 거부되었습니다. 설정에서 권한을 허용해주세요.');
     }
 
-    return await Geolocator.getCurrentPosition();
+    // 위치 정보 가져오기 (타임아웃 설정)
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } catch (e) {
+      // 정확한 위치를 가져올 수 없으면 낮은 정확도로 재시도
+      try {
+        return await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 5),
+        );
+      } catch (e) {
+        // 그래도 실패하면 마지막으로 알려진 위치 시도
+        final lastKnownPosition = await Geolocator.getLastKnownPosition();
+        if (lastKnownPosition != null) {
+          return lastKnownPosition;
+        }
+        throw Exception('현재 위치를 가져올 수 없습니다: $e');
+      }
+    }
   }
 
   Future<String> getAddressFromCoordinates(NLatLng location) async {

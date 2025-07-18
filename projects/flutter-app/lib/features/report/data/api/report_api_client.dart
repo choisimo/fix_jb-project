@@ -12,29 +12,29 @@ abstract class ReportApiClient {
 
   static String get defaultBaseUrl => AppConfig.apiBaseUrl;
 
-  @GET('/reports')
+  @GET('/reports/')
   Future<List<ReportDto>> getReports({
     @Query('page') int? page,
     @Query('size') int? size,
     @Query('status') String? status,
   });
 
-  @GET('/reports/{id}')
+  @GET('/reports/{id}/')
   Future<ReportDto> getReportById(@Path('id') String id);
 
-  @POST('/reports')
+  @POST('/reports/')
   Future<ReportDto> createReport(@Body() ReportDto report);
 
-  @PUT('/reports/{id}')
+  @PUT('/reports/{id}/')
   Future<ReportDto> updateReport(
     @Path('id') String id,
     @Body() ReportDto report,
   );
 
-  @DELETE('/reports/{id}')
+  @DELETE('/reports/{id}/')
   Future<void> deleteReport(@Path('id') String id);
 
-  @POST('/reports/{id}/upload')
+  @POST('/reports/{id}/upload/')
   @MultiPart()
   Future<ReportDto> uploadReportFile(
     @Path('id') String id,
@@ -42,7 +42,7 @@ abstract class ReportApiClient {
     @Part(name: 'type') String fileType,
   );
 
-  @POST('/reports/batch-upload')
+  @POST('/reports/batch-upload/')
   @MultiPart()
   Future<List<ReportDto>> batchUploadReports(
     @Part(name: 'files') List<File> files, // MultipartFile 대신 File 사용
@@ -50,7 +50,7 @@ abstract class ReportApiClient {
   );
   
   // 파일 서버와의 통합을 위한 메서드
-  @POST('/reports/{id}/attach-file')
+  @POST('/reports/{id}/attach-file/')
   Future<ReportDto> attachFileToReport(
     @Path('id') String id,
     @Field('fileId') String fileId,
@@ -58,12 +58,12 @@ abstract class ReportApiClient {
     @Field('thumbnailUrl') String? thumbnailUrl,
   );
   
-  @DELETE('/reports/{id}/detach-file/{fileId}')
+  @DELETE('/reports/{id}/detach-file/{fileId}/')
   Future<ReportDto> detachFileFromReport(
     @Path('id') String id,
     @Path('fileId') String fileId,
   );
   
-  @GET('/reports/{id}/files')
+  @GET('/reports/{id}/files/')
   Future<List<String>> getReportFileIds(@Path('id') String id);
 }

@@ -1,8 +1,8 @@
 package com.jeonbuk.report.infrastructure.external.openrouter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeonbuk.report.config.ApiKeyManager;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -33,24 +33,24 @@ public class OpenRouterApiClient {
 
     private static final String BASE_URL = "https://openrouter.ai/api/v1";
     private static final String CHAT_COMPLETIONS_ENDPOINT = "/chat/completions";
-    private static final String DEFAULT_MODEL = "qwen/qwen2.5-vl-72b-instruct:free";
+    private static final String DEFAULT_MODEL = "moonshotai/kimi-k2:free";
     
     // 백그라운드 스레드 풀 (UI 스레드 블로킹 방지)
     private final Executor executor = Executors.newFixedThreadPool(4);
     
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final String apiKey;
+    private final ApiKeyManager apiKeyManager;
 
     public OpenRouterApiClient(
             RestTemplate restTemplate,
             ObjectMapper objectMapper,
-            @Value("${openrouter.api.key:#{null}}") String apiKey) {
+            ApiKeyManager apiKeyManager) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
-        this.apiKey = apiKey;
+        this.apiKeyManager = apiKeyManager;
         
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.OPENROUTER)) {
             log.warn("OpenRouter API key is not configured. Some features may not work.");
         }
     }
@@ -97,16 +97,58 @@ public class OpenRouterApiClient {
         backoff = @Backoff(delay = 1000, multiplier = 2)
     )
     public String chatCompletionSync(List<OpenRouterDto.Message> messages) {
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.OPENROUTER)) {
             throw new OpenRouterException("OpenRouter API key is not configured");
         }
 
         log.info("🤖 OpenRouter API 호출 시작 - 메시지 수: {}", messages.size());
 
+        // 여러 모델을 순차적으로 시도 - 유료 모델 우선
+        String[] modelsToTry = {
+            // 유료 비전 모델들 (이미지 지원)
+            "google/gemini-2.5-pro-exp:beta",
+            "google/gemini-2.5-flash-exp:beta", 
+            "anthropic/claude-3.5-sonnet:beta",
+            "openai/gpt-4o",
+            "google/gemini-pro-vision",
+            "anthropic/claude-3-opus",
+            // 유료 텍스트 모델들
+            "google/gemini-2.5-pro",
+            "openai/gpt-4-turbo",
+            "anthropic/claude-3-sonnet",
+            "google/gemini-pro",
+            // 무료 모델들 (fallback)
+            "google/gemma-3n-e2b-it:free",
+            "tencent/hunyuan-a13b-instruct:free", 
+            "mistralai/mistral-small-3.2-24b-instruct:free",
+            "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+            "moonshotai/kimi-k2:free",
+            "tngtech/deepseek-r1t2-chimera:free",
+            "moonshotai/kimi-dev-72b:free"
+        };
+
+        for (String model : modelsToTry) {
+            try {
+                log.info("🔄 시도 중인 모델: {}", model);
+                return tryModelSync(messages, model);
+            } catch (OpenRouterException e) {
+                log.warn("❌ 모델 {} 실패: {}", model, e.getMessage());
+                // 다음 모델로 계속 진행
+            }
+        }
+        
+        // 모든 모델 실패시 예외 발생
+        throw new OpenRouterException("All models failed - possibly no credits or account limitations");
+    }
+
+    /**
+     * 특정 모델로 API 호출 시도
+     */
+    private String tryModelSync(List<OpenRouterDto.Message> messages, String model) {
         try {
             // 요청 객체 생성
             OpenRouterDto.ChatCompletionRequest request = new OpenRouterDto.ChatCompletionRequest();
-            request.setModel(DEFAULT_MODEL);
+            request.setModel(model);
             request.setMessages(messages);
             request.setTemperature(0.7);
             request.setMaxTokens(1000);
@@ -115,7 +157,7 @@ public class OpenRouterApiClient {
             // HTTP 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(apiKey);
+            headers.setBearerAuth(apiKeyManager.getApiKey(ApiKeyManager.ApiKeyType.OPENROUTER));
             headers.set("HTTP-Referer", "https://jeonbuk-report-platform.com");
             headers.set("X-Title", "전북 신고 플랫폼");
 
@@ -138,8 +180,8 @@ public class OpenRouterApiClient {
                 if (responseBody.getChoices() != null && !responseBody.getChoices().isEmpty()) {
                     String content = responseBody.getChoices().get(0).getMessage().getContent();
                     
-                    log.info("✅ OpenRouter API 응답 성공 - 토큰 사용량: {}", 
-                            responseBody.getUsage() != null ? responseBody.getUsage().getTotalTokens() : "unknown");
+                    log.info("✅ OpenRouter API 응답 성공 - 모델: {} 토큰 사용량: {}", 
+                            model, responseBody.getUsage() != null ? responseBody.getUsage().getTotalTokens() : "unknown");
                     
                     return content;
                 } else {
@@ -167,7 +209,7 @@ public class OpenRouterApiClient {
                 );
             } catch (Exception parseException) {
                 throw new OpenRouterException(
-                        "Client error: " + e.getMessage(),
+                        "Client error: " + e.getStatusCode() + " " + e.getStatusText() + ": \"" + e.getResponseBodyAsString() + "\"",
                         e.getStatusCode().value()
                 );
             }
@@ -206,6 +248,92 @@ public class OpenRouterApiClient {
     }
 
     /**
+     * 이미지 분석 (비동기) - 파일서버 URL 기반
+     */
+    public CompletableFuture<String> analyzeImageWithUrlAsync(String imageUrl, String prompt) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return analyzeImageWithUrlSync(imageUrl, prompt);
+            } catch (Exception e) {
+                log.error("Async image analysis failed", e);
+                throw new RuntimeException("Async image analysis failed", e);
+            }
+        }, executor);
+    }
+
+    /**
+     * 이미지 분석 (동기) - 파일서버 URL 기반
+     */
+    @Retryable(
+        value = {OpenRouterException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
+    public String analyzeImageWithUrlSync(String imageUrl, String prompt) {
+        if (!apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.OPENROUTER)) {
+            throw new OpenRouterException("OpenRouter API key is not configured");
+        }
+
+        log.info("🖼️ OpenRouter 이미지 분석 시작 - URL: {}", imageUrl);
+
+        // 비전 모델만 사용
+        String[] visionModelsToTry = {
+            "google/gemini-2.5-pro-exp:beta",
+            "google/gemini-2.5-flash-exp:beta",
+            "anthropic/claude-3.5-sonnet:beta",
+            "openai/gpt-4o",
+            "google/gemini-pro-vision",
+            "anthropic/claude-3-opus"
+        };
+
+        String systemPrompt = """
+                당신은 이미지 분석 전문가입니다.
+                주어진 이미지를 분석하여 다음 정보를 JSON 형태로 제공해주세요:
+                - object_type: 주요 객체 유형
+                - scene_type: 장면 유형 (indoor, outdoor, etc.)
+                - potential_issues: 잠재적 문제점들
+                - recommended_action: 권장 조치사항
+                - confidence: 분석 신뢰도 (0-1)
+                """;
+
+        List<OpenRouterDto.Message> messages = Arrays.asList(
+                OpenRouterDto.Message.system(systemPrompt),
+                OpenRouterDto.Message.userWithImage(prompt, imageUrl)
+        );
+
+        for (String model : visionModelsToTry) {
+            try {
+                log.info("🔄 이미지 분석 모델 시도: {}", model);
+                return tryModelSync(messages, model);
+            } catch (OpenRouterException e) {
+                log.warn("❌ 이미지 분석 모델 {} 실패: {}", model, e.getMessage());
+                // 다음 모델로 계속 진행
+            }
+        }
+        
+        // 모든 비전 모델 실패시 텍스트 기반 분석으로 fallback
+        log.warn("⚠️ 모든 비전 모델 실패, 텍스트 기반 분석으로 전환");
+        return analyzeImageDescriptionAsync(prompt + " (이미지 URL: " + imageUrl + ")").join();
+    }
+
+    /**
+     * 주어진 컨텍스트 기반으로 텍스트 생성 (비동기)
+     * @param context 생성에 사용할 컨텍스트 문자열
+     * @return 생성된 텍스트
+     */
+    public CompletableFuture<String> generateWithContext(String context) {
+        log.info("Generating text with context: {}", context.substring(0, Math.min(50, context.length())) + "...");
+        
+        String systemPrompt = """                
+                당신은 문서 분석 전문가입니다.
+                주어진 컨텍스트를 기반으로 요청된 정보를 정확하게 제공해주세요.
+                명확한 근거가 있을 때만 확실한 답변을 제공하고, 확실하지 않은 경우 솔직하게 알 수 없다고 답변하세요.
+                """;
+        
+        return chatCompletionAsync(systemPrompt, context);
+    }
+    
+    /**
      * 이미지 설명 분석 (비동기)
      */
     public CompletableFuture<String> analyzeImageDescriptionAsync(String imageDescription) {
@@ -241,7 +369,7 @@ public class OpenRouterApiClient {
      * API 상태 확인
      */
     public boolean isApiAvailable() {
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!apiKeyManager.hasApiKey(ApiKeyManager.ApiKeyType.OPENROUTER)) {
             return false;
         }
         

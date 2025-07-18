@@ -27,9 +27,9 @@ Future<void> mainCommon(Environment env) async {
   );
 }
 
-// 기본 진입점 - 프로덕션 환경으로 실행
+// 기본 진입점 - 개발 환경으로 실행
 void main() async {
-  await mainCommon(Environment.production);
+  await mainCommon(Environment.development);
 }
 
 class JBReportApp extends ConsumerWidget {

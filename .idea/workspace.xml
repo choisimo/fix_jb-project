@@ -5,15 +5,56 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3b632acb-09c7-466c-bc5d-5fb645d8a000" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.~lock.COMPREHENSIVE_ANALYSIS_REPORT.md#" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_example.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-analysis-server/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/nginx/conf.d/image.nodove.com.conf" beforeDir="false" afterPath="$PROJECT_DIR$/nginx/conf.d/image.nodove.com.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nginx/conf.d/localhost-images.conf" beforeDir="false" afterPath="$PROJECT_DIR$/nginx/conf.d/localhost-images.conf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/auth/data/api/auth_api_client.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/auth/data/api/auth_api_client.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/api/ai_api_client.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/api/ai_api_client.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/AiAnalysisApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/AiAnalysisApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/AiRoutingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/AiRoutingService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/ValidationAiAgentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/application/service/ValidationAiAgentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/config/JpaConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/config/JpaConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/config/RestClientConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/config/RestClientConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/AIAnalysisResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/dto/AIAnalysisResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterApiClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterApiClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/service/AiAgentAnalysisService.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/java/com/jeonbuk/report/service/AiAgentAnalysisService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/projects/ai-analysis-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/file-server/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/projects/file-server/app/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/file-server/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/projects/file-server/app/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/android/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/android/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/ios/Flutter/Generated.xcconfig" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/ios/Flutter/Generated.xcconfig" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/ios/Flutter/flutter_export_environment.sh" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/ios/Flutter/flutter_export_environment.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/ios/Runner/GeneratedPluginRegistrant.m" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/ios/Runner/GeneratedPluginRegistrant.m" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/core/config/env_config.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/core/config/env_config.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/core/constants/api_constants.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/core/constants/api_constants.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/core/providers/service_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/core/providers/service_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/core/utils/app_initializer.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/core/utils/app_initializer.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/image_analysis/domain/models/image_analysis_result.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/image_analysis/domain/models/image_analysis_result.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/image_analysis/domain/services/image_analysis_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/image_analysis/domain/services/image_analysis_service.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/maps/domain/services/map_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/maps/domain/services/map_service.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/maps/presentation/providers/map_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/maps/presentation/providers/map_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/maps/presentation/widgets/naver_map_widget.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/maps/presentation/widgets/naver_map_widget.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/api/report_api_client.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/api/report_api_client.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/models/report_dto.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/models/report_dto.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/providers/report_providers.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/data/providers/report_providers.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/domain/models/report.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/domain/models/report.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/presentation/create_report_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/presentation/create_report_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/presentation/report_detail_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/presentation/report_detail_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/presentation/report_list_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/features/report/presentation/report_list_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/flutter-app/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/pubspec.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/projects/flutter-app/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/projects/flutter-app/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/main-api-server/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/projects/main-api-server/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/application/service/IntegratedAiAgentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/application/service/ValidationAiAgentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/application/service/ValidationAiAgentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterApiClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterApiClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/projects/main-api-server/src/main/java/com/jeonbuk/report/infrastructure/external/openrouter/OpenRouterDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects/main-api-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/projects/main-api-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shellscript/setup-google-ocr-keys.sh" beforeDir="false" afterPath="$PROJECT_DIR$/shellscript/setup-google-ocr-keys.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,23 +96,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "com.google.services.firebase.aqiPopupShown": "true",
-    "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "develop",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/nodove/workspace/fix_jb-project",
-    "settings.editor.selected.configurable": "gradle.compiler",
-    "show.migrate.to.gradle.popup": "false"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;develop-0715&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/nodove/workspace/fix_jb-project&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;gradle.compiler&quot;,
+    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;
   }
-}]]></component>
+}</component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">

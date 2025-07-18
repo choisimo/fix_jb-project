@@ -1,5 +1,6 @@
 package com.jeonbuk.report.application.service;
 
+import com.jeonbuk.report.infrastructure.external.gemini.GeminiApiClient;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterApiClient;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterDto;
 import com.jeonbuk.report.application.service.IntegratedAiAgentService.*;
@@ -26,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class ValidationAiAgentService {
 
+  private final GeminiApiClient geminiClient;
   private final OpenRouterApiClient openRouterClient;
   private final ObjectMapper objectMapper;
 

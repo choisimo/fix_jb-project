@@ -11,6 +11,8 @@ class ReportDto with _$ReportDto {
     required String type,
     String? description,
     String? status,
+    String? priority,
+    String? location,
     Map<String, dynamic>? metadata,
     List<String>? tags,
     DateTime? createdAt,

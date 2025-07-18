@@ -25,7 +25,7 @@ import java.util.Properties;
 @EnableJpaRepositories(
     basePackages = "com.jeonbuk.report.domain.repository"
 )
-@EntityScan("com.jeonbuk.report.domain.entity")
+@EntityScan({"com.jeonbuk.report.domain.entity", "com.jeonbuk.report.dto"})
 @EnableTransactionManagement
 public class JpaConfig {
 
@@ -57,7 +57,7 @@ public class JpaConfig {
     public LocalContainerEntityManagerFactoryBean entityManagerFactoryBean() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource());
-        em.setPackagesToScan("com.jeonbuk.report.domain.entity");
+        em.setPackagesToScan("com.jeonbuk.report.domain.entity", "com.jeonbuk.report.dto");
         em.setPersistenceProviderClass(HibernatePersistenceProvider.class);
         
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

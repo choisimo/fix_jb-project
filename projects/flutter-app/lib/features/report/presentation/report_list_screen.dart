@@ -15,14 +15,31 @@ class ReportListScreen extends ConsumerStatefulWidget {
 
 class _ReportListScreenState extends ConsumerState<ReportListScreen> {
   final _searchController = TextEditingController();
+  // 로컬 필터 상태 - 다이얼로그용
   ReportType? _selectedType;
   ReportStatus? _selectedStatus;
   Priority? _selectedPriority;
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+  
+  // 검색어 변경 처리
+  void _onSearchChanged() {
+    ref.read(reportListProvider.notifier).setSearchQuery(_searchController.text);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 로드 및 검색 리스너 등록
+    _searchController.addListener(_onSearchChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(reportListProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -31,12 +48,18 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reports'),
+        title: const Text('신고서 목록'),
         elevation: 1,
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.read(reportListProvider.notifier).refresh(),
+            tooltip: '새로고침',
+          ),
+          IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
+            tooltip: '필터',
           ),
         ],
       ),
@@ -48,8 +71,17 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search reports...',
+                hintText: '신고서 검색...',
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        ref.read(reportListProvider.notifier).setSearchQuery(null);
+                      },
+                    )
+                  : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -57,7 +89,8 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                 fillColor: Colors.grey.shade50,
               ),
               onChanged: (value) {
-                // TODO: Implement search
+                // 검색어 변경시 프로바이더에 전달
+                ref.read(reportListProvider.notifier).setSearchQuery(value);
               },
             ),
           ),
@@ -73,17 +106,46 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   if (_selectedType != null)
                     _buildFilterChip(
                       label: _getTypeDisplayName(_selectedType!),
-                      onDelete: () => setState(() => _selectedType = null),
+                      onDelete: () {
+                        setState(() => _selectedType = null);
+                        ref.read(reportListProvider.notifier).setFilters(
+                          type: null,
+                          status: _selectedStatus,
+                          priority: _selectedPriority,
+                        );
+                      },
                     ),
                   if (_selectedStatus != null)
                     _buildFilterChip(
                       label: _getStatusDisplayName(_selectedStatus!),
-                      onDelete: () => setState(() => _selectedStatus = null),
+                      onDelete: () {
+                        setState(() => _selectedStatus = null);
+                        ref.read(reportListProvider.notifier).setFilters(
+                          type: _selectedType,
+                          status: null,
+                          priority: _selectedPriority,
+                        );
+                      },
                     ),
                   if (_selectedPriority != null)
                     _buildFilterChip(
                       label: _getPriorityDisplayName(_selectedPriority!),
-                      onDelete: () => setState(() => _selectedPriority = null),
+                      onDelete: () {
+                        setState(() => _selectedPriority = null);
+                        ref.read(reportListProvider.notifier).setFilters(
+                          type: _selectedType,
+                          status: _selectedStatus,
+                          priority: null,
+                        );
+                      },
+                    ),
+                  if (_searchController.text.isNotEmpty)
+                    _buildFilterChip(
+                      label: '"' + _searchController.text + '" 검색',
+                      onDelete: () {
+                        _searchController.clear();
+                        ref.read(reportListProvider.notifier).setSearchQuery(null);
+                      },
                     ),
                 ],
               ),
@@ -93,26 +155,45 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
           Expanded(
             child: reportsAsync.when(
               data: (reports) {
-                final filteredReports = _filterReports(reports);
-                
-                if (filteredReports.isEmpty) {
-                  return const Center(
+                // 필터링된 보고서가 없을 때 표시할 UI
+                if (reports.isEmpty) {
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.inbox_outlined,
                           size: 64,
                           color: Colors.grey,
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
-                          'No reports found',
-                          style: TextStyle(
+                          _hasActiveFilters()
+                              ? '검색 결과가 없습니다'
+                              : '신고서가 없습니다',
+                          style: const TextStyle(
                             fontSize: 18,
                             color: Colors.grey,
                           ),
                         ),
+                        if (_hasActiveFilters())
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // 모든 필터 초기화 및 프로바이더에 전달
+                                _searchController.clear();
+                                setState(() {
+                                  _selectedType = null;
+                                  _selectedStatus = null;
+                                  _selectedPriority = null;
+                                });
+                                ref.read(reportListProvider.notifier).setSearchQuery(null);
+                                ref.read(reportListProvider.notifier).setFilters();
+                              },
+                              child: const Text('필터 초기화'),
+                            ),
+                          ),
                       ],
                     ),
                   );
@@ -124,9 +205,9 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: filteredReports.length,
+                    itemCount: reports.length,
                     itemBuilder: (context, index) {
-                      final report = filteredReports[index];
+                      final report = reports[index];
                       return _buildReportCard(report);
                     },
                   ),
@@ -146,18 +227,31 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error loading reports',
+                      '신고서 목록을 불러오는 중 오류가 발생했습니다',
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.red.shade700,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         await ref.read(reportListProvider.notifier).refresh();
                       },
-                      child: const Text('Retry'),
+                      child: const Text('다시 시도'),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        error.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),
@@ -168,6 +262,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/create-report'),
+        tooltip: '신고서 작성',
         child: const Icon(Icons.add),
       ),
     );
@@ -348,43 +443,25 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     );
   }
 
-  List<Report> _filterReports(List<Report> reports) {
-    return reports.where((report) {
-      if (_selectedType != null && report.type != _selectedType) {
-        return false;
-      }
-      if (_selectedStatus != null && report.status != _selectedStatus) {
-        return false;
-      }
-      if (_selectedPriority != null && report.priority != _selectedPriority) {
-        return false;
-      }
-      if (_searchController.text.isNotEmpty) {
-        final query = _searchController.text.toLowerCase();
-        return report.title.toLowerCase().contains(query) ||
-               report.description.toLowerCase().contains(query);
-      }
-      return true;
-    }).toList();
-  }
-
+  // 필터링 여부 확인 (UI용)
   bool _hasActiveFilters() {
     return _selectedType != null || 
            _selectedStatus != null || 
-           _selectedPriority != null;
+           _selectedPriority != null ||
+           _searchController.text.isNotEmpty;
   }
 
   void _showFilterDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Filter Reports'),
+        title: const Text('신고서 필터링'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Type'),
+              const Text('유형'),
               const SizedBox(height: 8),
               DropdownButtonFormField<ReportType?>(
                 value: _selectedType,
@@ -393,7 +470,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('All Types')),
+                  const DropdownMenuItem(value: null, child: Text('모든 유형')),
                   ...ReportType.values.map((type) => DropdownMenuItem(
                     value: type,
                     child: Text(_getTypeDisplayName(type)),
@@ -403,7 +480,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
               ),
               const SizedBox(height: 16),
               
-              const Text('Status'),
+              const Text('상태'),
               const SizedBox(height: 8),
               DropdownButtonFormField<ReportStatus?>(
                 value: _selectedStatus,
@@ -412,7 +489,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('All Statuses')),
+                  const DropdownMenuItem(value: null, child: Text('모든 상태')),
                   ...ReportStatus.values.map((status) => DropdownMenuItem(
                     value: status,
                     child: Text(_getStatusDisplayName(status)),
@@ -422,7 +499,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
               ),
               const SizedBox(height: 16),
               
-              const Text('Priority'),
+              const Text('우선순위'),
               const SizedBox(height: 8),
               DropdownButtonFormField<Priority?>(
                 value: _selectedPriority,
@@ -431,7 +508,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('All Priorities')),
+                  const DropdownMenuItem(value: null, child: Text('모든 우선순위')),
                   ...Priority.values.map((priority) => DropdownMenuItem(
                     value: priority,
                     child: Text(_getPriorityDisplayName(priority)),
@@ -450,16 +527,25 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                 _selectedStatus = null;
                 _selectedPriority = null;
               });
+              
+              // 프로바이더에 필터 초기화 전달
+              ref.read(reportListProvider.notifier).setFilters();
+              
               Navigator.of(context).pop();
             },
-            child: const Text('Clear'),
+            child: const Text('초기화'),
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {});
+              // 프로바이더에 필터 적용
+              ref.read(reportListProvider.notifier).setFilters(
+                type: _selectedType,
+                status: _selectedStatus,
+                priority: _selectedPriority,
+              );
               Navigator.of(context).pop();
             },
-            child: const Text('Apply'),
+            child: const Text('적용'),
           ),
         ],
       ),
@@ -537,49 +623,49 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
   String _getTypeDisplayName(ReportType type) {
     switch (type) {
       case ReportType.pothole:
-        return 'Pothole';
+        return '포트홀';
       case ReportType.streetLight:
-        return 'Street Light';
+        return '가로등';
       case ReportType.trash:
-        return 'Trash';
+        return '쓰레기';
       case ReportType.graffiti:
-        return 'Graffiti';
+        return '낭서';
       case ReportType.roadDamage:
-        return 'Road Damage';
+        return '도로 파손';
       case ReportType.construction:
-        return 'Construction';
+        return '공사장';
       case ReportType.other:
-        return 'Other';
+        return '기타';
     }
   }
 
   String _getStatusDisplayName(ReportStatus status) {
     switch (status) {
       case ReportStatus.draft:
-        return 'Draft';
+        return '임시저장';
       case ReportStatus.submitted:
-        return 'Submitted';
+        return '접수됨';
       case ReportStatus.inProgress:
-        return 'In Progress';
+        return '처리중';
       case ReportStatus.resolved:
-        return 'Resolved';
+        return '해결됨';
       case ReportStatus.rejected:
-        return 'Rejected';
+        return '반려됨';
       case ReportStatus.closed:
-        return 'Closed';
+        return '완료';
     }
   }
 
   String _getPriorityDisplayName(Priority priority) {
     switch (priority) {
       case Priority.low:
-        return 'Low';
+        return '낮음';
       case Priority.medium:
-        return 'Medium';
+        return '중간';
       case Priority.high:
-        return 'High';
+        return '높음';
       case Priority.urgent:
-        return 'Urgent';
+        return '긴급';
     }
   }
 }

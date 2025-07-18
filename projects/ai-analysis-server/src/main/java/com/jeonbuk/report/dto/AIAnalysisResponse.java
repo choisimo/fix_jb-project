@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -78,6 +80,72 @@ public class AIAnalysisResponse {
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Object rawResponse;
+    
+    /**
+     * OCR 텍스트
+     */
+    private String ocrText;
+    
+    /**
+     * 분석 결과 본문
+     */
+    private String analysisResult;
+    
+    /**
+     * 분석 결과 가져오기 (summary와 동일한 용도로 사용)
+     */
+    public String getAnalysisResult() {
+        return analysisResult != null ? analysisResult : summary;
+    }
+    
+    /**
+     * 감지된 객체 목록 설정
+     * @param objects 감지된 객체 목록
+     * @return 현재 응답 객체 (빌더 패턴)
+     */
+    public AIAnalysisResponse detectedObjects(List<String> objects) {
+        List<DetectedObjectDto> detectionsList = new ArrayList<>();
+        if (objects != null) {
+            for (String obj : objects) {
+                detectionsList.add(DetectedObjectDto.builder()
+                    .className(obj)
+                    .koreanName(obj)
+                    .confidence(0.8)
+                    .build());
+            }
+            this.detections = detectionsList;
+        }
+        return this;
+    }
+    
+    /**
+     * 감지된 객체 목록의 이름만 추출
+     */
+    public List<String> getDetectedObjects() {
+        if (detections == null) {
+            return Collections.emptyList();
+        }
+        List<String> objects = new ArrayList<>();
+        for (DetectedObjectDto detection : detections) {
+            objects.add(detection.getKoreanName() != null ? 
+                       detection.getKoreanName() : detection.getClassName());
+        }
+        return objects;
+    }
+    
+    /**
+     * 신뢰도 반환
+     */
+    public float getConfidence() {
+        return averageConfidence != null ? averageConfidence.floatValue() : 0.7f;
+    }
+    
+    /**
+     * OCR 텍스트 반환
+     */
+    public String getOcrText() {
+        return ocrText;
+    }
 
     /**
      * 감지된 객체 DTO

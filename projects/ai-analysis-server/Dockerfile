@@ -21,7 +21,7 @@ RUN addgroup -g 1000 -S appgroup && \
 WORKDIR /app
 
 # Copy jar file from build stage
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /app/build/libs/demo-1.0.0.jar app.jar
 
 # Create directories for logs
 RUN mkdir -p /app/logs && \

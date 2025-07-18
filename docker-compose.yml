@@ -144,7 +144,7 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
       JWT_SECRET: ${JWT_SECRET}
-      GOOGLE_CLOUD_VISION_ENABLED: false
+      GOOGLE_CLOUD_VISION_ENABLED: "false"
     depends_on:
       postgres-ai:
         condition: service_healthy
@@ -285,19 +285,46 @@ services:
       - jb-network
 
   # nginx is now external on 192.168.1.15
-  # nginx:
-  #   image: nginx:latest
-  #   container_name: nginx
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
-  #     - ./nginx/ssl:/etc/nginx/ssl:ro
-  #     - /var/www/image.nodove.com/public:/var/www/image.nodove.com/public:ro
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   networks:
-  #     - jb-network
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - /var/www/image.nodove.com/public:/var/www/image.nodove.com/public:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - jb-network
+
+  # N8N Workflow Automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5679:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres-main
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=jb_main
+      - DB_POSTGRESDB_USER=jb_user
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD:-jb_password}
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-n8n_password}
+      - WEBHOOK_URL=https://n8n-test.nodove.com/
+      - GENERIC_TIMEZONE=Asia/Seoul
+    volumes:
+      - n8n-data:/home/node/.n8n
+    depends_on:
+      postgres-main:
+        condition: service_healthy
+    networks:
+      - jb-network
+    restart: unless-stopped
 
   # File Server
   file-server:
@@ -378,6 +405,7 @@ volumes:
   elasticsearch-data:
   uploads:
   file-server-data:
+  n8n-data:
 
 networks:
   jb-network:

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
@@ -7,6 +8,9 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import '../models/image_analysis_result.dart';
 import '../../../../core/services/webhook_service.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/utils/token_manager.dart';
+import '../../../../core/constants/api_constants.dart';
 import 'dart:developer' as developer;
 
 class ImageAnalysisService {
@@ -14,66 +18,180 @@ class ImageAnalysisService {
   final WebhookService? _webhookService;
   final _uuid = const Uuid();
   
+  // 재시도 설정
+  static const int _maxRetries = 3;
+  static const Duration _retryDelay = Duration(seconds: 1);
+  
+  // 서버 상태 캐싱
+  static bool? _isServerAvailable;
+  static DateTime? _lastServerCheck;
+  
   ImageAnalysisService(this._dio, {WebhookService? webhookService}) 
       : _webhookService = webhookService;
   
   Future<OCRResult> performOCR(File imageFile) async {
     final imageId = _uuid.v4();
     
-    try {
-      // 웹훅 - OCR 시작 알림
-      await _notifyAnalysisStarted(imageFile, imageId, 'ocr');
-      
-      // 이미지 파일 검증
-      if (!await imageFile.exists()) {
-        throw Exception('Image file does not exist');
+    // 서버 상태 확인
+    final isServerAvailable = await checkServerHealth();
+    if (!isServerAvailable) {
+      final errorMessage = 'AI 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요 (포트: 8081)';
+      developer.log('❌ $errorMessage', name: 'IMAGE_ANALYSIS');
+      await _notifyAnalysisFailed(imageId, errorMessage);
+      throw Exception(errorMessage);
+    }
+    
+    // 재시도 로직
+    int attempts = 0;
+    DioException? lastDioError;
+    
+    while (attempts < _maxRetries) {
+      try {
+        // 첫 시도가 아니면 지연
+        if (attempts > 0) {
+          developer.log('🔄 OCR 분석 재시도 중... (${attempts+1}/$_maxRetries)', name: 'IMAGE_ANALYSIS');
+          await Future.delayed(_retryDelay * attempts);
+        }
+        
+        attempts++;
+        
+        // 웹훅 - OCR 시작 알림
+        await _notifyAnalysisStarted(imageFile, imageId, 'ocr');
+        
+        // 이미지 파일 검증
+        if (!await imageFile.exists()) {
+          throw Exception('이미지 파일이 존재하지 않습니다');
+        }
+        
+        // 이미지 처리 (필요시)
+        final processedFile = await _preprocessImage(imageFile);
+        
+        // Form data 생성 - MultipartFile.fromFile 사용
+        final formData = FormData.fromMap({
+          'image': await MultipartFile.fromFile(
+            processedFile.path,
+            filename: path.basename(processedFile.path),
+          ),
+          'language': 'ko+en',
+          'detect_orientation': true,
+        });
+        
+        // 인증 토큰 가져오기
+        final token = await TokenManager.getAccessToken();
+        
+        // API 호출 - AI 서버 URL 사용 (후행 슬래시 포함)
+        final response = await _dio.post(
+          '${AppConfig.aiServerUrl}/analyze/image/',
+          data: formData,
+          options: Options(
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            sendTimeout: const Duration(seconds: 30),  // 타임아웃 감소
+            receiveTimeout: const Duration(seconds: 30),
+          ),
+        );
+        
+        if (response.statusCode == 200) {
+          final result = OCRResult.fromJson(response.data);
+          
+          // 웹훅 - OCR 완료 알림
+          await _notifyAnalysisCompleted(imageId, {
+            'type': 'ocr',
+            'result': response.data,
+          });
+          
+          developer.log('✅ OCR 분석 성공', name: 'IMAGE_ANALYSIS');
+          return result;
+        } else {
+          await _notifyAnalysisFailed(imageId, 'OCR 실패: ${response.statusCode}');
+          throw Exception('OCR 실패: ${response.statusCode}');
+        }
+      } on DioException catch (e) {
+        lastDioError = e;
+        
+        // 즉시 재시도하지 않아야 하는 오류 (인증 오류 등)
+        if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+          String errorMessage = '이미지 분석 서버 인증 오류 (${e.response?.statusCode}) - 로그인이 필요하거나 토큰이 만료되었을 수 있습니다';
+          developer.log('❌ 인증 오류: ${e.response?.statusCode} - ${e.response?.data}', name: 'IMAGE_ANALYSIS');
+          await _notifyAnalysisFailed(imageId, errorMessage);
+          throw Exception(errorMessage);
+        }
+        
+        // 마지막 시도였으면 실패로 처리
+        if (attempts >= _maxRetries) {
+          break;
+        }
+        
+        // 연결 문제는 재시도 로그 출력
+        if (e.type == DioExceptionType.connectionTimeout || 
+            e.type == DioExceptionType.connectionError) {
+          developer.log('⏱️ 연결 문제 발생, 재시도 중... (${attempts}/$_maxRetries): ${e.message}', 
+                       name: 'IMAGE_ANALYSIS');
+        }
+      } catch (e) {
+        await _notifyAnalysisFailed(imageId, 'OCR 오류: $e');
+        throw Exception('OCR 오류: $e');
       }
-      
-      // 이미지 처리 (필요시)
-      final processedFile = await _preprocessImage(imageFile);
-      
-      // Form data 생성 - MultipartFile.fromFile 사용
-      final formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(
-          processedFile.path,
-          filename: path.basename(processedFile.path),
-        ),
-        'language': 'ko+en',
-        'detect_orientation': true,
-      });
-      
-      // API 호출 - 완전한 URL 직접 사용
-      final response = await _dio.post(
-        'http://localhost:8085/api/v1/ai/analyze/image',
-        data: formData,
+    }
+    
+    // 모든 재시도 실패
+    String errorMessage;
+    if (lastDioError != null) {
+      if (lastDioError.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'OCR 서버 연결 시간 초과 - 서버가 실행 중인지 확인하세요';
+      } else if (lastDioError.type == DioExceptionType.connectionError) {
+        errorMessage = 'OCR 서버 연결 실패 - 서버 주소(포트: 8081)가 올바른지 확인하세요';
+      } else {
+        errorMessage = 'OCR 네트워크 오류: ${lastDioError.message ?? "알 수 없는 오류"}';
+      }
+      developer.log('❌ 재시도 후 최종 실패: $errorMessage', name: 'IMAGE_ANALYSIS');
+    } else {
+      errorMessage = '알 수 없는 오류로 OCR 분석에 실패했습니다';
+    }
+    
+    await _notifyAnalysisFailed(imageId, errorMessage);
+    throw Exception(errorMessage);
+  }
+  
+  // 서버 상태 확인 메서드
+  Future<bool> checkServerHealth() async {
+    // 최근 30초 이내 확인한 경우 캐시된 상태 반환
+    if (_lastServerCheck != null && 
+        DateTime.now().difference(_lastServerCheck!) < const Duration(seconds: 30) &&
+        _isServerAvailable != null) {
+      developer.log('🔄 서버 상태 캐시 사용: ${_isServerAvailable! ? '정상' : '오류'}', name: 'SERVER_HEALTH');
+      return _isServerAvailable!;
+    }
+    
+    try {
+      final response = await _dio.get(
+        '${AppConfig.aiServerUrl}/actuator/health',
         options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: ApiConstants.baseHeaders,
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
         ),
       );
       
-      if (response.statusCode == 200) {
-        final result = OCRResult.fromJson(response.data);
-        
-        // 웹훅 - OCR 완료 알림
-        await _notifyAnalysisCompleted(imageId, {
-          'type': 'ocr',
-          'result': response.data,
-        });
-        
-        return result;
-      } else {
-        await _notifyAnalysisFailed(imageId, 'OCR failed: ${response.statusCode}');
-        throw Exception('OCR failed: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      await _notifyAnalysisFailed(imageId, 'Network error during OCR: ${e.message}');
-      throw Exception('Network error during OCR: ${e.message}');
+      _lastServerCheck = DateTime.now();
+      _isServerAvailable = response.statusCode == 200 && 
+                         response.data['status'] == 'UP';
+                         
+      developer.log('✅ AI 서버 상태 확인: ${_isServerAvailable! ? '정상' : '오류'}', 
+                  name: 'SERVER_HEALTH');
+      return _isServerAvailable!;
     } catch (e) {
-      await _notifyAnalysisFailed(imageId, 'OCR error: $e');
-      throw Exception('OCR error: $e');
+      _lastServerCheck = DateTime.now();
+      _isServerAvailable = false;
+      developer.log('❌ AI 서버 상태 확인 실패: $e', name: 'SERVER_HEALTH');
+      return false;
     }
+  }
+  
+  Future<ComprehensiveAnalysisResult> analyzeImageComprehensive(File imageFile) async {
+    return await performComprehensiveAnalysis(imageFile);
   }
   
   Future<ComprehensiveAnalysisResult> performComprehensiveAnalysis(File imageFile) async {
@@ -113,17 +231,21 @@ class ImageAnalysisService {
         ),
       });
       
-      print('📤 Sending comprehensive analysis request to: http://localhost:8085/api/v1/ai/analyze/image');
-      print('🌐 Using direct URL construction');
+      print('📤 Sending comprehensive analysis request to: ${AppConfig.aiServerUrl}/analyze/image/');
+      print('🌐 Using AI server URL from AppConfig');
       developer.log('📤 Sending comprehensive analysis request...', name: 'IMAGE_ANALYSIS');
       
-      // 통합 AI 분석 API 호출 - 완전한 URL 직접 사용
+      // 인증 토큰 가져오기
+      final token = await TokenManager.getAccessToken();
+      
+      // 통합 AI 분석 API 호출 - AI 서버 URL 사용 (후행 슬래시 포함)
       final response = await _dio.post(
-        'http://localhost:8085/api/v1/ai/analyze/image',
+        '${AppConfig.aiServerUrl}/analyze/image/', // 후행 슬래시(/) 추가
         data: formData,
         options: Options(
           headers: {
             'Content-Type': 'multipart/form-data',
+            if (token != null) 'Authorization': 'Bearer $token',
           },
           sendTimeout: const Duration(minutes: 2),
           receiveTimeout: const Duration(minutes: 2),
@@ -193,6 +315,9 @@ class ImageAnalysisService {
       } else if (e.response?.statusCode == 413) {
         errorMessage = 'Image file too large';
         print('❌ File too large error: ${e.response?.data}');
+      } else if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        errorMessage = '이미지 분석 서버 인증 오류 (${e.response?.statusCode}) - 로그인이 필요하거나 토큰이 만료되었을 수 있습니다';
+        developer.log('❌ 인증 오류: ${e.response?.statusCode} - ${e.response?.data}', name: 'IMAGE_ANALYSIS', error: true);
       } else {
         errorMessage = 'Network error: ${e.message ?? 'Unknown error'}';
         print('❌ Network error: ${e.type} - ${e.message}');

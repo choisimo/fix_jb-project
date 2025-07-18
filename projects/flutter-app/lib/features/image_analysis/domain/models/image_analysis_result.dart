@@ -71,6 +71,10 @@ class ComprehensiveAnalysisResult with _$ComprehensiveAnalysisResult {
     required RoboflowResult roboflow,
     @JsonKey(name: 'aiAgent') required AIAgentResult aiAgent,
     @JsonKey(name: 'integratedAnalysis') required IntegratedAnalysisResult integratedAnalysis,
+    @JsonKey(name: 'suggestedTitle') String? suggestedTitle,
+    @JsonKey(name: 'suggestedDescription') String? suggestedDescription,
+    @JsonKey(name: 'suggestedType') String? suggestedType,
+    @JsonKey(name: 'suggestedPriority') String? suggestedPriority,
   }) = _ComprehensiveAnalysisResult;
   
   factory ComprehensiveAnalysisResult.fromJson(Map<String, dynamic> json) =>

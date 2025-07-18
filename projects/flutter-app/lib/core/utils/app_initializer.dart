@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 import '../../firebase_options.dart';
 import '../config/env_config.dart';
+import '../services/unified_location_service.dart';
 
 class AppInitializer {
   static bool _isInitialized = false;
@@ -35,6 +38,9 @@ class AppInitializer {
 
       // 디바이스 정보 초기화
       await _initializeDeviceInfo();
+      
+      // 통합 위치 서비스 초기화
+      await _initializeUnifiedLocationService();
 
       // 네이버 맵 초기화
       await _initializeNaverMap();
@@ -179,18 +185,50 @@ class AppInitializer {
       debugPrint('❌ Device info initialization failed: $e');
     }
   }
+  
+  /// 통합 위치 서비스 초기화
+  static Future<void> _initializeUnifiedLocationService() async {
+    try {
+      // SharedPreferences 초기화 (마지막 알려진 위치 캐싱용)
+      await SharedPreferences.getInstance();
+      
+      // UnifiedLocationService 인스턴스 초기 설정
+      final unifiedLocationService = UnifiedLocationService();
+      
+      // 디버그 모드 설정
+      if (kDebugMode) {
+        unifiedLocationService.setDebugMode(true);
+      }
+      
+      // 초기화 및 권한 확인
+      await unifiedLocationService.init();
+      
+      debugPrint('✅ Unified location service initialized');
+    } catch (e) {
+      debugPrint('❌ Unified location service initialization failed: $e');
+      // 위치 서비스 초기화 실패는 애플리케이션을 중단하지 않음
+    }
+  }
 
   /// 네이버 맵 초기화
   static Future<void> _initializeNaverMap() async {
     try {
+      final clientId = EnvConfig.instance.naverMapClientId;
+      
+      if (clientId.isEmpty || clientId == 'YOUR_NAVER_MAP_CLIENT_ID') {
+        throw Exception('네이버 맵 클라이언트 ID가 설정되지 않았습니다.');
+      }
+      
+      debugPrint('🗺️ Initializing Naver Map SDK with client ID: $clientId');
+      
       // 네이버 맵 SDK 초기화
       await NaverMapSdk.instance.initialize(
-        clientId: 'ncp:location:public', // 개발용 기본 클라이언트 ID
+        clientId: clientId,
         onAuthFailed: (ex) {
           debugPrint('❌ Naver Map auth failed: $ex');
         },
       );
-      debugPrint('✅ Naver Map SDK initialized');
+      debugPrint('✅ Naver Map SDK initialized successfully');
     } catch (e) {
       debugPrint('❌ Naver Map initialization failed: $e');
       // 네이버 맵 초기화 실패는 치명적이지 않으므로 계속 진행

@@ -1,5 +1,6 @@
 package com.jeonbuk.report.application.service;
 
+import com.jeonbuk.report.infrastructure.external.gemini.GeminiApiClient;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterApiClient;
 import com.jeonbuk.report.infrastructure.external.openrouter.OpenRouterDto;
 import com.jeonbuk.report.infrastructure.external.roboflow.RoboflowApiClient;
@@ -27,8 +28,10 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class IntegratedAiAgentService {
 
+  private final GeminiApiClient geminiClient;
   private final OpenRouterApiClient openRouterClient;
   private final RoboflowApiClient roboflowClient;
+  private final EnhancedAiAnalysisService enhancedAiAnalysisService;
   private final ObjectMapper objectMapper;
 
   // 모델 라우팅 규칙 (확장 가능)
@@ -95,65 +98,212 @@ public class IntegratedAiAgentService {
    */
   private AnalyzedData parseAndAnalyzeData(InputData inputData) {
     try {
-      // OpenRouter AI를 이용한 데이터 분석 프롬프트 구성
-      String analysisPrompt = buildAnalysisPrompt(inputData);
-
-      List<OpenRouterDto.ChatMessage> messages = List.of(
-          new OpenRouterDto.ChatMessage("system",
-              "You are an expert AI assistant for analyzing report data and images. " +
-                  "Analyze the provided data and extract key information in JSON format."),
-          new OpenRouterDto.ChatMessage("user", analysisPrompt));
-
-      OpenRouterDto.ChatRequest request = new OpenRouterDto.ChatRequest();
-      request.setModel("qwen/qwen2.5-vl-72b-instruct:free");
-      request.setMessages(messages);
-      request.setTemperature(0.7);
-      request.setMaxTokens(1024);
-
-      // AI 분석 실행 (동기적으로 실행, 이미 비동기 컨텍스트에서 실행됨)
-      OpenRouterDto.ChatResponse response = openRouterClient.chatCompletion(request);
-
-      // AI 응답 파싱
-      return parseAiResponse(response, inputData);
-
+      log.info("🔍 Performing comprehensive analysis for: {}", inputData.getId());
+      
+      // 이미지가 있는 경우 비전 모델 사용
+      if (inputData.getImageUrls() != null && !inputData.getImageUrls().isEmpty()) {
+        return analyzeWithImages(inputData);
+      } else {
+        return analyzeTextOnly(inputData);
+      }
+      
     } catch (Exception e) {
-      log.error("Error parsing and analyzing data: {}", e.getMessage(), e);
-      throw new RuntimeException("Data analysis failed", e);
+      log.error("❌ Error parsing and analyzing data: {}", e.getMessage(), e);
+      return createFallbackAnalysis(inputData);
+    }
+  }
+
+   /**
+    * 이미지를 포함한 분석 (Enhanced AI Analysis Service 사용)
+    */
+   private AnalyzedData analyzeWithImages(InputData inputData) {
+     try {
+       String firstImageUrl = inputData.getImageUrls().get(0);
+       log.info("🖼️ Analyzing with Enhanced AI Service: {}", firstImageUrl);
+       
+       // 분석 프롬프트 구성
+       StringBuilder analysisPrompt = new StringBuilder();
+       analysisPrompt.append("이 이미지와 텍스트 정보를 종합 분석하여 JSON 형태로 응답해주세요:\n\n");
+       
+       if (inputData.getTitle() != null) {
+         analysisPrompt.append("제목: ").append(inputData.getTitle()).append("\n");
+       }
+       if (inputData.getDescription() != null) {
+         analysisPrompt.append("설명: ").append(inputData.getDescription()).append("\n");
+       }
+       if (inputData.getLocation() != null) {
+         analysisPrompt.append("위치: ").append(inputData.getLocation()).append("\n");
+       }
+       
+       analysisPrompt.append("\n다음 JSON 형식으로 분석 결과를 반환해주세요:\n");
+       analysisPrompt.append("{\n");
+       analysisPrompt.append("  \"objectType\": \"도로 시설물 유형 (pothole, traffic_sign, road_damage, infrastructure, general)\",\n");
+       analysisPrompt.append("  \"damageType\": \"손상 정도 (minor, moderate, severe, critical, normal)\",\n");
+       analysisPrompt.append("  \"environment\": \"환경 (urban, rural, highway, residential)\",\n");
+       analysisPrompt.append("  \"priority\": \"우선순위 (low, medium, high, critical)\",\n");
+       analysisPrompt.append("  \"category\": \"신고 카테고리\",\n");
+       analysisPrompt.append("  \"keywords\": [\"관련\", \"키워드\", \"목록\"],\n");
+       analysisPrompt.append("  \"confidence\": 0.85\n");
+       analysisPrompt.append("}\n");
+       
+       // Enhanced AI Analysis Service 사용 (OCR + Gemini 2.5 Pro 통합)
+       String analysisResult = enhancedAiAnalysisService.analyzeImageWithOcrAndAi(
+           firstImageUrl, 
+           analysisPrompt.toString()
+       ).join();
+       
+       return parseAiAnalysisResult(analysisResult, inputData);
+       
+     } catch (Exception e) {
+       log.error("❌ Enhanced image analysis failed: {}", e.getMessage());
+       return analyzeTextOnly(inputData);
+     }
+   }
+   /**
+    * 텍스트만 분석 (Enhanced AI Analysis Service 사용)
+    */
+   private AnalyzedData analyzeTextOnly(InputData inputData) {
+     try {
+       log.info("📝 Analyzing text with Enhanced AI Service for: {}", inputData.getId());
+       
+       String analysisPrompt = buildAnalysisPrompt(inputData);
+       
+       // Enhanced AI Analysis Service 사용 (Gemini 2.5 Pro)
+       String analysisResult = enhancedAiAnalysisService.analyzeTextWithGemini(
+           analysisPrompt, 
+           "category"
+       ).join();
+       
+       return parseAiAnalysisResult(analysisResult, inputData);
+       
+     } catch (Exception e) {
+       log.error("❌ Enhanced text analysis failed: {}", e.getMessage());
+       return createFallbackAnalysis(inputData);
+     }
+   }
+  /**
+   * AI 분석 결과 파싱 (개선된 버전)
+   */
+  private AnalyzedData parseAiAnalysisResult(String analysisResult, InputData inputData) {
+    try {
+      log.info("🔧 Parsing AI analysis result");
+      
+      // JSON 파싱
+      Map<String, Object> resultMap = objectMapper.readValue(
+          extractJsonFromContent(analysisResult), Map.class);
+      
+      return new AnalyzedData(
+          inputData.getId(),
+          (String) resultMap.getOrDefault("objectType", "general"),
+          (String) resultMap.getOrDefault("damageType", "unknown"),
+          (String) resultMap.getOrDefault("environment", "urban"),
+          (String) resultMap.getOrDefault("priority", "medium"),
+          (String) resultMap.getOrDefault("category", "기타"),
+          (List<String>) resultMap.getOrDefault("keywords", List.of("분석", "결과")),
+          ((Number) resultMap.getOrDefault("confidence", 0.7)).doubleValue(),
+          inputData
+      );
+      
+    } catch (Exception e) {
+      log.warn("⚠️ Failed to parse AI analysis result, using fallback: {}", e.getMessage());
+      return createFallbackAnalysis(inputData);
     }
   }
 
   /**
-   * 분석 프롬프트 구성
+   * Fallback 분석 생성 (AI 분석 실패시)
+   */
+  private AnalyzedData createFallbackAnalysis(InputData inputData) {
+    log.info("🔄 Creating fallback analysis for: {}", inputData.getId());
+    
+    String category = "기타";
+    String damageType = "unknown";
+    String priority = "medium";
+    String objectType = "general";
+    List<String> keywords = new ArrayList<>();
+    
+    // 제목과 설명에서 키워드 추출
+    String content = "";
+    if (inputData.getTitle() != null) {
+      content += inputData.getTitle() + " ";
+    }
+    if (inputData.getDescription() != null) {
+      content += inputData.getDescription();
+    }
+    
+    content = content.toLowerCase();
+    
+    // 카테고리 및 손상 유형 결정
+    if (content.contains("포트홀") || content.contains("구멍") || content.contains("도로")) {
+      category = "포트홀";
+      objectType = "pothole";
+      damageType = "pothole";
+      keywords.addAll(Arrays.asList("도로", "포트홀", "구멍"));
+      priority = "high";
+    } else if (content.contains("표지판") || content.contains("신호등")) {
+      category = "교통표지판";
+      objectType = "traffic_sign";
+      damageType = "broken";
+      keywords.addAll(Arrays.asList("표지판", "신호등", "교통"));
+      priority = "medium";
+    } else if (content.contains("가로등") || content.contains("조명")) {
+      category = "가로등";
+      objectType = "infrastructure";
+      damageType = "broken";
+      keywords.addAll(Arrays.asList("가로등", "조명", "불빛"));
+      priority = "medium";
+    } else if (content.contains("쓰레기") || content.contains("폐기물")) {
+      category = "쓰레기";
+      objectType = "general";
+      damageType = "litter";
+      keywords.addAll(Arrays.asList("쓰레기", "폐기물", "환경"));
+      priority = "low";
+    }
+    
+    return new AnalyzedData(
+        inputData.getId(),
+        objectType,
+        damageType,
+        "urban",
+        priority,
+        category,
+        keywords,
+        0.6, // Lower confidence for fallback
+        inputData
+    );
+  }
+
+  /**
+   * 분석 프롬프트 구성 (개선된 한국어 버전)
    */
   private String buildAnalysisPrompt(InputData inputData) {
     StringBuilder prompt = new StringBuilder();
-    prompt.append("Analyze the following report data and extract key information:\n\n");
+    prompt.append("다음 신고 데이터를 분석하여 주요 정보를 추출해주세요:\n\n");
 
     if (inputData.getTitle() != null) {
-      prompt.append("Title: ").append(inputData.getTitle()).append("\n");
+      prompt.append("제목: ").append(inputData.getTitle()).append("\n");
     }
 
     if (inputData.getDescription() != null) {
-      prompt.append("Description: ").append(inputData.getDescription()).append("\n");
+      prompt.append("설명: ").append(inputData.getDescription()).append("\n");
     }
 
     if (inputData.getLocation() != null) {
-      prompt.append("Location: ").append(inputData.getLocation()).append("\n");
+      prompt.append("위치: ").append(inputData.getLocation()).append("\n");
     }
 
     if (inputData.getImageUrls() != null && !inputData.getImageUrls().isEmpty()) {
-      prompt.append("Number of images: ").append(inputData.getImageUrls().size()).append("\n");
+      prompt.append("이미지 개수: ").append(inputData.getImageUrls().size()).append("개\n");
     }
 
-    prompt.append("\nPlease extract and return the following information in JSON format:\n");
+    prompt.append("\n다음 정보를 JSON 형식으로 추출하여 반환해주세요:\n");
     prompt.append("{\n");
-    prompt.append(
-        "  \"objectType\": \"detected object type (pothole, traffic_sign, road_damage, infrastructure, general)\",\n");
-    prompt.append("  \"damageType\": \"severity or type of damage (minor, moderate, severe, critical)\",\n");
-    prompt.append("  \"environment\": \"environment context (urban, rural, highway, residential)\",\n");
-    prompt.append("  \"priority\": \"priority level (low, medium, high, critical)\",\n");
-    prompt.append("  \"category\": \"report category\",\n");
-    prompt.append("  \"keywords\": [\"list\", \"of\", \"relevant\", \"keywords\"],\n");
+    prompt.append("  \"objectType\": \"감지된 객체 유형 (pothole, traffic_sign, road_damage, infrastructure, general)\",\n");
+    prompt.append("  \"damageType\": \"손상 심각도 또는 유형 (minor, moderate, severe, critical, normal)\",\n");
+    prompt.append("  \"environment\": \"환경 맥락 (urban, rural, highway, residential)\",\n");
+    prompt.append("  \"priority\": \"우선순위 수준 (low, medium, high, critical)\",\n");
+    prompt.append("  \"category\": \"신고 카테고리 (한국어)\",\n");
+    prompt.append("  \"keywords\": [\"관련\", \"키워드\", \"목록\"],\n");
     prompt.append("  \"confidence\": 0.85\n");
     prompt.append("}\n");
 
