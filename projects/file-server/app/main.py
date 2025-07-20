@@ -439,3 +439,134 @@ async def search_files_by_tag(
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("File server shutting down")
+
+# Standard API endpoints for compatibility
+@app.get("/api/files")
+async def list_files(
+    limit: int = Query(50, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    x_auth_token: Optional[str] = Header(None)
+):
+    """List all files with pagination"""
+    # Validate auth token if security is enabled
+    if settings.ENABLE_AUTH and not x_auth_token == api_key_manager.get_api_key_safe('file_server'):
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    
+    try:
+        files = []
+        all_files = []
+        
+        # Collect all files
+        for filename in os.listdir(settings.UPLOAD_DIR):
+            file_path = os.path.join(settings.UPLOAD_DIR, filename)
+            if os.path.isfile(file_path):
+                try:
+                    file_id = filename.split('-')[0]
+                    file_stats = os.stat(file_path)
+                    
+                    all_files.append({
+                        "file_id": file_id,
+                        "filename": filename,
+                        "stored_filename": filename,
+                        "size": file_stats.st_size,
+                        "file_url": settings.get_public_file_url(filename),
+                        "upload_time": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
+                        "content_type": "application/octet-stream"  # Default type
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing file {filename}: {str(e)}")
+                    continue
+        
+        # Sort by upload time (newest first)
+        all_files.sort(key=lambda x: x["upload_time"], reverse=True)
+        
+        # Apply pagination
+        total_files = len(all_files)
+        start_idx = offset
+        end_idx = min(offset + limit, total_files)
+        files = all_files[start_idx:end_idx]
+        
+        return {
+            "success": True,
+            "files": files,
+            "pagination": {
+                "total": total_files,
+                "offset": offset,
+                "limit": limit,
+                "has_more": end_idx < total_files
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error listing files: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
+
+@app.get("/api/files/status")
+async def get_files_status():
+    """Get file system status and statistics"""
+    try:
+        # Count files
+        total_files = 0
+        total_size = 0
+        
+        for filename in os.listdir(settings.UPLOAD_DIR):
+            file_path = os.path.join(settings.UPLOAD_DIR, filename)
+            if os.path.isfile(file_path):
+                total_files += 1
+                total_size += os.path.getsize(file_path)
+        
+        # Disk usage
+        total, used, free = shutil.disk_usage(settings.UPLOAD_DIR)
+        free_percent = (free / total) * 100
+        
+        return {
+            "service": "File Server",
+            "status": "ACTIVE",
+            "version": "1.0.0",
+            "statistics": {
+                "total_files": total_files,
+                "total_size_bytes": total_size,
+                "total_size_mb": round(total_size / (1024 * 1024), 2)
+            },
+            "storage": {
+                "total_space_bytes": total,
+                "used_space_bytes": used,
+                "free_space_bytes": free,
+                "free_percent": round(free_percent, 1)
+            },
+            "endpoints": {
+                "upload": "/upload/",
+                "list": "/api/files",
+                "get": "/files/{file_id}",
+                "delete": "/files/{file_id}",
+                "status": "/api/files/status",
+                "health": "/health"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting files status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting status: {str(e)}")
+
+@app.get("/api/files/info")
+async def get_files_info():
+    """Get file server information"""
+    return {
+        "service": "JB-Project File Server",
+        "version": "1.0.0",
+        "description": "파일 저장 및 처리 서비스",
+        "features": [
+            "파일 업로드",
+            "썸네일 생성",
+            "AI 분석 통합",
+            "배치 업로드",
+            "웹훅 지원"
+        ],
+        "supported_formats": list(settings.ALLOWED_EXTENSIONS),
+        "max_file_size": "100MB",
+        "auth_required": settings.ENABLE_AUTH,
+        "ai_integration": True,
+        "timestamp": datetime.now().isoformat()
+    }

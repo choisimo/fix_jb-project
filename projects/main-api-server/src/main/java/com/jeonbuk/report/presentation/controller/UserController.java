@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -146,6 +148,38 @@ public class UserController {
     Page<UserResponse> response = users.map(UserResponse::fromEntity);
     return ResponseEntity.ok(
         ApiResponse.success("사용자 목록을 조회했습니다.", response));
+  }
+
+  @Operation(summary = "사용자 서비스 상태", description = "사용자 서비스의 상태를 확인합니다.")
+  @GetMapping("/status")
+  public ResponseEntity<ApiResponse<Map<String, Object>>> getUserServiceStatus() {
+    try {
+      long totalUsers = userService.getTotalUserCount();
+      long activeUsers = userService.getActiveUserCount();
+      
+      Map<String, Object> status = new HashMap<>();
+      status.put("service", "User Management Service");
+      status.put("status", "ACTIVE");
+      status.put("version", "1.0.0");
+      status.put("statistics", Map.of(
+        "totalUsers", totalUsers,
+        "activeUsers", activeUsers,
+        "inactiveUsers", totalUsers - activeUsers
+      ));
+      status.put("features", new String[]{
+        "사용자 등록/수정",
+        "프로필 관리",
+        "권한 관리",
+        "사용자 검색"
+      });
+      status.put("timestamp", System.currentTimeMillis());
+      
+      return ResponseEntity.ok(ApiResponse.success("사용자 서비스 상태 조회 완료", status));
+    } catch (Exception e) {
+      log.error("User service status error", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(ApiResponse.error("사용자 서비스 상태 조회 중 오류가 발생했습니다."));
+    }
   }
 
   @Operation(summary = "사용자 상세 조회", description = "특정 사용자의 상세 정보를 조회합니다. (관리자 전용)")

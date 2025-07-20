@@ -456,4 +456,36 @@ public class AuthController {
         }
         return null;
     }
+
+    @Operation(summary = "인증 서비스 테스트", description = "인증 서비스의 상태를 확인합니다.")
+    @GetMapping("/test")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> testAuth() {
+        try {
+            Map<String, Object> testResult = new HashMap<>();
+            testResult.put("service", "Authentication Service");
+            testResult.put("status", "ACTIVE");
+            testResult.put("version", "1.0.0");
+            testResult.put("timestamp", System.currentTimeMillis());
+            testResult.put("features", new String[]{
+                "일반 로그인/회원가입",
+                "OAuth2 소셜 로그인",
+                "JWT 토큰 관리",
+                "이메일/SMS 인증"
+            });
+            testResult.put("providers", new String[]{"Google", "Kakao"});
+            testResult.put("endpoints", Map.of(
+                "login", "/api/auth/login",
+                "register", "/api/auth/register",
+                "oauth2", "/api/auth/oauth2/authorization/{provider}",
+                "refresh", "/api/auth/refresh",
+                "test", "/api/auth/test"
+            ));
+            
+            return ResponseEntity.ok(ApiResponse.success("인증 서비스 테스트 완료", testResult));
+        } catch (Exception e) {
+            log.error("Auth test error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("인증 서비스 테스트 중 오류가 발생했습니다."));
+        }
+    }
 }

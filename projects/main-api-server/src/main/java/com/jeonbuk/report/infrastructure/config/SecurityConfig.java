@@ -43,7 +43,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/api/auth/**", "/public/**", "/login/oauth2/**", "/oauth2/**", "/h2-console/**", "/swagger-ui/**", "/api-docs/**", "/actuator/**").permitAll()
+                .requestMatchers("/auth/**", "/api/auth/**", "/api/users/status", "/public/**", "/login/oauth2/**", "/oauth2/**", "/h2-console/**", "/swagger-ui/**", "/api-docs/**", "/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions().sameOrigin()) // H2 콘솔을 위한 설정

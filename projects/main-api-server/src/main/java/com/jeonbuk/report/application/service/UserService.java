@@ -266,4 +266,15 @@ public class UserService {
   public boolean isPhoneAvailable(String phone) {
     return !userRepository.existsByPhone(phone);
   }
+
+  /**
+   * 사용자 통계 메서드
+   */
+  public long getTotalUserCount() {
+    return userRepository.count();
+  }
+
+  public long getActiveUserCount() {
+    return userRepository.countActiveUsers();
+  }
 }
