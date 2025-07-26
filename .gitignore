@@ -84,35 +84,34 @@ node_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# =============================================================================
+# 환경변수 및 보안 파일 (중앙 관리)
+# =============================================================================
+# 실제 환경변수 파일들 (민감한 정보 포함)
 .env
+.env.local
+.env.*.local
+.env.production
+.env.prod
+.env.staging
+.env.development
+.env.dev
 
-# dataconnect generated files
-.dataconnect
+# Flutter 앱 환경변수 파일
+flutter-app/.env
+flutter-app/.env.*
 
-# Flutter
-.dart_tool/
-.flutter-plugins/
-.flutter-plugins-dependencies/
-.idea/
-.vscode/
-.iml
-*.iml
-*.freezed.dart
-*.g.dart
-build/
-.fvm/
-.packages
-.dart_tool/
-.flutter-plugins-cache/
-.env # 민감한 환경 변수 파일이 있다면 추가
+# 백업 환경변수 파일
+.env.backup.*
+*.env.backup
 
-# Dart Frog Backend (flutter_backend 폴더 내에도 별도의 .gitignore가 있을 수 있음)
-flutter_backend/.dart_tool/
-flutter_backend/build/
-flutter_backend/.packages
-flutter_backend/generated/
-flutter_backend/.env # 백엔드용 .env 파일이 있다면 추가
+# Docker 환경 오버라이드 파일
+docker-compose.override.yml
+docker-compose.*.override.yml
+
+# =============================================================================
+# 원본 보안 관련 설정들 (유지)
+# =============================================================================
 
 # Firebase
 .firebase/

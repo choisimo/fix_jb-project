@@ -4,6 +4,12 @@ set -e
 
 echo "🚀 Starting JB Report Platform Production Deployment..."
 
+# Load environment utilities
+source "$(dirname "$0")/env-utils.sh"
+
+# Load production environment variables
+load_env_by_environment "production"
+
 # Check for required environment variables
 required_vars=(
     "DATABASE_PASSWORD"
@@ -18,12 +24,10 @@ required_vars=(
     "OPENROUTER_API_KEY"
 )
 
-for var in "${required_vars[@]}"; do
-    if [ -z "${!var}" ]; then
-        echo "❌ Error: $var is not set"
-        exit 1
-    fi
-done
+validate_required_vars "${required_vars[@]}"
+
+# Print environment info
+print_env_info
 
 # Build services
 echo "📦 Building services..."

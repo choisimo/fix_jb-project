@@ -54,13 +54,13 @@ class AppIntegrityVerification {
         _checkMockLocation(),
       ]);
       
-      final rootJailbreakResult = checks[0] as SecurityCheckResult;
-      final debugModeResult = checks[1] as SecurityCheckResult;
-      final emulatorResult = checks[2] as SecurityCheckResult;
-      final hookingResult = checks[3] as SecurityCheckResult;
-      final signatureResult = checks[4] as SecurityCheckResult;
-      final developerResult = checks[5] as SecurityCheckResult;
-      final mockLocationResult = checks[6] as SecurityCheckResult;
+      final rootJailbreakResult = checks[0];
+      final debugModeResult = checks[1];
+      final emulatorResult = checks[2];
+      final hookingResult = checks[3];
+      final signatureResult = checks[4];
+      final developerResult = checks[5];
+      final mockLocationResult = checks[6];
       
       final threatLevel = _calculateThreatLevel([
         rootJailbreakResult,
@@ -141,7 +141,7 @@ class AppIntegrityVerification {
   /// Check if app is running in debug mode
   Future<SecurityCheckResult> _checkDebugMode() async {
     try {
-      final isDebugMode = kDebugMode;
+      const isDebugMode = kDebugMode;
       
       return SecurityCheckResult(
         name: 'Debug Mode Detection',
@@ -384,7 +384,7 @@ class AppIntegrityVerification {
       // Check for Frida ports
       final fridaPorts = [27042, 27043];
       for (final port in fridaPorts) {
-        final socket = await Socket.connect('127.0.0.1', port, timeout: Duration(milliseconds: 100));
+        final socket = await Socket.connect('127.0.0.1', port, timeout: const Duration(milliseconds: 100));
         socket.destroy();
         return true; // Frida detected
       }

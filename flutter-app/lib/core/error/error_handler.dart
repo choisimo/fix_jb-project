@@ -311,37 +311,33 @@ class AppError implements Exception {
 
 /// 특정 에러 타입별 헬퍼 클래스
 class NetworkError extends AppError {
-  const NetworkError(String message, {dynamic originalError})
+  const NetworkError(String message, {super.originalError})
       : super(
           type: ErrorType.network,
           message: message,
-          originalError: originalError,
         );
 }
 
 class AuthenticationError extends AppError {
-  const AuthenticationError(String message, {dynamic originalError})
+  const AuthenticationError(String message, {super.originalError})
       : super(
           type: ErrorType.authentication,
           message: message,
-          originalError: originalError,
         );
 }
 
 class ValidationError extends AppError {
-  const ValidationError(String message, {Map<String, dynamic>? details})
+  const ValidationError(String message, {super.details})
       : super(
           type: ErrorType.validation,
           message: message,
-          details: details,
         );
 }
 
 class ServerError extends AppError {
-  const ServerError(String message, {dynamic originalError})
+  const ServerError(String message, {super.originalError})
       : super(
           type: ErrorType.server,
           message: message,
-          originalError: originalError,
         );
 }

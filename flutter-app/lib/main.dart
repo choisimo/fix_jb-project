@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jb_report_app/core/router/app_router.dart';
 import 'package:jb_report_app/core/theme/app_theme.dart';
 import 'package:jb_report_app/core/utils/app_initializer.dart';
+import 'package:jb_report_app/core/config/app_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize app config first
+  await AppConfig.initialize();
   
   // Initialize app
   await AppInitializer.initialize();

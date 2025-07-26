@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JB Report - 환경변수 관리 시스템</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .code-editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        // API 클라이언트
+        const apiClient = {
+            baseURL: 'http://localhost:8080/api/v1/admin',
+            
+            async request(endpoint, options = {}) {
+                const response = await fetch(`${this.baseURL}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+                
+                return response.json();
+            },
+
+            // 환경변수 관련 API
+            async getVariables(params = {}) {
+                const queryString = new URLSearchParams(params).toString();
+                return this.request(`/environment/variables?${queryString}`);
+            },
+
+            async createVariable(data) {
+                return this.request('/environment/variables', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+            },
+
+            async updateVariable(id, data) {
+                return this.request(`/environment/variables/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                });
+            },
+
+            async deleteVariable(id, reason) {
+                return this.request(`/environment/variables/${id}?reason=${encodeURIComponent(reason)}`, {
+                    method: 'DELETE'
+                });
+            },
+
+            async validateEnvironment(environment) {
+                return this.request(`/environment/validate?environment=${environment}`, {
+                    method: 'POST'
+                });
+            },
+
+            async exportEnvironment(data) {
+                const response = await fetch(`${this.baseURL}/environment/export`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Export Error: ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `env_${data.environment}_${Date.now()}.env`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            },
+
+            // 배포 관련 API
+            async deployChanges(environment, changes) {
+                return this.request('/deployment/deploy', {
+                    method: 'POST',
+                    body: JSON.stringify(changes),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            },
+
+            async restartServices(environment, services) {
+                return this.request('/deployment/restart-services', {
+                    method: 'POST',
+                    body: JSON.stringify(services),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            },
+
+            // 변경 이력 관련 API
+            async getChangeHistory(params = {}) {
+                const queryString = new URLSearchParams(params).toString();
+                return this.request(`/environment/history?${queryString}`);
+            },
+
+            async rollbackVariable(historyId, reason) {
+                return this.request('/environment/history/rollback', {
+                    method: 'POST',
+                    body: JSON.stringify({ historyId, reason, requestedBy: 'current_user' })
+                });
+            }
+        };
+
+        // 알림 컴포넌트
+        const Toast = ({ message, type, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 5000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+            return (
+                <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`}>
+                    <div className="flex items-center">
+                        <span>{message}</span>
+                        <button onClick={onClose} className="ml-4 text-white hover:text-gray-200">
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 환경변수 편집 모달
+        const VariableModal = ({ variable, onSave, onClose, environments, categories }) => {
+            const [formData, setFormData] = useState({
+                keyName: variable?.keyName || '',
+                value: variable?.value || '',
+                description: variable?.description || '',
+                environment: variable?.environment || 'DEVELOPMENT',
+                category: variable?.category || 'API',
+                isSecret: variable?.isSecret || false,
+                isRequired: variable?.isRequired || false,
+                reason: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSave(formData);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">
+                                {variable ? '환경변수 수정' : '환경변수 생성'}
+                            </h2>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">키 이름</label>
+                                    <input
+                                        type="text"
+                                        value={formData.keyName}
+                                        onChange={(e) => setFormData({ ...formData, keyName: e.target.value })}
+                                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                        required
+                                        disabled={!!variable}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">환경</label>
+                                    <select
+                                        value={formData.environment}
+                                        onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                        disabled={!!variable}
+                                    >
+                                        {environments.map(env => (
+                                            <option key={env} value={env}>{env}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">값</label>
+                                <textarea
+                                    value={formData.value}
+                                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 code-editor"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">설명</label>
+                                <input
+                                    type="text"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">카테고리</label>
+                                <select
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                >
+                                    {categories.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex space-x-4">
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.isSecret}
+                                        onChange={(e) => setFormData({ ...formData, isSecret: e.target.checked })}
+                                        className="mr-2"
+                                    />
+                                    보안 변수
+                                </label>
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.isRequired}
+                                        onChange={(e) => setFormData({ ...formData, isRequired: e.target.checked })}
+                                        className="mr-2"
+                                    />
+                                    필수 변수
+                                </label>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">변경 사유</label>
+                                <input
+                                    type="text"
+                                    value={formData.reason}
+                                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex justify-end space-x-2 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+                                >
+                                    저장
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // 메인 환경변수 관리 컴포넌트
+        const EnvironmentManager = () => {
+            const [variables, setVariables] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [toast, setToast] = useState(null);
+            const [selectedEnvironment, setSelectedEnvironment] = useState('DEVELOPMENT');
+            const [selectedCategory, setSelectedCategory] = useState('');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showModal, setShowModal] = useState(false);
+            const [editingVariable, setEditingVariable] = useState(null);
+            const [activeTab, setActiveTab] = useState('variables');
+
+            const environments = ['DEVELOPMENT', 'STAGING', 'PRODUCTION', 'ALL'];
+            const categories = ['DATABASE', 'SECURITY', 'AI_SERVICES', 'API', 'INFRASTRUCTURE', 'FEATURE_FLAGS'];
+
+            const showToast = (message, type = 'info') => {
+                setToast({ message, type });
+            };
+
+            const loadVariables = useCallback(async () => {
+                setLoading(true);
+                try {
+                    const params = {
+                        environment: selectedEnvironment,
+                        ...(selectedCategory && { category: selectedCategory }),
+                        ...(searchTerm && { keyName: searchTerm })
+                    };
+                    
+                    const response = await apiClient.getVariables(params);
+                    setVariables(response.data.content || response.data);
+                } catch (error) {
+                    showToast('환경변수 로딩 실패: ' + error.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            }, [selectedEnvironment, selectedCategory, searchTerm]);
+
+            useEffect(() => {
+                loadVariables();
+            }, [loadVariables]);
+
+            const handleSaveVariable = async (formData) => {
+                try {
+                    if (editingVariable) {
+                        await apiClient.updateVariable(editingVariable.id, formData);
+                        showToast('환경변수가 수정되었습니다', 'success');
+                    } else {
+                        await apiClient.createVariable(formData);
+                        showToast('환경변수가 생성되었습니다', 'success');
+                    }
+                    setShowModal(false);
+                    setEditingVariable(null);
+                    loadVariables();
+                } catch (error) {
+                    showToast('저장 실패: ' + error.message, 'error');
+                }
+            };
+
+            const handleDeleteVariable = async (variable) => {
+                const reason = prompt('삭제 사유를 입력하세요:');
+                if (!reason) return;
+
+                try {
+                    await apiClient.deleteVariable(variable.id, reason);
+                    showToast('환경변수가 삭제되었습니다', 'success');
+                    loadVariables();
+                } catch (error) {
+                    showToast('삭제 실패: ' + error.message, 'error');
+                }
+            };
+
+            const handleValidateEnvironment = async () => {
+                try {
+                    const response = await apiClient.validateEnvironment(selectedEnvironment);
+                    const result = response.data;
+                    
+                    if (result.isValid) {
+                        showToast('환경변수 검증 통과', 'success');
+                    } else {
+                        const errors = result.errors.concat(result.missingRequired).join(', ');
+                        showToast(`검증 실패: ${errors}`, 'error');
+                    }
+                } catch (error) {
+                    showToast('검증 실패: ' + error.message, 'error');
+                }
+            };
+
+            const handleExportEnvironment = async () => {
+                try {
+                    await apiClient.exportEnvironment({
+                        environment: selectedEnvironment,
+                        includeSecrets: confirm('보안 변수를 포함하시겠습니까?')
+                    });
+                    showToast('환경변수 파일이 다운로드되었습니다', 'success');
+                } catch (error) {
+                    showToast('내보내기 실패: ' + error.message, 'error');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* 헤더 */}
+                    <div className="bg-white shadow">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center py-6">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-gray-900">
+                                        <i className="fas fa-cogs mr-2"></i>
+                                        환경변수 관리 시스템
+                                    </h1>
+                                    <p className="text-gray-600">JB Report Platform 환경변수 중앙 관리</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={handleValidateEnvironment}
+                                        className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                                    >
+                                        <i className="fas fa-check-circle mr-2"></i>
+                                        검증
+                                    </button>
+                                    <button
+                                        onClick={handleExportEnvironment}
+                                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                    >
+                                        <i className="fas fa-download mr-2"></i>
+                                        내보내기
+                                    </button>
+                                    <button
+                                        onClick={() => setShowModal(true)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                        <i className="fas fa-plus mr-2"></i>
+                                        새 변수
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 탭 네비게이션 */}
+                    <div className="bg-white border-b">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <nav className="flex space-x-8">
+                                <button
+                                    onClick={() => setActiveTab('variables')}
+                                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'variables'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    환경변수 관리
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'history'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    변경 이력
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('deployment')}
+                                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'deployment'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    배포 관리
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+
+                    {/* 메인 컨텐츠 */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {activeTab === 'variables' && (
+                            <div>
+                                {/* 필터 영역 */}
+                                <div className="bg-white p-6 rounded-lg shadow mb-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">환경</label>
+                                            <select
+                                                value={selectedEnvironment}
+                                                onChange={(e) => setSelectedEnvironment(e.target.value)}
+                                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                            >
+                                                {environments.map(env => (
+                                                    <option key={env} value={env}>{env}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">카테고리</label>
+                                            <select
+                                                value={selectedCategory}
+                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                            >
+                                                <option value="">전체</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700">검색</label>
+                                            <input
+                                                type="text"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                placeholder="키 이름으로 검색..."
+                                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 환경변수 테이블 */}
+                                <div className="bg-white rounded-lg shadow overflow-hidden">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    키 이름
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    값
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    환경
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    카테고리
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    속성
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    작업
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {loading ? (
+                                                <tr>
+                                                    <td colSpan="6" className="px-6 py-4 text-center">
+                                                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                                                        로딩 중...
+                                                    </td>
+                                                </tr>
+                                            ) : variables.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                                                        환경변수가 없습니다
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                variables.map((variable) => (
+                                                    <tr key={variable.id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm font-medium text-gray-900 code-editor">
+                                                                {variable.keyName}
+                                                            </div>
+                                                            {variable.description && (
+                                                                <div className="text-sm text-gray-500">
+                                                                    {variable.description}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="text-sm text-gray-900 code-editor">
+                                                                {variable.isSecret ? (
+                                                                    <span className="text-gray-400">
+                                                                        <i className="fas fa-lock mr-1"></i>
+                                                                        {variable.maskedValue}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="max-w-xs truncate block">
+                                                                        {variable.value || '-'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                                                                variable.environment === 'PRODUCTION' 
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : variable.environment === 'STAGING'
+                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                    : 'bg-green-100 text-green-800'
+                                                            }`}>
+                                                                {variable.environment}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {variable.category}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex space-x-2">
+                                                                {variable.isSecret && (
+                                                                    <span className="inline-flex px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
+                                                                        <i className="fas fa-lock mr-1"></i>
+                                                                        보안
+                                                                    </span>
+                                                                )}
+                                                                {variable.isRequired && (
+                                                                    <span className="inline-flex px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded">
+                                                                        필수
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingVariable(variable);
+                                                                        setShowModal(true);
+                                                                    }}
+                                                                    className="text-indigo-600 hover:text-indigo-900"
+                                                                >
+                                                                    <i className="fas fa-edit"></i>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteVariable(variable)}
+                                                                    className="text-red-600 hover:text-red-900"
+                                                                >
+                                                                    <i className="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-lg font-medium mb-4">변경 이력</h3>
+                                <p className="text-gray-500">변경 이력 기능은 구현 중입니다...</p>
+                            </div>
+                        )}
+
+                        {activeTab === 'deployment' && (
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-lg font-medium mb-4">배포 관리</h3>
+                                <p className="text-gray-500">배포 관리 기능은 구현 중입니다...</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 모달 */}
+                    {showModal && (
+                        <VariableModal
+                            variable={editingVariable}
+                            onSave={handleSaveVariable}
+                            onClose={() => {
+                                setShowModal(false);
+                                setEditingVariable(null);
+                            }}
+                            environments={environments}
+                            categories={categories}
+                        />
+                    )}
+
+                    {/* 토스트 알림 */}
+                    {toast && (
+                        <Toast
+                            message={toast.message}
+                            type={toast.type}
+                            onClose={() => setToast(null)}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        // 앱 렌더링
+        ReactDOM.render(<EnvironmentManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>

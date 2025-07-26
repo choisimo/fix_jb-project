@@ -130,7 +130,7 @@ class SecurityMonitoringService {
       
       // Remove old entries (older than 1 hour)
       _actionHistory[actionKey]!.removeWhere(
-        (time) => now.difference(time) > Duration(hours: 1),
+        (time) => now.difference(time) > const Duration(hours: 1),
       );
       
       // Check for brute force attacks
@@ -167,7 +167,7 @@ class SecurityMonitoringService {
       
       // Remove old entries (older than 1 hour)
       _actionHistory[apiKey]!.removeWhere(
-        (time) => now.difference(time) > Duration(hours: 1),
+        (time) => now.difference(time) > const Duration(hours: 1),
       );
       
       // Check rate limiting
@@ -239,8 +239,8 @@ class SecurityMonitoringService {
   Future<Map<String, dynamic>> getSecurityDashboard() async {
     try {
       final now = DateTime.now();
-      final last24Hours = now.subtract(Duration(hours: 24));
-      final last7Days = now.subtract(Duration(days: 7));
+      final last24Hours = now.subtract(const Duration(hours: 24));
+      final last7Days = now.subtract(const Duration(days: 7));
       
       final recentEvents = _securityEvents
           .where((event) => event.timestamp.isAfter(last24Hours))
@@ -505,7 +505,7 @@ class SecurityMonitoringService {
     
     // Remove old entries
     _actionHistory[errorKey]!.removeWhere(
-      (time) => DateTime.now().difference(time) > Duration(hours: 1),
+      (time) => DateTime.now().difference(time) > const Duration(hours: 1),
     );
     
     // Check for excessive errors
@@ -617,7 +617,7 @@ class SecurityMonitoringService {
   
   String _calculateOverallThreatLevel() {
     final now = DateTime.now();
-    final last24Hours = now.subtract(Duration(hours: 24));
+    final last24Hours = now.subtract(const Duration(hours: 24));
     
     final recentEvents = _securityEvents
         .where((event) => event.timestamp.isAfter(last24Hours))
@@ -744,7 +744,7 @@ class SecurityMonitoringService {
   }
   
   Future<void> _cleanupOldEvents() async {
-    final cutoffDate = DateTime.now().subtract(Duration(days: 30));
+    final cutoffDate = DateTime.now().subtract(const Duration(days: 30));
     _securityEvents.removeWhere(
       (event) => event.timestamp.isBefore(cutoffDate),
     );
@@ -755,7 +755,7 @@ class SecurityMonitoringService {
     // Decay risk scores over time
     final now = DateTime.now();
     _riskScores.updateAll((userId, score) {
-      final decay = 0.95; // 5% decay per monitoring cycle
+      const decay = 0.95; // 5% decay per monitoring cycle
       return score * decay;
     });
     
@@ -824,7 +824,7 @@ class SecurityMonitoringService {
           name: 'Brute Force Detection',
           enabled: true,
           threshold: 5,
-          timeWindow: Duration(minutes: 15),
+          timeWindow: const Duration(minutes: 15),
           actions: [ResponseAction.alert, ResponseAction.block],
         ),
         'api_abuse': ThreatDetectionRule(
@@ -832,7 +832,7 @@ class SecurityMonitoringService {
           name: 'API Abuse Detection',
           enabled: true,
           threshold: 100,
-          timeWindow: Duration(hours: 1),
+          timeWindow: const Duration(hours: 1),
           actions: [ResponseAction.alert, ResponseAction.restrict],
         ),
         'auto_lockdown': ThreatDetectionRule(
@@ -840,7 +840,7 @@ class SecurityMonitoringService {
           name: 'Auto Lockdown',
           enabled: false, // Disabled by default
           threshold: 1,
-          timeWindow: Duration(seconds: 1),
+          timeWindow: const Duration(seconds: 1),
           actions: [ResponseAction.quarantine],
         ),
       };

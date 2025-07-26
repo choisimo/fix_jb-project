@@ -1,25 +1,17 @@
+import '../config/app_config.dart';
+
 class ApiConstants {
-  // 개발/스테이징/프로덕션 환경별 베이스 URL
-  static const String _devBaseUrl = 'http://localhost:8080';
-  static const String _stagingBaseUrl = 'https://staging-api.jbreport.com';
-  static const String _prodBaseUrl = 'https://api.jbreport.com';
+  // Get configuration from AppConfig
+  static AppConfig get _config => AppConfig.instance;
 
-  // 현재 환경 설정 (개발 모드에서는 개발 서버 사용)
-  static const bool _isDevelopment = true; // 프로덕션 배포시 false로 변경
-  static const bool _isStaging = false;
-
-  // 베이스 URL 선택
-  static String get baseUrl {
-    if (_isDevelopment) return _devBaseUrl;
-    if (_isStaging) return _stagingBaseUrl;
-    return _prodBaseUrl;
-  }
-
+  // 베이스 URL (환경변수에서 동적으로 가져옴)
+  static String get baseUrl => _config.baseUrl;
+  
   // API 버전
-  static const String apiVersion = '/api/v1';
+  static String get apiVersion => _config.apiVersion;
   
   // 전체 API 베이스 URL
-  static String get apiBaseUrl => '$baseUrl$apiVersion';
+  static String get apiBaseUrl => _config.apiBaseUrl;
 
   // === 인증 관련 엔드포인트 ===
   static const String authBase = '/auth';
@@ -71,33 +63,37 @@ class ApiConstants {
   static const String deleteFileEndpoint = '$fileBase/{id}';
 
   // === WebSocket 엔드포인트 ===
-  static String get wsBaseUrl => baseUrl.replaceFirst('http', 'ws');
-  static String get wsUrl => '$wsBaseUrl$apiVersion'; // 추가된 속성
+  static String get wsBaseUrl => _config.wsBaseUrl;
+  static String get wsUrl => _config.wsUrl;
   static const String wsNotifications = '/ws/notifications';
   static const String wsReportUpdates = '/ws/reports';
   
   // === HTTP 헤더 상수 ===
-  static const String authorizationHeader = 'Authorization';
-  static const String bearerPrefix = 'Bearer ';
-  static const String contentTypeHeader = 'Content-Type';
-  static const String applicationJson = 'application/json';
-  static const String multipartFormData = 'multipart/form-data';
+  static const String authorizationHeader = AppConfig.authorizationHeader;
+  static const String bearerPrefix = AppConfig.bearerPrefix;
+  static const String contentTypeHeader = AppConfig.contentTypeHeader;
+  static const String applicationJson = AppConfig.applicationJson;
+  static const String multipartFormData = AppConfig.multipartFormData;
 
-  // === 타임아웃 설정 ===
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-  static const Duration sendTimeout = Duration(seconds: 30);
+  // === 타임아웃 설정 (환경변수에서 가져옴) ===
+  static Duration get connectionTimeout => Duration(seconds: _config.connectionTimeout);
+  static Duration get receiveTimeout => Duration(seconds: _config.receiveTimeout);
+  static Duration get sendTimeout => Duration(seconds: _config.sendTimeout);
 
-  // === 재시도 설정 ===
-  static const int maxRetryAttempts = 3;
-  static const Duration retryDelay = Duration(seconds: 1);
+  // === 재시도 설정 (환경변수에서 가져옴) ===
+  static int get maxRetryAttempts => _config.maxRetryAttempts;
+  static Duration get retryDelay => Duration(seconds: _config.retryDelay);
 
-  // === 페이지네이션 ===
-  static const int defaultPageSize = 20;
-  static const int maxPageSize = 100;
+  // === 페이지네이션 (환경변수에서 가져옴) ===
+  static int get defaultPageSize => _config.defaultPageSize;
+  static int get maxPageSize => _config.maxPageSize;
 
-  // === 파일 업로드 제한 ===
-  static const int maxFileSize = 10 * 1024 * 1024; // 10MB
+  // === 파일 업로드 제한 (환경변수에서 가져옴) ===
+  static int get maxFileSize => _config.maxFileSize;
+
+  // === 환경별 설정 반환 ===
+  static Map<String, dynamic> get environmentConfig => _config.environmentConfig;
+}
   static const List<String> allowedImageFormats = ['jpg', 'jpeg', 'png', 'webp'];
   static const List<String> allowedVideoFormats = ['mp4', 'mov', 'avi'];
 

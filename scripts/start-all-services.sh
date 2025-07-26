@@ -4,13 +4,11 @@ set -e
 
 echo "🚀 Starting JB Report Platform - All Services"
 
-# Load environment variables
-if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
-else
-    echo "❌ .env file not found. Please copy .env.template to .env and configure it."
-    exit 1
-fi
+# Load environment utilities
+source "$(dirname "$0")/env-utils.sh"
+
+# Load environment variables (default or by ENVIRONMENT variable)
+load_env_by_environment "${ENVIRONMENT:-development}"
 
 # Check required environment variables
 required_vars=(
@@ -19,12 +17,10 @@ required_vars=(
     "JWT_SECRET"
 )
 
-for var in "${required_vars[@]}"; do
-    if [ -z "${!var}" ]; then
-        echo "❌ Error: $var is not set in .env file"
-        exit 1
-    fi
-done
+validate_required_vars "${required_vars[@]}"
+
+# Print environment info
+print_env_info
 
 # Start infrastructure services
 echo "🐳 Starting infrastructure services..."

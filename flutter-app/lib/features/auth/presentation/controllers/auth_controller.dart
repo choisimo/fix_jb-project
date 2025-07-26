@@ -40,7 +40,7 @@ class AuthController extends _$AuthController {
           await authRepository.logout();
           state = state.copyWith(
             status: AuthStatus.unauthenticated,
-            error: AuthError(
+            error: const AuthError(
               code: 'SESSION_EXPIRED',
               message: 'Session expired. Please login again.',
             ),

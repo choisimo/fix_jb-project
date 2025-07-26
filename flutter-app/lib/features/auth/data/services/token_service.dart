@@ -13,7 +13,7 @@ class TokenService {
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
     ),
-    iOptions: const IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
   Future<void> saveTokens({
