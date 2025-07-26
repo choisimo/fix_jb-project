@@ -91,15 +91,17 @@ class ApiConstants {
   // === 파일 업로드 제한 (환경변수에서 가져옴) ===
   static int get maxFileSize => _config.maxFileSize;
 
-  // === 환경별 설정 반환 ===
-  static Map<String, dynamic> get environmentConfig => _config.environmentConfig;
-}
+  // === 파일 포맷 제한 ===
   static const List<String> allowedImageFormats = ['jpg', 'jpeg', 'png', 'webp'];
   static const List<String> allowedVideoFormats = ['mp4', 'mov', 'avi'];
 
   // === 캐시 설정 ===
   static const Duration cacheTimeout = Duration(minutes: 5);
   static const String cacheKeyPrefix = 'jb_report_';
+
+  // === 환경 확인 헬퍼 ===
+  static bool get _isDevelopment => _config.environment == 'development';
+  static bool get _isStaging => _config.environment == 'staging';
 
   // === 환경별 설정 ===
   static Map<String, dynamic> get environmentConfig {
